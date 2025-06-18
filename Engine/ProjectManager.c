@@ -4,26 +4,59 @@
 #include <stdlib.h>
 #include "shell_execute.h"
 
-int MainWindow(Vector2 mousePoint)
-{
-    Rectangle btnLoad = {200, 300, 500, 200};
-    Color btnLoadColor = DARKGRAY;
+void DrawMovingDotAlongRectangle() {
+    static float t = 0.0f;
+    float speed = 8.0f;
 
-    Rectangle btnCreate = {900, 300, 500, 200};
-    Color btnCreateColor = DARKGRAY;
+    int x = 475; 
+    int y = 180;
+    int w = 652;
+    int h = 142;
 
-    if (CheckCollisionPointRec(mousePoint, btnLoad) || CheckCollisionPointRec(mousePoint, btnCreate))
-    {
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    float perimeter = 2 * (w + h);
+
+    t += speed;
+    if (t > perimeter) t -= perimeter;
+
+    float dotX = x;
+    float dotY = y;
+
+    if (t < w) {
+        // Top edge
+        dotX = x + t;
+        dotY = y;
+    } else if (t < w + h) {
+        // Right edge
+        dotX = x + w;
+        dotY = y + (t - w);
+    } else if (t < w + h + w) {
+        // Bottom edge
+        dotX = x + w - (t - w - h);
+        dotY = y + h;
+    } else {
+        // Left edge
+        dotX = x;
+        dotY = y + h - (t - w - h - w);
     }
-    else
-    {
+
+    DrawCircle((int)dotX, (int)dotY, 5, (Color){180, 100, 200, 255});
+}
+
+int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
+{
+    Rectangle btnLoad = {0, 0, 798, 1000};
+    Rectangle btnCreate = {802, 0, 796, 1000};
+
+    BeginDrawing();
+    ClearBackground((Color){40, 42, 54, 255});
+
+    if(CheckCollisionPointRec(mousePoint, (Rectangle){484, 189, 632, 122})){
         SetMouseCursor(MOUSE_CURSOR_DEFAULT);
     }
-
-    if (CheckCollisionPointRec(mousePoint, btnLoad))
+    else if (CheckCollisionPointRec(mousePoint, btnLoad))
     {
-        btnLoadColor = GRAY;
+        DrawRectangle(0, 0, 800, 1000, (Color){128, 128, 128, 20});
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             TraceLog(LOG_INFO, "Load Button Clicked!");
@@ -31,14 +64,10 @@ int MainWindow(Vector2 mousePoint)
             return 2;
         }
     }
-    else
+    else if (CheckCollisionPointRec(mousePoint, btnCreate))
     {
-        btnLoadColor = DARKGRAY;
-    }
-
-    if (CheckCollisionPointRec(mousePoint, btnCreate))
-    {
-        btnCreateColor = GRAY;
+        DrawRectangle(800, 0, 1600, 1000, (Color){128, 128, 128, 20});
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             TraceLog(LOG_INFO, "Create Button Clicked!");
@@ -46,21 +75,27 @@ int MainWindow(Vector2 mousePoint)
             return 1;
         }
     }
-    else
-    {
-        btnCreateColor = DARKGRAY;
+    else{
+        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
     }
 
-    BeginDrawing();
-    ClearBackground(BLACK);
+    DrawLine(800, 0, 800, 1000, WHITE);
 
-    DrawRectangleRec(btnLoad, btnLoadColor);
-    DrawRectangleLinesEx(btnLoad, 2, BLACK);
-    DrawText("Load project", btnLoad.x + 120, btnLoad.y + 80, 40, WHITE);
+    DrawRectangleRounded((Rectangle){483, 188, 634, 124}, 0.6f, 16, WHITE);
+    DrawRectangleRounded((Rectangle){485, 190, 630, 120}, 0.6f, 16, (Color){180, 100, 200, 255});
 
-    DrawRectangleRec(btnCreate, btnCreateColor);
-    DrawRectangleLinesEx(btnCreate, 2, BLACK);
-    DrawText("Create project", btnCreate.x + 120, btnCreate.y + 80, 40, WHITE);
+    DrawTextEx(fontRE, "R", (Vector2){500, 180}, 130, 0, (Color){255, 255, 255, 255});
+    DrawTextEx(font, "apid Engine", (Vector2){605, 200}, 100, 0, (Color){255, 255, 255, 255});
+
+    //DrawMovingDotAlongRectangle();
+
+    DrawTextEx(font, "Load", (Vector2){290, 540}, 80, 0, WHITE);
+    DrawTextEx(font, "project", (Vector2){260, 630}, 80, 0, WHITE);
+
+    DrawTextEx(font, "Create", (Vector2){1080, 540}, 80, 0, WHITE);
+    DrawTextEx(font, "project", (Vector2){1075, 630}, 80, 0, WHITE);
+
+    DrawMovingDotAlongRectangle();
 
     return 0;
 }
@@ -69,7 +104,7 @@ int CreateProject(char *inputText)
 {
     char projectPath[512];
 
-    sprintf(projectPath, "C:\\Users\\user\\Desktop\\GameEngine\\Projects\\%s", inputText);
+    sprintf(projectPath, "C:\\Users\\user\\Desktop\\RapidEngine\\Projects\\%s", inputText);
 
     if (_mkdir(projectPath) == 0)
     {
@@ -156,7 +191,7 @@ int WindowCreateProject(char *projectFileName)
     }
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground((Color){40, 42, 54, 255});
 
     DrawRectangleRec(backButton, CLITERAL(Color){70, 70, 70, 150});
     DrawText("Back", backButton.x + 8, backButton.y + 5, 20, WHITE);
@@ -191,12 +226,12 @@ int WindowLoadProject(char *projectFileName)
 
     Vector2 mousePoint = GetMousePosition();
 
-    FilePathList files = LoadDirectoryFiles("C:\\Users\\user\\Desktop\\GameEngine\\Projects"); //////hardcoded filepath
+    FilePathList files = LoadDirectoryFiles("C:\\Users\\user\\Desktop\\RapidEngine\\Projects"); //////hardcoded filepath
 
     int yPosition = 80;
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    ClearBackground((Color){40, 42, 54, 255});
     
     DrawRectangleRec(backButton, CLITERAL(Color){70, 70, 70, 150});
     DrawText("Back", backButton.x + 8, backButton.y + 5, 20, WHITE);
@@ -238,7 +273,10 @@ void EndProjectManager(char *projectFileName)
 int main(void)
 {
     InitWindow(1600, 1000, "Project manager");
-    SetTargetFPS(30);
+    SetTargetFPS(100);
+
+    Font font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+    Font fontRE = LoadFontEx("fonts/sonsie.ttf", 256, NULL, 0);
 
     int windowMode = 0;
     char *projectFileName;
@@ -249,7 +287,7 @@ int main(void)
 
         if (windowMode == 0)
         {
-            windowMode = MainWindow(mousePoint);
+            windowMode = MainWindow(mousePoint, font, fontRE);
         }
         else if (windowMode == 1)
         {

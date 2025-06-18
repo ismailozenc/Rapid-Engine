@@ -1,1 +1,0 @@
-gcc Engine.c raylib/lib/libraylib.a -o Engine.exe -Iraylib/include -lopengl32 -lgdi32 -lwinmm; ./Engine.exe Snake

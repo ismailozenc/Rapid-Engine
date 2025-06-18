@@ -124,7 +124,7 @@ EditorContext InitEditorContext()
     EC.logCount = 0;
     EC.logMessages = malloc(sizeof(char *) * EC.logCapacity);
 
-    EC.font = LoadFontEx("fonts/arialbd.ttf", 32, NULL, 0);
+    EC.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
 
     return EC;
 }

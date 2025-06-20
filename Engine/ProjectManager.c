@@ -51,37 +51,43 @@ void DrawMovingDotAlongRectangle()
     DrawCircle((int)dotX, (int)dotY, 5, (Color){180, 100, 200, 255});
 }
 
-void DrawX(Vector2 center, float size, float thickness, Color color) {
+void DrawX(Vector2 center, float size, float thickness, Color color)
+{
     float half = size / 2;
 
-    Vector2 p1 = { center.x - half, center.y - half };
-    Vector2 p2 = { center.x + half, center.y + half };
-    Vector2 p3 = { center.x - half, center.y + half };
-    Vector2 p4 = { center.x + half, center.y - half };
+    Vector2 p1 = {center.x - half, center.y - half};
+    Vector2 p2 = {center.x + half, center.y + half};
+    Vector2 p3 = {center.x - half, center.y + half};
+    Vector2 p4 = {center.x + half, center.y - half};
 
     DrawLineEx(p1, p2, thickness, color);
     DrawLineEx(p3, p4, thickness, color);
 }
 
-void DrawTopButtons(){
+void DrawTopButtons()
+{
 
     DrawLineEx((Vector2){0, 1}, (Vector2){1600, 1}, 4.0f, WHITE);
     DrawLineEx((Vector2){1, 0}, (Vector2){1, 1000}, 4.0f, WHITE);
     DrawLineEx((Vector2){0, 999}, (Vector2){1600, 999}, 4.0f, WHITE);
     DrawLineEx((Vector2){1599, 0}, (Vector2){1599, 1000}, 4.0f, WHITE);
 
-    if(CheckCollisionPointRec(GetMousePosition(), (Rectangle){1550, 0, 50, 50})){
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){1550, 0, 50, 50}))
+    {
         DrawRectangle(1550, 0, 50, 50, RED);
-        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
             CloseWindow();
         }
     }
 
     DrawX((Vector2){1575, 25}, 20, 2, WHITE);
 
-    if(CheckCollisionPointRec(GetMousePosition(), (Rectangle){1500, 0, 50, 50})){
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){1500, 0, 50, 50}))
+    {
         DrawRectangle(1500, 0, 50, 50, GRAY);
-        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
             MinimizeWindow();
         }
     }
@@ -89,51 +95,92 @@ void DrawTopButtons(){
     DrawLineEx((Vector2){1515, 25}, (Vector2){1535, 25}, 2, WHITE);
 }
 
+bool hasCursorMoved(Vector2 lastMousePos)
+{
+    return lastMousePos.x != GetMousePosition().x;
+}
+
 int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
 {
     Rectangle btnLoad = {0, 0, 798, 1000};
     Rectangle btnCreate = {802, 0, 796, 1000};
 
-    if(IsKeyPressed(KEY_LEFT)){
-        return 1;
-    }
-    else if(IsKeyPressed(KEY_RIGHT)){
-        return 2;
-    }
+    static int isLoadBtnFocused = 0;
+    static Vector2 lastMousePos;
 
     BeginDrawing();
     ClearBackground((Color){40, 42, 54, 255});
 
-    DrawTopButtons();
-
-    if (CheckCollisionPointRec(mousePoint, (Rectangle){484, 189, 632, 122}))
+    if (hasCursorMoved(lastMousePos))
     {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        if (CheckCollisionPointRec(mousePoint, (Rectangle){484, 189, 632, 122}))
+        {
+            isLoadBtnFocused = 0;
+            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        }
+        else if (CheckCollisionPointRec(mousePoint, btnLoad))
+        {
+            isLoadBtnFocused = 1;
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        }
+        else if (CheckCollisionPointRec(mousePoint, btnCreate) && !CheckCollisionPointRec(mousePoint, (Rectangle){1500, 0, 100, 50}))
+        {
+            isLoadBtnFocused = 2;
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        }
+        else
+        {
+            isLoadBtnFocused = 0;
+            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        }
     }
-    else if (CheckCollisionPointRec(mousePoint, btnLoad))
+    else
+    {
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            if (isLoadBtnFocused == 1)
+            {
+                isLoadBtnFocused = 0;
+                return 1;
+            }
+            else if (isLoadBtnFocused == 2)
+            {
+                isLoadBtnFocused = 0;
+                return 2;
+            }
+        }
+        else if (IsKeyPressed(KEY_LEFT))
+        {
+            isLoadBtnFocused = 1;
+        }
+        else if (IsKeyPressed(KEY_RIGHT))
+        {
+            isLoadBtnFocused = 2;
+        }
+    }
+
+    lastMousePos = GetMousePosition();
+
+    if (isLoadBtnFocused == 1)
     {
         DrawRectangle(0, 0, 800, 1000, (Color){128, 128, 128, 20});
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePoint, btnLoad))
         {
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
             return 1;
         }
     }
-    else if (CheckCollisionPointRec(mousePoint, btnCreate) && !CheckCollisionPointRec(mousePoint, (Rectangle){1500, 0, 100, 50}))
+    else if (isLoadBtnFocused == 2)
     {
         DrawRectangle(800, 0, 1600, 1000, (Color){128, 128, 128, 20});
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePoint, btnCreate) && !CheckCollisionPointRec(mousePoint, (Rectangle){1500, 0, 100, 50}))
         {
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
             return 2;
         }
     }
-    else
-    {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-    }
+
+    DrawTopButtons();
 
     DrawLineEx((Vector2){800, 0}, (Vector2){800, 1000}, 4.0f, WHITE);
 
@@ -166,7 +213,11 @@ int WindowLoadProject(char *projectFileName, Font font)
 
     int yPosition = 80;
 
-    if(IsKeyPressed(KEY_LEFT)){
+    static int selectedProject = 0;
+    static bool showSelectorArrow = true;
+
+    if (IsKeyPressed(KEY_LEFT))
+    {
         return 0;
     }
 
@@ -181,11 +232,13 @@ int WindowLoadProject(char *projectFileName, Font font)
     {
         DrawRectangleRec(backButton, CLITERAL(Color){255, 255, 255, 50});
         DrawTextEx(font, "<", (Vector2){10, 490}, 70, 0, WHITE);
-        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
             return 0;
         }
     }
-    else{
+    else
+    {
         DrawTextEx(font, "<", (Vector2){15, 500}, 50, 0, WHITE);
     }
 
@@ -209,6 +262,53 @@ int WindowLoadProject(char *projectFileName, Font font)
             return 3;
         }
         yPosition += 50;
+    }
+
+    static float blinkTimer = 0;
+    blinkTimer += GetFrameTime();
+
+    if (blinkTimer >= 0.3f) // Half a second
+    {
+        blinkTimer = 0;
+        showSelectorArrow = !showSelectorArrow; // Toggle visibility
+    }
+
+    if (IsKeyPressed(KEY_DOWN))
+    {
+        if (selectedProject == files.count - 1)
+        {
+            selectedProject = 0;
+        }
+        else
+        {
+            selectedProject++;
+        }
+        showSelectorArrow = true;
+        blinkTimer = 0;
+    }
+    if (IsKeyPressed(KEY_UP))
+    {
+        if (selectedProject == 0)
+        {
+            selectedProject = files.count - 1;
+        }
+        else
+        {
+            selectedProject--;
+        }
+        showSelectorArrow = true;
+        blinkTimer = 0;
+    }
+
+    if (showSelectorArrow)
+    {
+        DrawTextEx(font, ">", (Vector2){80, 80 + selectedProject * 50}, 30, 0, (Color){202, 97, 255, 255});
+    }
+
+    if (IsKeyPressed(KEY_ENTER))
+    {
+        strcpy(projectFileName, GetFileName(files.paths[selectedProject]));
+        return 3;
     }
 
     UnloadDirectoryFiles(files);
@@ -273,7 +373,8 @@ int WindowCreateProject(char *projectFileName, Font font)
 
     Vector2 mousePoint = GetMousePosition();
 
-    if(IsKeyPressed(KEY_LEFT)){
+    if (IsKeyPressed(KEY_LEFT))
+    {
         return 0;
     }
 
@@ -321,11 +422,13 @@ int WindowCreateProject(char *projectFileName, Font font)
     {
         DrawRectangleRec(backButton, CLITERAL(Color){255, 255, 255, 50});
         DrawTextEx(font, "<", (Vector2){10, 490}, 70, 0, WHITE);
-        if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
             return 0;
         }
     }
-    else{
+    else
+    {
         DrawTextEx(font, "<", (Vector2){15, 500}, 50, 0, WHITE);
     }
 

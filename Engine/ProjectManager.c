@@ -2,7 +2,16 @@
 #include <direct.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "shell_execute.h"
+
+#define MAX_PROJECT_NAME 99
+
+typedef struct ProjectOptions
+{
+    char projectName[MAX_PROJECT_NAME];
+    bool is3D;
+} ProjectOptions;
 
 void DrawMovingDotAlongRectangle()
 {
@@ -205,7 +214,7 @@ int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
 
 int WindowLoadProject(char *projectFileName, Font font)
 {
-    Rectangle backButton = {0, 0, 65, 1600};
+    Rectangle backButton = {1, 0, 65, 1600};
 
     Vector2 mousePoint = GetMousePosition();
 
@@ -316,11 +325,11 @@ int WindowLoadProject(char *projectFileName, Font font)
     return 1;
 }
 
-int CreateProject(char *inputText)
+int CreateProject(ProjectOptions PO)
 {
     char projectPath[512];
 
-    sprintf(projectPath, "C:\\Users\\user\\Desktop\\RapidEngine\\Projects\\%s", inputText);
+    sprintf(projectPath, "C:\\Users\\user\\Desktop\\RapidEngine\\Projects\\%s", PO.projectName);
 
     if (_mkdir(projectPath) == 0)
     {
@@ -334,7 +343,7 @@ int CreateProject(char *inputText)
 
     char mainPath[512];
 
-    sprintf(mainPath, "%s\\%s.c", projectPath, inputText);
+    sprintf(mainPath, "%s\\%s.c", projectPath, PO.projectName);
 
     FILE *file = fopen(mainPath, "w");
 
@@ -365,11 +374,13 @@ int CreateProject(char *inputText)
 
 int WindowCreateProject(char *projectFileName, Font font)
 {
-    Rectangle backButton = {0, 0, 65, 1600};
+    Rectangle backButton = {1, 0, 65, 1600};
     static Rectangle textBox = {700, 230, 250, 40};
-    static char inputText[99] = "";
+    static char inputText[MAX_PROJECT_NAME] = "";
     static int letterCount = 0;
     static bool isFocused = true;
+
+    static ProjectOptions PO;
 
     Vector2 mousePoint = GetMousePosition();
 
@@ -388,7 +399,7 @@ int WindowCreateProject(char *projectFileName, Font font)
         int key = GetCharPressed();
         while (key > 0)
         {
-            if ((key >= 32) && (key <= 125) && (letterCount < 99))
+            if ((key >= 32) && (key <= 125) && (letterCount < MAX_PROJECT_NAME))
             {
                 inputText[letterCount] = (char)key;
                 letterCount++;
@@ -401,13 +412,6 @@ int WindowCreateProject(char *projectFileName, Font font)
         {
             letterCount--;
             inputText[letterCount] = '\0';
-        }
-
-        if (IsKeyPressed(KEY_ENTER) && letterCount > 0)
-        {
-            CreateProject(inputText);
-            strcpy(projectFileName, inputText);
-            return 3;
         }
     }
 
@@ -432,16 +436,107 @@ int WindowCreateProject(char *projectFileName, Font font)
         DrawTextEx(font, "<", (Vector2){15, 500}, 50, 0, WHITE);
     }
 
-    DrawRectangleRec(textBox, LIGHTGRAY);
-    DrawRectangleLinesEx(textBox, 2, isFocused ? WHITE : DARKGRAY);
-    DrawText(inputText, textBox.x + 5, textBox.y + 10, 30, BLACK);
-
-    if (isFocused && (letterCount < 99) && (GetTime() - (int)GetTime() < 0.5))
+    DrawRectangleRounded(textBox, 2.0f, 8, LIGHTGRAY);
+    DrawRectangleRoundedLinesEx(textBox, 2.0f, 8, 2, isFocused ? WHITE : DARKGRAY);
+    const char *subStr;
+    if (MeasureTextEx(font, inputText, 30, 0).x > textBox.width)
     {
-        DrawText("_", textBox.x + 5 + MeasureText(inputText, 30), textBox.y + 10, 30, BLACK);
+        int len = strlen(inputText);
+        for (int i = 0; i < len; i++)
+        {
+            subStr = &inputText[i];
+            if (MeasureTextEx(font, subStr, 30, 0).x <= textBox.width - MeasureText("_", 30) - 15)
+            {
+                DrawTextEx(font, subStr, (Vector2){textBox.x + 5, textBox.y + 10}, 30, 0, BLACK);
+                break;
+            }
+        }
+    }
+    else
+    {
+        DrawTextEx(font, inputText, (Vector2){textBox.x + 5, textBox.y + 10}, 30, 0, BLACK);
     }
 
-    DrawText("Enter project name...", textBox.x, textBox.y - 25, 20, DARKGRAY);
+    if (isFocused && MeasureTextEx(font, inputText, 30, 0).x < textBox.width && (GetTime() - (int)GetTime() < 0.5))
+    {
+        DrawText("_", textBox.x + 10 + MeasureTextEx(font, inputText, 30, 0).x, textBox.y + 10, 30, BLACK);
+    }
+    else if (isFocused && MeasureTextEx(font, inputText, 30, 0).x > textBox.width && (GetTime() - (int)GetTime() < 0.5))
+    {
+        DrawText("_", textBox.x + 10 + MeasureTextEx(font, subStr, 30, 0).x, textBox.y + 10, 30, BLACK);
+    }
+
+    DrawTextEx(font, "Enter project name:", (Vector2){textBox.x + 10, textBox.y - 30}, 25, 0, WHITE);
+
+    DrawTextEx(font, "2D", (Vector2){700, 330}, 30, 0, WHITE);
+    DrawRectangle(750, 330, 30, 30, WHITE);
+    DrawRectangleLinesEx((Rectangle){750, 330, 30, 30}, 3, BLACK);
+    if (!PO.is3D && CheckCollisionPointRec(mousePoint, (Rectangle){750, 330, 30, 30}))
+    {
+        DrawX((Vector2){765, 345}, 20, 5, (Color){202, 97, 255, 255});
+    }
+    else if (!PO.is3D)
+    {
+        DrawX((Vector2){765, 345}, 15, 3, (Color){202, 97, 255, 255});
+    }
+    if (CheckCollisionPointRec(mousePoint, (Rectangle){750, 330, 30, 30}))
+    {
+        DrawRectangle(750, 330, 30, 30, (Color){255, 255, 255, 150});
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            PO.is3D = false;
+        }
+    }
+
+    DrawTextEx(font, "3D", (Vector2){840, 330}, 30, 0, WHITE);
+    DrawRectangle(890, 330, 30, 30, WHITE);
+    DrawRectangleLinesEx((Rectangle){890, 330, 30, 30}, 3, BLACK);
+    if (PO.is3D && CheckCollisionPointRec(mousePoint, (Rectangle){890, 330, 30, 30}))
+    {
+        DrawX((Vector2){905, 345}, 20, 5, (Color){202, 97, 255, 255});
+    }
+    else if (PO.is3D)
+    {
+        DrawX((Vector2){905, 345}, 15, 3, (Color){202, 97, 255, 255});
+    }
+    if (CheckCollisionPointRec(mousePoint, (Rectangle){890, 330, 30, 30}))
+    {
+        DrawRectangle(890, 330, 30, 30, (Color){255, 255, 255, 150});
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            PO.is3D = true;
+        }
+    }
+
+    //Temporary warning
+    if(PO.is3D){
+        DrawTextEx(font, "3D mode is currently unavailable", (Vector2){690, 475}, 20, 0, RED);
+    }
+
+    if (letterCount > 0 && !PO.is3D)
+    {
+        DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, (Color){202, 97, 255, 255});
+        DrawRectangleRoundedLinesEx((Rectangle){700, 500, 250, 50}, 2.0f, 8, 3, WHITE);
+        DrawTextEx(font, "Create project", (Vector2){730, 507}, 32, 0, WHITE);
+        if(CheckCollisionPointRec(mousePoint, (Rectangle){700, 500, 250, 50})){
+            DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, (Color){255, 255, 255, 150});
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                strcpy(PO.projectName, inputText);
+                CreateProject(PO);
+                strcpy(projectFileName, inputText);
+                return 3;
+            }
+        }
+    }
+    else
+    {
+        DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, DARKGRAY);
+        DrawRectangleRoundedLinesEx((Rectangle){700, 500, 250, 50}, 2.0f, 8, 3, BLACK);
+        DrawTextEx(font, "Create project", (Vector2){730, 507}, 32, 0, LIGHTGRAY);
+        if(CheckCollisionPointRec(mousePoint, (Rectangle){700, 500, 250, 50}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !PO.is3D){
+            DrawRectangleRounded(textBox, 2.0f, 8, RED);
+        }
+    }
 
     return 2;
 }

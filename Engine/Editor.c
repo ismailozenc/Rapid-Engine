@@ -86,7 +86,7 @@ typedef struct
 
     Font font;
 
-    //float zoom;
+    // float zoom;
 } EditorContext;
 
 EditorContext InitEditorContext()
@@ -225,18 +225,18 @@ void DrawBottomBar(EditorContext *EC)
     DrawLineEx((Vector2){0, (*EC).screenHeight - (*EC).bottomBarHeight}, (Vector2){(*EC).screenWidth, (*EC).screenHeight - (*EC).bottomBarHeight}, 2, WHITE);
 
     DrawRectangleRounded((Rectangle){85, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    //DrawText("Save", 90, (*EC).screenHeight - (*EC).bottomBarHeight + 30, 20, WHITE);
+    // DrawText("Save", 90, (*EC).screenHeight - (*EC).bottomBarHeight + 30, 20, WHITE);
     DrawTextEx((*EC).font, "Save", (Vector2){90, (*EC).screenHeight - (*EC).bottomBarHeight + 30}, 20, 2, WHITE);
 
     DrawRectangleRounded((Rectangle){10, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    //DrawText("Run", 20, (*EC).screenHeight - (*EC).bottomBarHeight + 30, 20, WHITE);
+    // DrawText("Run", 20, (*EC).screenHeight - (*EC).bottomBarHeight + 30, 20, WHITE);
     DrawTextEx((*EC).font, "Run", (Vector2){20, (*EC).screenHeight - (*EC).bottomBarHeight + 30}, 20, 2, WHITE);
 
     int y = (*EC).screenHeight - 60;
 
     for (int i = (*EC).logCount - 1; i >= 0 && y >= (*EC).screenHeight - (*EC).bottomBarHeight + 50; i--)
     {
-        //DrawText((*EC).logMessages[i], 20, y, 20, WHITE);
+        // DrawText((*EC).logMessages[i], 20, y, 20, WHITE);
         DrawTextEx((*EC).font, (*EC).logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
         y -= 25;
     }
@@ -291,7 +291,7 @@ Pin DrawNodes(EditorContext *EC, Node **NodeList, size_t *nodeCount)
     {
         DrawRectangleRoundedLines((Rectangle){(*NodeList)[i].position.x - 1, (*NodeList)[i].position.y - 1, getNodeInfoByType((*NodeList)[i].type, "width") + 2, getNodeInfoByType((*NodeList)[i].type, "height") + 2}, 0.2f, 8, WHITE);
         DrawRectangleRounded((Rectangle){(*NodeList)[i].position.x, (*NodeList)[i].position.y, getNodeInfoByType((*NodeList)[i].type, "width"), getNodeInfoByType((*NodeList)[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
-        //DrawText((*NodeList)[i].type, (*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 10, 24, WHITE);
+        // DrawText((*NodeList)[i].type, (*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 10, 24, WHITE);
         DrawTextEx((*EC).font, (*NodeList)[i].type, (Vector2){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 3}, 30, 2, WHITE);
 
         DrawTriangle(
@@ -676,10 +676,12 @@ int main(int argc, char *argv[])
 
     EditorContext EC = InitEditorContext();
 
-    if(EC.font.texture.id == 0){
+    if (EC.font.texture.id == 0)
+    {
         AddToLog(&EC, "Couldn't load font");
     }
-    else{
+    else
+    {
         AddToLog(&EC, "Loaded font");
     }
 

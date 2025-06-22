@@ -46,7 +46,7 @@ void RefreshBottomBar(FilePathList *files, char *projectPath)
     *files = LoadDirectoryFilesEx(projectPath, NULL, false);
 }
 
-void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath)
+void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath, Font font)
 {
 
     int xOffset = 50;
@@ -57,20 +57,15 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
     Rectangle tooltipRect = {0};
     char *currentPath = projectPath;
 
-    /*Font font = LoadFontEx("resources/arial.ttf", 256, 0, 95);
-    SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);*/
-
     Rectangle backButton = {30, screenHeight - bottomBarHeight + 10, 65, 30};
     DrawRectangleRec(backButton, CLITERAL(Color){70, 70, 70, 150});
-    DrawText("Back", backButton.x + 8, backButton.y + 5, 20, WHITE);
+    DrawTextEx(font, "Back", (Vector2){backButton.x + 5, backButton.y + 2}, 25, 0, WHITE);
 
     Rectangle refreshButton = {110, screenHeight - bottomBarHeight + 10, 100, 30};
     DrawRectangleRec(refreshButton, CLITERAL(Color){70, 70, 70, 150});
-    DrawText("Refresh", refreshButton.x + 8, refreshButton.y + 5, 20, WHITE);
+    DrawTextEx(font, "Refresh", (Vector2){refreshButton.x + 9, refreshButton.y + 2}, 25, 0, WHITE);
 
-    // UnloadFont(font);
-
-    DrawText(currentPath, 250, screenHeight - bottomBarHeight + 15, 20, WHITE);
+    DrawTextEx(font, currentPath, (Vector2){230, screenHeight - bottomBarHeight + 15}, 22, 2, WHITE);
 
     if (CheckCollisionPointRec(mousePos, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
@@ -138,7 +133,7 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
 
             if (currentTime - lastClickTime <= doubleClickThreshold)
             {
-                if (GetFileType(fileName) == 1)
+                if (GetFileType(fileName) == 2)
                 {
                     char *buff = malloc(sizeof(fileName));
                     strcpy(buff, fileName);
@@ -166,7 +161,7 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
         char buff[256];
         strcpy(buff, fileName);
 
-        if (MeasureText(fileName, 25) > 135)
+        if (MeasureTextEx(font, fileName, 25, 0).x > 135)
         {
             for (int i = sizeof(buff); i > 0; i--)
             {
@@ -181,14 +176,14 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
             }
         }
 
-        DrawText(buff, xOffset + 10, yOffset + 15, 25, BLACK);
+        DrawTextEx(font, buff, (Vector2){xOffset + 10, yOffset + 15}, 25, 0, BLACK);
 
         if (isHovered)
         {
             DrawRectangleRec(fileRect, CLITERAL(Color){255, 255, 255, 100});
 
             snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", fileName, GetFileLength((*files).paths[i]));
-            tooltipRect = (Rectangle){xOffset, yOffset - 61, MeasureText(tooltipText, 20) + 20, 60};
+            tooltipRect = (Rectangle){xOffset, yOffset - 61, MeasureTextEx(font, tooltipText, 20, 0).x + 20, 60};
             showTooltip = true;
         }
 
@@ -204,11 +199,11 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
     if (showTooltip)
     {
         DrawRectangleRec(tooltipRect, DARKGRAY);
-        DrawText(tooltipText, tooltipRect.x + 10, tooltipRect.y + 10, 20, WHITE);
+        DrawTextEx(font, tooltipText, (Vector2){tooltipRect.x + 10, tooltipRect.y + 10}, 20, 0, WHITE);
     }
 }
 
-void BuildViewTexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D view)
+void BuildViewTexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D view, Font font)
 {
     BeginTextureMode(view);
     ClearBackground(BLACK);
@@ -225,7 +220,7 @@ void BuildViewTexture(int screenWidth, int screenHeight, int sideBarWidth, int b
     DrawRectangle(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight, BottomBarColor);
     DrawLineEx((Vector2){0, screenHeight - bottomBarHeight}, (Vector2){screenWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
-    LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath);
+    LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, font);
 
     EndTextureMode();
 }
@@ -302,6 +297,8 @@ int main(int argc, char *argv[])
     int prevScreenWidth = GetScreenWidth();
     int prevScreenHeight = GetScreenHeight();
 
+    Font font = LoadFontEx("fonts/arialbd.ttf", 64, NULL, 0);
+
     while (!WindowShouldClose())
     {
         int screenWidth = GetScreenWidth();
@@ -314,19 +311,19 @@ int main(int argc, char *argv[])
 
         if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
         {
-            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view);
+            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view, font);
             refreshDelayFrames = 1;
             prevScreenWidth = screenWidth;
             prevScreenHeight = screenHeight;
         }
         else if (refreshDelayFrames > 0)
         {
-            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view);
+            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view, font);
             refreshDelayFrames--;
         }
         else if (isFirstFrame)
         {
-            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view);
+            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view, font);
             isFirstFrame = false;
         }
 
@@ -343,6 +340,8 @@ int main(int argc, char *argv[])
     UnloadDirectoryFiles(files);
 
     UnloadRenderTexture(view);
+
+    UnloadFont(font);
 
     return 0;
 }

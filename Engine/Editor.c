@@ -23,30 +23,6 @@
 #define PATH_SEPARATOR '/'
 #endif
 
-const char *InputsByNodeTypes[][5] = {
-    {"name", "value"},
-    {"name", "value"},
-    {"a", "b", "c", "d", "e"},
-    {"Sub 4-1"},
-    {"Sub 5-1", "Sub 5-2"},
-    {"Sub 6-1", "Sub 6-2", "Sub 6-3", "Sub 6-4"},
-    {"Sub 7-1"},
-    {"Sub 8-1", "Sub 8-2"},
-    {"Sub 9-1", "Sub 9-2", "Sub 9-3"},
-    {"Sub 10-1"}};
-
-const char *OutputsByNodeTypes[][5] = {
-    {NULL},
-    {NULL},
-    {"a", "b", "c", "d", "e"},
-    {"Sub 4-1"},
-    {"Sub 5-1", "Sub 5-2"},
-    {"Sub 6-1", "Sub 6-2", "Sub 6-3", "Sub 6-4"},
-    {"Sub 7-1"},
-    {"Sub 8-1", "Sub 8-2"},
-    {"Sub 9-1", "Sub 9-2", "Sub 9-3"},
-    {"Sub 10-1"}};
-
 typedef struct
 {
     char *CGFilePath;
@@ -242,7 +218,7 @@ void DrawBottomBar(EditorContext *EC)
     }
 }
 
-bool CheckBottomBarCollisions(EditorContext *EC, Node *NodeList, size_t nodeCount)
+bool CheckBottomBarCollisions(EditorContext *EC, GraphContext *graph)
 {
 
     // Save button collisions
@@ -251,7 +227,7 @@ bool CheckBottomBarCollisions(EditorContext *EC, Node *NodeList, size_t nodeCoun
         DrawRectangleRounded((Rectangle){85, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
-            if (OverrideFileWithList((*EC).CGFilePath, NodeList, nodeCount, (*EC).lastNodeID) == 0)
+            if (SaveGraphToFile(EC->CGFilePath, graph) == 0)
             {
                 AddToLog(EC, "Saved successfully!");
             }
@@ -280,7 +256,33 @@ bool CheckBottomBarCollisions(EditorContext *EC, Node *NodeList, size_t nodeCoun
     return false;
 }
 
-Pin DrawNodes(EditorContext *EC, Node **NodeList, size_t *nodeCount)
+/*
+if ((*EC).lastClickedPin.nodeID == -1)
+        {
+            (*EC).lastClickedPin = clickedPin;
+            (*EC).isConnecting = true;
+        }
+        else
+        {
+            MakeConnection(clickedPin, (*EC).lastClickedPin, graph);//
+            (*EC).isConnecting = false;
+            (*EC).lastClickedPin = INVALID_PIN;
+        }
+*/
+
+void DrawNodes(EditorContext *EC, GraphContext *graph){
+    if(graph->nodeCount == 0){
+        return;
+    }
+
+    for(int i = 0; i < graph->nodeCount; i++){
+        DrawRectangleRoundedLines((Rectangle){graph->nodes[i].position.x - 1, graph->nodes[i].position.y - 1, getNodeInfoByType(graph->nodes[i].type, "width") + 2, getNodeInfoByType(graph->nodes[i].type, "height") + 2}, 0.2f, 8, WHITE);
+        DrawRectangleRounded((Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
+        //DrawTextEx(EC->font, graph->nodes[i].type, (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
+    }
+}
+
+/*Pin DDrawNodes(EditorContext *EC, Node **NodeList, size_t *nodeCount)
 {
     if (nodeCount == 0 || NodeList == NULL)
         return INVALID_PIN;
@@ -291,7 +293,6 @@ Pin DrawNodes(EditorContext *EC, Node **NodeList, size_t *nodeCount)
     {
         DrawRectangleRoundedLines((Rectangle){(*NodeList)[i].position.x - 1, (*NodeList)[i].position.y - 1, getNodeInfoByType((*NodeList)[i].type, "width") + 2, getNodeInfoByType((*NodeList)[i].type, "height") + 2}, 0.2f, 8, WHITE);
         DrawRectangleRounded((Rectangle){(*NodeList)[i].position.x, (*NodeList)[i].position.y, getNodeInfoByType((*NodeList)[i].type, "width"), getNodeInfoByType((*NodeList)[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
-        // DrawText((*NodeList)[i].type, (*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 10, 24, WHITE);
         DrawTextEx((*EC).font, (*NodeList)[i].type, (Vector2){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 3}, 30, 2, WHITE);
 
         DrawTriangle(
@@ -431,13 +432,13 @@ Pin DrawNodes(EditorContext *EC, Node **NodeList, size_t *nodeCount)
     }
 
     return INVALID_PIN;
-}
+}*/
 
-bool CheckNodeCollisions(EditorContext *EC, Node *NodeList, size_t nodeCount)
+bool CheckNodeCollisions(EditorContext *EC, GraphContext *graph)
 {
-    for (int i = 0; i < nodeCount; i++)
+    for (int i = 0; i < graph->nodeCount; i++)
     {
-        if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){NodeList[i].position.x, NodeList[i].position.y, getNodeInfoByType(NodeList[i].type, "width"), getNodeInfoByType(NodeList[i].type, "height")}))
+        if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             return true;
         }
@@ -446,7 +447,7 @@ bool CheckNodeCollisions(EditorContext *EC, Node *NodeList, size_t nodeCount)
     return false;
 }
 
-const char *DrawBlockMenu(EditorContext *EC)
+const char *DrawNodeMenu(EditorContext *EC)
 {
     Color MenuColor = {50, 50, 50, 255};
     Color ScrollIndicatorColor = {150, 150, 150, 255};
@@ -543,17 +544,17 @@ const char *DrawBlockMenu(EditorContext *EC)
     return "NULL";
 }
 
-void HandleDragging(EditorContext *EC, Node *NodeList, size_t nodeCount)
+void HandleDragging(EditorContext *EC, GraphContext *graph)
 {
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && (*EC).draggingNodeIndex == -1)
     {
         SetTargetFPS(140);
-        for (int i = 0; i < nodeCount; i++)
+        for (int i = 0; i < graph->nodeCount; i++)
         {
-            if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){NodeList[i].position.x, NodeList[i].position.y, getNodeInfoByType(NodeList[i].type, "width"), getNodeInfoByType(NodeList[i].type, "height")}))
+            if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
             {
                 (*EC).draggingNodeIndex = i;
-                (*EC).dragOffset = (Vector2){(*EC).mousePos.x - NodeList[i].position.x, (*EC).mousePos.y - NodeList[i].position.y};
+                (*EC).dragOffset = (Vector2){(*EC).mousePos.x - graph->nodes[i].position.x, (*EC).mousePos.y - graph->nodes[i].position.y};
                 return;
             }
         }
@@ -565,16 +566,16 @@ void HandleDragging(EditorContext *EC, Node *NodeList, size_t nodeCount)
 
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && (*EC).draggingNodeIndex != -1)
     {
-        NodeList[(*EC).draggingNodeIndex].position.x = (*EC).mousePos.x - (*EC).dragOffset.x;
-        NodeList[(*EC).draggingNodeIndex].position.y = (*EC).mousePos.y - (*EC).dragOffset.y;
-        DrawRectangleRounded((Rectangle){NodeList[(*EC).draggingNodeIndex].position.x, NodeList[(*EC).draggingNodeIndex].position.y, getNodeInfoByType(NodeList[(*EC).draggingNodeIndex].type, "width"), getNodeInfoByType(NodeList[(*EC).draggingNodeIndex].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+        graph->nodes[(*EC).draggingNodeIndex].position.x = (*EC).mousePos.x - (*EC).dragOffset.x;
+        graph->nodes[(*EC).draggingNodeIndex].position.y = (*EC).mousePos.y - (*EC).dragOffset.y;
+        DrawRectangleRounded((Rectangle){graph->nodes[(*EC).draggingNodeIndex].position.x, graph->nodes[(*EC).draggingNodeIndex].position.y, getNodeInfoByType(graph->nodes[(*EC).draggingNodeIndex].type, "width"), getNodeInfoByType(graph->nodes[(*EC).draggingNodeIndex].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
     }
     else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && (*EC).isDraggingScreen)
     {
-        for (int i = 0; i < nodeCount; i++)
+        for (int i = 0; i < graph->nodeCount; i++)
         {
-            NodeList[i].position.x = NodeList[i].position.x + EC->mousePos.x - EC->prevMousePos.x;
-            NodeList[i].position.y = NodeList[i].position.y + EC->mousePos.y - EC->prevMousePos.y;
+            graph->nodes[i].position.x = graph->nodes[i].position.x + EC->mousePos.x - EC->prevMousePos.x;
+            graph->nodes[i].position.y = graph->nodes[i].position.y + EC->mousePos.y - EC->prevMousePos.y;
         }
         (*EC).prevMousePos = (*EC).mousePos;
     }
@@ -619,31 +620,16 @@ void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
     }
 }
 
-int DrawViewTexture(EditorContext *EC, RenderTexture2D view, Node **NodeList, size_t *nodeCount)
+int DrawViewTexture(EditorContext *EC, RenderTexture2D view, GraphContext *graph)
 {
     BeginTextureMode(view);
     ClearBackground((Color){40, 42, 54, 255});
 
-    HandleDragging(EC, *NodeList, *nodeCount);
+    HandleDragging(EC, graph);
 
     DrawBackgroundGrid(EC, 40);
 
-    Pin clickedPin = DrawNodes(EC, NodeList, nodeCount);
-
-    if (clickedPin.nodeID != -1)
-    {
-        if ((*EC).lastClickedPin.nodeID == -1)
-        {
-            (*EC).lastClickedPin = clickedPin;
-            (*EC).isConnecting = true;
-        }
-        else
-        {
-            MakeConnection(clickedPin, (*EC).lastClickedPin, *NodeList, *nodeCount);
-            (*EC).isConnecting = false;
-            (*EC).lastClickedPin = INVALID_PIN;
-        }
-    }
+    DrawNodes(EC, graph);
 
     DrawBottomBar(EC);
 
@@ -655,7 +641,7 @@ int DrawViewTexture(EditorContext *EC, RenderTexture2D view, Node **NodeList, si
     return 0;
 }
 
-bool CheckAllCollisions(EditorContext *EC, Node *NodeList, size_t nodeCount)
+bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
 {
     if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && (*EC).mousePos.y < (*EC).screenHeight - (*EC).bottomBarHeight)
     {
@@ -664,7 +650,13 @@ bool CheckAllCollisions(EditorContext *EC, Node *NodeList, size_t nodeCount)
         (*EC).scrollIndex = 0;
     }
 
-    return CheckNodeCollisions(EC, NodeList, nodeCount) || CheckBottomBarCollisions(EC, NodeList, nodeCount) || (*EC).draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    return CheckNodeCollisions(EC, graph) || CheckBottomBarCollisions(EC, graph) || (*EC).draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+}
+
+NodeType MatchChosenType(char strType[MAX_TYPE_LENGTH]){
+    if(strcmp(strType, "num")){
+        return NODE_NUM;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -697,10 +689,10 @@ int main(int argc, char *argv[])
 
     SetProjectPaths(&EC, argv[1]);
 
-    Node *NodeList = NULL;
-    size_t nodeCount = 0;
+    GraphContext graph;
+    InitGraphContext(&graph);
 
-    switch (LoadNodesFromFile(EC.CGFilePath, &NodeList, &nodeCount, &EC.lastNodeID))
+    /*switch (LoadNodesFromFile(EC.CGFilePath, &NodeList, &nodeCount, &EC.lastNodeID))
     {
     case 0:
         AddToLog(&EC, "Loaded CoreGraph file");
@@ -717,7 +709,9 @@ int main(int argc, char *argv[])
     default:
         AddToLog(&EC, "Error while loading nodes from file");
         break;
-    }
+    }*/
+
+    LoadGraphFromFile(EC.CGFilePath, &graph);
 
     AddToLog(&EC, "Welcome!");
 
@@ -733,14 +727,14 @@ int main(int argc, char *argv[])
         BeginDrawing();
         ClearBackground((Color){40, 42, 54, 255});
 
-        if (CheckAllCollisions(&EC, NodeList, nodeCount) || EC.isConnecting)
+        if (CheckAllCollisions(&EC, &graph) || EC.isConnecting)
         {
-            DrawViewTexture(&EC, view, &NodeList, &nodeCount);
+            DrawViewTexture(&EC, view, &graph);
             EC.delayFrames = true;
         }
         else if (EC.delayFrames)
         {
-            DrawViewTexture(&EC, view, &NodeList, &nodeCount);
+            DrawViewTexture(&EC, view, &graph);
             EC.delayFrames = false;
         }
 
@@ -748,9 +742,9 @@ int main(int argc, char *argv[])
 
         if (EC.menuOpen)
         {
-            char createdBlock[MAX_TYPE_LENGTH];
-            strcpy(createdBlock, DrawBlockMenu(&EC));
-            if (strcmp(createdBlock, "NULL") != 0)
+            char createdNode[MAX_TYPE_LENGTH];
+            strcpy(createdNode, DrawNodeMenu(&EC));
+            if (createdNode != "NULL")
             {
                 if (EC.lastNodeID == 9999)
                 {
@@ -758,10 +752,16 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    MakeNode(createdBlock, argv[1], EC.CGFilePath, &NodeList, &nodeCount, EC.rightClickPos, &EC.lastNodeID);
+                    CreateNode(&graph, MatchChosenType(createdNode), EC.rightClickPos);
                 }
             }
         }
+
+        char str[30];
+        sprintf(str, "%d", graph.nodes[0].type);
+        DrawText(str, 50, 50, 50, WHITE);
+
+        DrawFPS(10, 10);
 
         EndDrawing();
     }
@@ -774,10 +774,10 @@ int main(int argc, char *argv[])
 
     UnloadFont(EC.font);
 
-    if (NodeList)
+    /*if (NodeList)
     {
         free(NodeList);
-    }
+    }*/
 
     return 0;
 }

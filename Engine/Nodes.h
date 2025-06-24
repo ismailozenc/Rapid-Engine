@@ -56,8 +56,8 @@ typedef struct Pin
 
 typedef struct Link
 {
-    int fromPinID; // output
-    int toPinID;   // input
+    Pin inputPin;
+    Pin outputPin;
 } Link;
 
 #define INVALID_PIN \
@@ -91,6 +91,41 @@ void InitGraphContext(GraphContext *ctx)
     ctx->links = NULL;
     ctx->linkCount = 0;
     ctx->nextLinkID = 1;
+}
+
+void FreeGraphContext(GraphContext *ctx)
+{
+    if (!ctx)
+        return;
+
+    // Free pins array
+    if (ctx->pins)
+    {
+        free(ctx->pins);
+        ctx->pins = NULL;
+    }
+
+    // Free links array
+    if (ctx->links)
+    {
+        free(ctx->links);
+        ctx->links = NULL;
+    }
+
+    // Free nodes array
+    if (ctx->nodes)
+    {
+        free(ctx->nodes);
+        ctx->nodes = NULL;
+    }
+
+    // Reset counters
+    ctx->nodeCount = 0;
+    ctx->nextNodeID = 0;
+    ctx->pinCount = 0;
+    ctx->nextPinID = 0;
+    ctx->linkCount = 0;
+    ctx->nextLinkID = 0;
 }
 
 int SaveGraphToFile(const char *filename, GraphContext *ctx)
@@ -166,57 +201,83 @@ Node CreateNode(GraphContext *ctx, NodeType type, Vector2 pos)
     node.id = ctx->nextNodeID++;
     node.type = type;
     node.position = pos;
-    node.inputCount = 0;
-    node.outputCount = 0;
+
+    if (type == NODE_UNKNOWN)
+    {
+        return node;
+    }
 
     int inputCount = getNodeInfoByType(type, "inputCount");
     int outputCount = getNodeInfoByType(type, "outputCount");
 
-    if (inputCount > MAX_NODE_PINS || outputCount > MAX_NODE_PINS) {
-        TraceLog(LOG_ERROR, "CreateNode: input/output count exceeds MAX_* limit");
-        return node; // or handle error more gracefully
+    if (inputCount > MAX_NODE_PINS || outputCount > MAX_NODE_PINS)
+    {
+        TraceLog(LOG_ERROR, "CreateNode: input/output count exceeds MAX_NODE_PINS");
+        return node;
     }
 
+    // Preallocate room for all pins at once
+    int newPinCapacity = ctx->pinCount + inputCount + outputCount;
+    Pin *newPins = realloc(ctx->pins, sizeof(Pin) * newPinCapacity);
+    if (!newPins)
+    {
+        TraceLog(LOG_ERROR, "CreateNode: Failed to realloc pins array");
+        return node;
+    }
+    ctx->pins = newPins;
+
     // Create input pins
-    for (int i = 0; i < inputCount; i++) {
+    for (int i = 0; i < inputCount; i++)
+    {
         Pin pin = CreatePin(ctx, node.id, true, getInputsByType(type)[i], i, (Vector2){0, 0});
-
-        ctx->pins = realloc(ctx->pins, sizeof(Pin) * (ctx->pinCount + 1));
-        ctx->pins[ctx->pinCount++] = pin;
-
+        ctx->pins[ctx->pinCount] = pin;
         node.inputPins[node.inputCount++] = pin.id;
+        ctx->pinCount++;
     }
 
     // Create output pins
-    for (int i = 0; i < outputCount; i++) {
+    for (int i = 0; i < outputCount; i++)
+    {
         Pin pin = CreatePin(ctx, node.id, false, getOutputsByType(type)[i], i, (Vector2){0, 0});
-
-        ctx->pins = realloc(ctx->pins, sizeof(Pin) * (ctx->pinCount + 1));
-        ctx->pins[ctx->pinCount++] = pin;
-
+        ctx->pins[ctx->pinCount] = pin;
         node.outputPins[node.outputCount++] = pin.id;
+        ctx->pinCount++;
     }
+
+    Node *newNodes = realloc(ctx->nodes, sizeof(Node) * (ctx->nodeCount + 1));
+    if (!newNodes)
+    {
+        TraceLog(LOG_ERROR, "CreateNode: Failed to realloc nodes");
+        return node;
+    }
+    ctx->nodes = newNodes;
+    ctx->nodes[ctx->nodeCount++] = node;
 
     return node;
 }
 
-Link CreateLink(GraphContext* ctx, int fromPinID, int toPinID) {
+Link CreateLink(GraphContext *ctx, Pin inputPin, Pin outputPin)
+{
     Link link = {0};
-    link.fromPinID = fromPinID;
-    link.toPinID = toPinID;
+    link.inputPin = inputPin;
+    link.outputPin = outputPin;
     return link;
 }
 
-void DeleteNode(GraphContext* ctx, int nodeID) {
+void DeleteNode(GraphContext *ctx, int nodeID)
+{
     // 1. Find and remove node
     int nodeIndex = -1;
-    for (int i = 0; i < ctx->nodeCount; i++) {
-        if (ctx->nodes[i].id == nodeID) {
+    for (int i = 0; i < ctx->nodeCount; i++)
+    {
+        if (ctx->nodes[i].id == nodeID)
+        {
             nodeIndex = i;
             break;
         }
     }
-    if (nodeIndex == -1) return; // Node not found
+    if (nodeIndex == -1)
+        return; // Node not found
 
     // Remove node by swapping with last and shrinking array
     ctx->nodes[nodeIndex] = ctx->nodes[ctx->nodeCount - 1];
@@ -224,11 +285,13 @@ void DeleteNode(GraphContext* ctx, int nodeID) {
     ctx->nodes = realloc(ctx->nodes, sizeof(Node) * ctx->nodeCount);
 
     // 2. Remove pins belonging to node and collect their IDs
-    int* pinsToDelete = malloc(sizeof(int) * ctx->pinCount);
+    int *pinsToDelete = malloc(sizeof(int) * ctx->pinCount);
     int pinsToDeleteCount = 0;
 
-    for (int i = 0; i < ctx->pinCount; /*increment inside*/) {
-        if (ctx->pins[i].nodeID == nodeID) {
+    for (int i = 0; i < ctx->pinCount; /*increment inside*/)
+    {
+        if (ctx->pins[i].nodeID == nodeID)
+        {
             pinsToDelete[pinsToDeleteCount++] = ctx->pins[i].id;
 
             // Remove pin by swapping with last and shrinking
@@ -236,31 +299,42 @@ void DeleteNode(GraphContext* ctx, int nodeID) {
             ctx->pinCount--;
             ctx->pins = realloc(ctx->pins, sizeof(Pin) * ctx->pinCount);
             // Don't increment i because we swapped a new pin into i
-        } else {
+        }
+        else
+        {
             i++;
         }
     }
 
     // 3. Remove all links connected to deleted pins
-    for (int i = 0; i < ctx->linkCount; /*increment inside*/) {
-        int from = ctx->links[i].fromPinID;
-        int to = ctx->links[i].toPinID;
+    for (int i = 0; i < ctx->linkCount; /* increment inside */)
+    {
+        int outputPinID = ctx->links[i].outputPin.id;
+        int inputPinID = ctx->links[i].inputPin.id;
 
-        bool fromDeleted = false;
-        bool toDeleted = false;
-        for (int j = 0; j < pinsToDeleteCount; j++) {
-            if (from == pinsToDelete[j]) fromDeleted = true;
-            if (to == pinsToDelete[j]) toDeleted = true;
-            if (fromDeleted && toDeleted) break;
+        bool outputDeleted = false;
+        bool inputDeleted = false;
+
+        for (int j = 0; j < pinsToDeleteCount; j++)
+        {
+            if (outputPinID == pinsToDelete[j])
+                outputDeleted = true;
+            if (inputPinID == pinsToDelete[j])
+                inputDeleted = true;
+            if (outputDeleted && inputDeleted)
+                break;
         }
 
-        if (fromDeleted || toDeleted) {
+        if (outputDeleted || inputDeleted)
+        {
             // Remove link by swapping with last and shrinking
             ctx->links[i] = ctx->links[ctx->linkCount - 1];
             ctx->linkCount--;
             ctx->links = realloc(ctx->links, sizeof(Link) * ctx->linkCount);
-            // Don't increment i because we swapped a new link into i
-        } else {
+            // Don't increment i because we swapped a new element into i
+        }
+        else
+        {
             i++;
         }
     }
@@ -268,9 +342,12 @@ void DeleteNode(GraphContext* ctx, int nodeID) {
     free(pinsToDelete);
 }
 
-void RemoveConnection(GraphContext* ctx, int fromPinID, int toPinID) {
-    for (int i = 0; i < ctx->linkCount; i++) {
-        if (ctx->links[i].fromPinID == fromPinID && ctx->links[i].toPinID == toPinID) {
+void RemoveConnection(GraphContext *ctx, int fromPinID, int toPinID)
+{
+    for (int i = 0; i < ctx->linkCount; i++)
+    {
+        if (ctx->links[i].outputPin.id == fromPinID && ctx->links[i].inputPin.id == toPinID)
+        {
             // Swap with last link and shrink
             ctx->links[i] = ctx->links[ctx->linkCount - 1];
             ctx->linkCount--;
@@ -280,7 +357,7 @@ void RemoveConnection(GraphContext* ctx, int fromPinID, int toPinID) {
     }
 }
 
-//makeConnection
+// makeConnection
 
 /*int SaveNode(char CGFilePath[], Node *node)
 {

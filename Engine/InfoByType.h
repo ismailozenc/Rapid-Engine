@@ -44,7 +44,7 @@ typedef struct InfoByType{
 static InfoByType NodeInfoByType[] = {
     {NODE_NUM, 2, 1, 120, 100, {PIN_FLOW, PIN_INT}, {PIN_FLOW}},
     {NODE_STRING, 2, 1, 120, 100, {PIN_FLOW, PIN_INT}, {PIN_FLOW}},
-    {NODE_EX, 5, 5, 240, 200, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}}
+    {NODE_EX, 5, 5, 240, 200, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}}
 };
 
 int getNodeInfoByType(NodeType type, char *info){
@@ -87,4 +87,19 @@ PinType *getOutputsByType(NodeType type) {
         }
     }
     return NULL;
+}
+
+const char* NodeTypeToString(NodeType type) {
+    switch (type) {
+        case NODE_UNKNOWN: return "unknown";
+        case NODE_NUM:     return "num";
+        case NODE_STRING:  return "string";
+        case NODE_EX:      return "ex";
+        case NODE_BEGIN:   return "begin";
+        case NODE_PRINT:   return "print";
+        case NODE_ADD:     return "add";
+        case NODE_DELAY:   return "delay";
+        case NODE_BRANCH:  return "branch";
+        default:           return "invalid";
+    }
 }

@@ -270,15 +270,60 @@ if ((*EC).lastClickedPin.nodeID == -1)
         }
 */
 
-void DrawNodes(EditorContext *EC, GraphContext *graph){
-    if(graph->nodeCount == 0){
+void DrawNodes(EditorContext *EC, GraphContext *graph)
+{
+    if (graph->nodeCount == 0)
+    {
         return;
     }
 
-    for(int i = 0; i < graph->nodeCount; i++){
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
         DrawRectangleRoundedLines((Rectangle){graph->nodes[i].position.x - 1, graph->nodes[i].position.y - 1, getNodeInfoByType(graph->nodes[i].type, "width") + 2, getNodeInfoByType(graph->nodes[i].type, "height") + 2}, 0.2f, 8, WHITE);
         DrawRectangleRounded((Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
-        //DrawTextEx(EC->font, graph->nodes[i].type, (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
+        DrawTextEx(EC->font, NodeTypeToString(graph->nodes[i].type), (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
+    }
+
+    for (int i = 0; i < graph->pinCount; i++)
+    {
+        int currNodeIndex = -1;
+
+        for (int j = 0; j < graph->nodeCount; j++)
+        {
+            if (graph->nodes[j].id == graph->pins[i].nodeID)
+            {
+                currNodeIndex = j;
+                break;
+            }
+        }
+
+        if (currNodeIndex == -1)
+        {
+            TraceLog(LOG_WARNING, "Pin %d has no matching node (ID %d)", i, graph->pins[i].nodeID);
+            continue;
+        }
+
+        Vector2 nodePos = graph->nodes[currNodeIndex].position;
+        int xOffset = graph->pins[i].isInput ? 5 : (getNodeInfoByType(graph->nodes[currNodeIndex].type, "width") - 20);
+        int yOffset = 50 + graph->pins[i].posInNode * 30;
+
+        graph->pins[i].position = (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset};
+
+        if (graph->pins[i].type == PIN_FLOW)
+        {
+            DrawTriangle((Vector2){nodePos.x + xOffset, nodePos.y + yOffset - 8}, (Vector2){nodePos.x + xOffset, nodePos.y + yOffset + 8}, (Vector2){nodePos.x + xOffset + 15, nodePos.y + yOffset}, WHITE);
+        }
+        else
+        {
+            DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
+        }
+
+        // DrawCircle(graph->pins[i].position.x, graph->pins[i].position.y, 3, RED);
+    }
+
+    for (int i = 0; i < graph->linkCount; i++)
+    {
+        DrawCurvedWire(graph->links[i].inputPin.position, graph->links[i].outputPin.position, 2.0f, (Color){180, 100, 200, 255});
     }
 }
 
@@ -653,10 +698,23 @@ bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
     return CheckNodeCollisions(EC, graph) || CheckBottomBarCollisions(EC, graph) || (*EC).draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 }
 
-NodeType MatchChosenType(char strType[MAX_TYPE_LENGTH]){
-    if(strcmp(strType, "num")){
+NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
+{
+    if (strcmp(strType, "num") == 0)
         return NODE_NUM;
-    }
+    if (strcmp(strType, "string") == 0)
+        return NODE_STRING;
+    if (strcmp(strType, "ex") == 0)
+        return NODE_EX;
+    if (strcmp(strType, "print") == 0)
+        return NODE_PRINT;
+    if (strcmp(strType, "add") == 0)
+        return NODE_ADD;
+    if (strcmp(strType, "delay") == 0)
+        return NODE_DELAY;
+    if (strcmp(strType, "branch") == 0)
+        return NODE_BRANCH;
+    return NODE_UNKNOWN;
 }
 
 int main(int argc, char *argv[])
@@ -744,22 +802,15 @@ int main(int argc, char *argv[])
         {
             char createdNode[MAX_TYPE_LENGTH];
             strcpy(createdNode, DrawNodeMenu(&EC));
-            if (createdNode != "NULL")
+            if (strcmp(createdNode, "NULL") != 0)
             {
-                if (EC.lastNodeID == 9999)
-                {
-                    AddToLog(&EC, "CG file too big to process");
-                }
-                else
-                {
-                    CreateNode(&graph, MatchChosenType(createdNode), EC.rightClickPos);
-                }
+                CreateNode(&graph, StringToNodeType(createdNode), EC.rightClickPos);
             }
         }
 
-        char str[30];
-        sprintf(str, "%d", graph.nodes[0].type);
-        DrawText(str, 50, 50, 50, WHITE);
+        /*char str[30];
+        sprintf(str, "%d %d", graph.nodes[1].id, graph.pins[1].id);
+        DrawText(str, 50, 50, 50, WHITE);*/
 
         DrawFPS(10, 10);
 
@@ -770,14 +821,11 @@ int main(int argc, char *argv[])
 
     FreeEditorContext(&EC);
 
+    FreeGraphContext(&graph);
+
     UnloadRenderTexture(view);
 
     UnloadFont(EC.font);
-
-    /*if (NodeList)
-    {
-        free(NodeList);
-    }*/
 
     return 0;
 }

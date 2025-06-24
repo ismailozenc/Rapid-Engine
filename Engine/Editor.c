@@ -201,18 +201,15 @@ void DrawBottomBar(EditorContext *EC)
     DrawLineEx((Vector2){0, (*EC).screenHeight - (*EC).bottomBarHeight}, (Vector2){(*EC).screenWidth, (*EC).screenHeight - (*EC).bottomBarHeight}, 2, WHITE);
 
     DrawRectangleRounded((Rectangle){85, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    // DrawText("Save", 90, (*EC).screenHeight - (*EC).bottomBarHeight + 30, 20, WHITE);
     DrawTextEx((*EC).font, "Save", (Vector2){90, (*EC).screenHeight - (*EC).bottomBarHeight + 30}, 20, 2, WHITE);
 
     DrawRectangleRounded((Rectangle){10, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    // DrawText("Run", 20, (*EC).screenHeight - (*EC).bottomBarHeight + 30, 20, WHITE);
     DrawTextEx((*EC).font, "Run", (Vector2){20, (*EC).screenHeight - (*EC).bottomBarHeight + 30}, 20, 2, WHITE);
 
     int y = (*EC).screenHeight - 60;
 
     for (int i = (*EC).logCount - 1; i >= 0 && y >= (*EC).screenHeight - (*EC).bottomBarHeight + 50; i--)
     {
-        // DrawText((*EC).logMessages[i], 20, y, 20, WHITE);
         DrawTextEx((*EC).font, (*EC).logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
         y -= 25;
     }
@@ -256,20 +253,6 @@ bool CheckBottomBarCollisions(EditorContext *EC, GraphContext *graph)
     return false;
 }
 
-/*
-if ((*EC).lastClickedPin.nodeID == -1)
-        {
-            (*EC).lastClickedPin = clickedPin;
-            (*EC).isConnecting = true;
-        }
-        else
-        {
-            MakeConnection(clickedPin, (*EC).lastClickedPin, graph);//
-            (*EC).isConnecting = false;
-            (*EC).lastClickedPin = INVALID_PIN;
-        }
-*/
-
 void DrawNodes(EditorContext *EC, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
@@ -277,12 +260,45 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         return;
     }
 
+    for (int i = 0; i < graph->linkCount; i++)
+    {
+        Vector2 inputPinPosition = (Vector2){-1};
+        Vector2 outputPinPosition = (Vector2){-1};
+        for (int j = 0; j < graph->pinCount; j++)
+        {
+            if (graph->links[i].inputPinID == graph->pins[j].id)
+            {
+                inputPinPosition = graph->pins[j].position;
+            }
+            else if (graph->links[i].outputPinID == graph->pins[j].id)
+            {
+                outputPinPosition = graph->pins[j].position;
+            }
+        }
+        if (inputPinPosition.x != -1 && outputPinPosition.x != -1)
+        {
+            DrawCurvedWire(outputPinPosition, inputPinPosition, 2.0f, (Color){180, 100, 200, 255});
+        }
+        else
+        {
+            AddToLog(EC, "Error drawing connection");
+        }
+    }
+
+    int hoveredNodeIndex = -1;
+
     for (int i = 0; i < graph->nodeCount; i++)
     {
         DrawRectangleRoundedLines((Rectangle){graph->nodes[i].position.x - 1, graph->nodes[i].position.y - 1, getNodeInfoByType(graph->nodes[i].type, "width") + 2, getNodeInfoByType(graph->nodes[i].type, "height") + 2}, 0.2f, 8, WHITE);
         DrawRectangleRounded((Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
         DrawTextEx(EC->font, NodeTypeToString(graph->nodes[i].type), (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
+        if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
+        {
+            hoveredNodeIndex = i;
+        }
     }
+
+    int hoveredPinIndex = -1;
 
     for (int i = 0; i < graph->pinCount; i++)
     {
@@ -312,172 +328,53 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         if (graph->pins[i].type == PIN_FLOW)
         {
             DrawTriangle((Vector2){nodePos.x + xOffset, nodePos.y + yOffset - 8}, (Vector2){nodePos.x + xOffset, nodePos.y + yOffset + 8}, (Vector2){nodePos.x + xOffset + 15, nodePos.y + yOffset}, WHITE);
+            if (CheckCollisionPointRec(EC->mousePos, (Rectangle){nodePos.x + xOffset, nodePos.y + yOffset - 8, 15, 16}))
+            {
+                DrawTriangle((Vector2){nodePos.x + xOffset - 2, nodePos.y + yOffset - 10}, (Vector2){nodePos.x + xOffset - 2, nodePos.y + yOffset + 10}, (Vector2){nodePos.x + xOffset + 17, nodePos.y + yOffset}, WHITE);
+                hoveredPinIndex = i;
+            }
         }
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
-        }
-
-        // DrawCircle(graph->pins[i].position.x, graph->pins[i].position.y, 3, RED);
-    }
-
-    for (int i = 0; i < graph->linkCount; i++)
-    {
-        DrawCurvedWire(graph->links[i].inputPin.position, graph->links[i].outputPin.position, 2.0f, (Color){180, 100, 200, 255});
-    }
-}
-
-/*Pin DDrawNodes(EditorContext *EC, Node **NodeList, size_t *nodeCount)
-{
-    if (nodeCount == 0 || NodeList == NULL)
-        return INVALID_PIN;
-
-    int linkedNodeIndex = -1;
-
-    for (int i = 0; i < *nodeCount; i++)
-    {
-        DrawRectangleRoundedLines((Rectangle){(*NodeList)[i].position.x - 1, (*NodeList)[i].position.y - 1, getNodeInfoByType((*NodeList)[i].type, "width") + 2, getNodeInfoByType((*NodeList)[i].type, "height") + 2}, 0.2f, 8, WHITE);
-        DrawRectangleRounded((Rectangle){(*NodeList)[i].position.x, (*NodeList)[i].position.y, getNodeInfoByType((*NodeList)[i].type, "width"), getNodeInfoByType((*NodeList)[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
-        DrawTextEx((*EC).font, (*NodeList)[i].type, (Vector2){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 3}, 30, 2, WHITE);
-
-        DrawTriangle(
-            (Vector2){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 40},
-            (Vector2){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 56},
-            (Vector2){(*NodeList)[i].position.x + 25, (*NodeList)[i].position.y + 48},
-            WHITE);
-
-        DrawTriangle(
-            (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 20, (*NodeList)[i].position.y + 40},
-            (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 20, (*NodeList)[i].position.y + 56},
-            (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 5, (*NodeList)[i].position.y + 48},
-            WHITE);
-
-        if ((*NodeList)[i].next != -1)
-        {
-            linkedNodeIndex = GetLinkedNodeIndex(*NodeList, *nodeCount, (*NodeList)[i].next);
-            DrawCurvedWire((Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 5, (*NodeList)[i].position.y + 48}, (Vector2){(*NodeList)[linkedNodeIndex].position.x + 10, (*NodeList)[linkedNodeIndex].position.y + 48}, 2.0f, (Color){180, 100, 200, 255});
-        }
-
-        for (int j = 0; j < getNodeInfoByType((*NodeList)[i].type, "inputCount"); j++)
-        {
-            DrawCircle((*NodeList)[i].position.x + 15, (*NodeList)[i].position.y + 80 + j * 25, 5, WHITE);
-
-            if ((*NodeList)[i].input[j] != -1)
+            if (CheckCollisionPointCircle(EC->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 5))
             {
-                linkedNodeIndex = GetLinkedNodeIndex(*NodeList, *nodeCount, (*NodeList)[i].input[j]);
-
-                DrawCurvedWire((Vector2){(*NodeList)[linkedNodeIndex].position.x + getNodeInfoByType((*NodeList)[linkedNodeIndex].type, "width") - 14, (*NodeList)[linkedNodeIndex].position.y + 80 + ((*NodeList)[i].input[j] % 100) * 25}, (Vector2){(*NodeList)[i].position.x + 15, (*NodeList)[i].position.y + 80 + j * 25}, 2.0f, (Color){139, 233, 253, 255});
+                DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 7, WHITE);
+                hoveredPinIndex = i;
             }
         }
-
-        for (int j = 0; j < getNodeInfoByType((*NodeList)[i].type, "outputCount"); j++)
-        {
-            DrawCircle((*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 14, (*NodeList)[i].position.y + 80 + j * 25, 5, WHITE);
-        }
     }
 
-    // Collisions and pins part
-
-    if ((*EC).isConnecting == true)
+    if (hoveredPinIndex != -1 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        if ((*EC).lastClickedPin.isInput)
+        if (EC->lastClickedPin.id == -1)
         {
-            DrawCurvedWire((*EC).mousePos, (*EC).lastClickedPin.position, 2.0f, YELLOW);
+            EC->lastClickedPin = graph->pins[hoveredPinIndex];
         }
         else
         {
-            DrawCurvedWire((*EC).lastClickedPin.position, (*EC).mousePos, 2.0f, YELLOW);
+            CreateLink(graph, EC->lastClickedPin, graph->pins[hoveredPinIndex]);
+            EC->lastClickedPin = INVALID_PIN;
         }
     }
 
-    for (int i = 0; i < *nodeCount; i++)
+    if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
     {
-        if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){(*NodeList)[i].position.x, (*NodeList)[i].position.y, getNodeInfoByType((*NodeList)[i].type, "width"), getNodeInfoByType((*NodeList)[i].type, "height")}))
-        {
-            if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 40, 15, 16}))
-            {
-                DrawTriangle(
-                    (Vector2){(*NodeList)[i].position.x + 8, (*NodeList)[i].position.y + 38},
-                    (Vector2){(*NodeList)[i].position.x + 8, (*NodeList)[i].position.y + 58},
-                    (Vector2){(*NodeList)[i].position.x + 27, (*NodeList)[i].position.y + 48},
-                    WHITE);
-
-                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-                {
-                    return (Pin){(*NodeList)[i].id, i, 0, true, true, (Vector2){(*NodeList)[i].position.x + 10, (*NodeList)[i].position.y + 48}};
-                }
-                else
-                {
-                    return INVALID_PIN;
-                }
-            }
-            else if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 20, (*NodeList)[i].position.y + 40, 15, 16}))
-            {
-                DrawTriangle(
-                    (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 22, (*NodeList)[i].position.y + 38},
-                    (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 22, (*NodeList)[i].position.y + 58},
-                    (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 3, (*NodeList)[i].position.y + 48},
-                    WHITE);
-
-                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-                {
-                    return (Pin){(*NodeList)[i].id, i, 1, true, false, (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 7, (*NodeList)[i].position.y + 48}};
-                }
-                else
-                {
-                    return INVALID_PIN;
-                }
-            }
-            else
-            {
-                for (int j = 0; j < getNodeInfoByType((*NodeList)[i].type, "inputCount"); j++)
-                {
-                    if (CheckCollisionPointCircle((*EC).mousePos, (Vector2){(*NodeList)[i].position.x + 15, (*NodeList)[i].position.y + 80 + j * 25}, 7))
-                    {
-                        DrawCircle((*NodeList)[i].position.x + 15, (*NodeList)[i].position.y + 80 + j * 25, 7, WHITE);
-                        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-                        {
-                            return (Pin){(*NodeList)[i].id, i, j, false, true, (Vector2){(*NodeList)[i].position.x + 15, (*NodeList)[i].position.y + 80 + j * 25}};
-                        }
-                        else
-                        {
-                            return INVALID_PIN;
-                        }
-                    }
-                }
-
-                for (int j = 0; j < getNodeInfoByType((*NodeList)[i].type, "outputCount"); j++)
-                {
-                    if (CheckCollisionPointCircle((*EC).mousePos, (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 14, (*NodeList)[i].position.y + 80 + j * 25}, 7))
-                    {
-                        DrawCircle((*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 14, (*NodeList)[i].position.y + 80 + j * 25, 7, WHITE);
-                        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-                        {
-                            return (Pin){(*NodeList)[i].id, i, j, false, false, (Vector2){(*NodeList)[i].position.x + getNodeInfoByType((*NodeList)[i].type, "width") - 14, (*NodeList)[i].position.y + 80 + j * 25}};
-                        }
-                        else
-                        {
-                            return INVALID_PIN;
-                        }
-                    }
-                }
-
-                DrawRectangleRounded((Rectangle){(*NodeList)[i].position.x, (*NodeList)[i].position.y, getNodeInfoByType((*NodeList)[i].type, "width"), getNodeInfoByType((*NodeList)[i].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-            }
-
-            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-            {
-                // show delete button
-                RemoveNode(NodeList, nodeCount, i);
-                (*EC).menuOpen = false;
-
-                return INVALID_PIN;
-            }
-        }
+        DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, "width") + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, "height") + 2}, 0.2f, 8, (Color){255, 255, 255, 30});
     }
 
-    return INVALID_PIN;
-}*/
+    if (EC->lastClickedPin.id != -1)
+    {
+        if (EC->lastClickedPin.isInput)
+        {
+            DrawCurvedWire(EC->mousePos, EC->lastClickedPin.position, 2.0f, YELLOW);
+        }
+        else
+        {
+            DrawCurvedWire(EC->lastClickedPin.position, EC->mousePos, 2.0f, YELLOW);
+        }
+    }
+}
 
 bool CheckNodeCollisions(EditorContext *EC, GraphContext *graph)
 {
@@ -650,11 +547,11 @@ void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
     for (int y = startY; y < EC->screenHeight + offsetY; y += gridSpacing - 5)
     {
         int worldY = y;
-        int row = worldY / (gridSpacing - 5); // row anchored to world space
+        int row = worldY / (gridSpacing - 5);
 
         for (int x = startX; x < EC->screenWidth + offsetX; x += gridSpacing)
         {
-            float drawX = (float)(x - offsetX + (row % 2) * 25); // stagger every other row
+            float drawX = (float)(x - offsetX + (row % 2) * 25);
             float drawY = (float)(y - offsetY);
 
             DrawRectangleRounded(
@@ -665,7 +562,7 @@ void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
     }
 }
 
-int DrawViewTexture(EditorContext *EC, RenderTexture2D view, GraphContext *graph)
+int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view)
 {
     BeginTextureMode(view);
     ClearBackground((Color){40, 42, 54, 255});
@@ -695,7 +592,7 @@ bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
         (*EC).scrollIndex = 0;
     }
 
-    return CheckNodeCollisions(EC, graph) || CheckBottomBarCollisions(EC, graph) || (*EC).draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    return CheckNodeCollisions(EC, graph) || CheckBottomBarCollisions(EC, graph) || (*EC).draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
 }
 
 NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
@@ -785,15 +682,10 @@ int main(int argc, char *argv[])
         BeginDrawing();
         ClearBackground((Color){40, 42, 54, 255});
 
-        if (CheckAllCollisions(&EC, &graph) || EC.isConnecting)
+        if (CheckAllCollisions(&EC, &graph) || EC.delayFrames)
         {
-            DrawViewTexture(&EC, view, &graph);
-            EC.delayFrames = true;
-        }
-        else if (EC.delayFrames)
-        {
-            DrawViewTexture(&EC, view, &graph);
-            EC.delayFrames = false;
+            DrawFullTexture(&EC, &graph, view);
+            !EC.delayFrames;
         }
 
         DrawTextureRec(view.texture, (Rectangle){0, 0, view.texture.width, -view.texture.height}, (Vector2){0, 0}, WHITE);
@@ -809,7 +701,7 @@ int main(int argc, char *argv[])
         }
 
         /*char str[30];
-        sprintf(str, "%d %d", graph.nodes[1].id, graph.pins[1].id);
+        sprintf(str, "%d", graph.links[0].inputPin.id);
         DrawText(str, 50, 50, 50, WHITE);*/
 
         DrawFPS(10, 10);

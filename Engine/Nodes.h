@@ -56,12 +56,11 @@ typedef struct Pin
 
 typedef struct Link
 {
-    Pin inputPin;
-    Pin outputPin;
+    int inputPinID;
+    int outputPinID;
 } Link;
 
-#define INVALID_PIN \
-    (Pin) { -1, -1, -1, false, false }
+#define INVALID_PIN (Pin) {-1}
 
 typedef struct GraphContext
 {
@@ -256,12 +255,26 @@ Node CreateNode(GraphContext *ctx, NodeType type, Vector2 pos)
     return node;
 }
 
-Link CreateLink(GraphContext *ctx, Pin inputPin, Pin outputPin)
+void CreateLink(GraphContext *ctx, Pin Pin1, Pin Pin2)
 {
+    if(Pin1.isInput == Pin2.isInput){return;}
+    else if((Pin1.type == PIN_FLOW && Pin2.type != PIN_FLOW) || (Pin1.type != PIN_FLOW && Pin2.type == PIN_FLOW)){return;}
+
     Link link = {0};
-    link.inputPin = inputPin;
-    link.outputPin = outputPin;
-    return link;
+
+    if(Pin1.isInput){
+        link.inputPinID = Pin1.id;
+        link.outputPinID = Pin2.id;
+    }
+    else if(Pin2.isInput){
+        link.inputPinID = Pin2.id;
+        link.outputPinID = Pin1.id;
+    }
+
+    ctx->links = realloc(ctx->links, sizeof(Link) * (ctx->linkCount + 1));
+    ctx->links[ctx->linkCount++] = link;
+
+    return;
 }
 
 void DeleteNode(GraphContext *ctx, int nodeID)
@@ -309,17 +322,14 @@ void DeleteNode(GraphContext *ctx, int nodeID)
     // 3. Remove all links connected to deleted pins
     for (int i = 0; i < ctx->linkCount; /* increment inside */)
     {
-        int outputPinID = ctx->links[i].outputPin.id;
-        int inputPinID = ctx->links[i].inputPin.id;
-
         bool outputDeleted = false;
         bool inputDeleted = false;
 
         for (int j = 0; j < pinsToDeleteCount; j++)
         {
-            if (outputPinID == pinsToDelete[j])
+            if (ctx->links[i].outputPinID == pinsToDelete[j])
                 outputDeleted = true;
-            if (inputPinID == pinsToDelete[j])
+            if (ctx->links[i].inputPinID == pinsToDelete[j])
                 inputDeleted = true;
             if (outputDeleted && inputDeleted)
                 break;
@@ -346,7 +356,7 @@ void RemoveConnection(GraphContext *ctx, int fromPinID, int toPinID)
 {
     for (int i = 0; i < ctx->linkCount; i++)
     {
-        if (ctx->links[i].outputPin.id == fromPinID && ctx->links[i].inputPin.id == toPinID)
+        if (ctx->links[i].outputPinID == fromPinID && ctx->links[i].inputPinID == toPinID)
         {
             // Swap with last link and shrink
             ctx->links[i] = ctx->links[ctx->linkCount - 1];
@@ -356,8 +366,6 @@ void RemoveConnection(GraphContext *ctx, int fromPinID, int toPinID)
         }
     }
 }
-
-// makeConnection
 
 /*int SaveNode(char CGFilePath[], Node *node)
 {

@@ -189,6 +189,8 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
             hoveredNodeIndex = i;
             if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
                 DeleteNode(graph, graph->nodes[i].id); //deletion problem
+                EC->menuOpen = false;
+                return;
             }
         }
     }
@@ -402,8 +404,7 @@ void HandleDragging(EditorContext *EC, GraphContext *graph)
         EC->mousePosAtStartOfDrag = EC->mousePos;
         return;
     }
-
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex != -1)
+    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex != -1)
     {
         graph->nodes[EC->draggingNodeIndex].position.x = EC->mousePos.x - EC->dragOffset.x;
         graph->nodes[EC->draggingNodeIndex].position.y = EC->mousePos.y - EC->dragOffset.y;

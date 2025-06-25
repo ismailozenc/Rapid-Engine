@@ -231,72 +231,77 @@ void CreateLink(GraphContext *ctx, Pin Pin1, Pin Pin2)
 
 void DeleteNode(GraphContext *ctx, int nodeID)
 {
-    // 1. Find and remove node
+    if (ctx->nodeCount == 0) return;
+
+    // 1. Find node
     int nodeIndex = -1;
-    for (int i = 0; i < ctx->nodeCount; i++)
-    {
-        if (ctx->nodes[i].id == nodeID)
-        {
+    for (int i = 0; i < ctx->nodeCount; i++) {
+        if (ctx->nodes[i].id == nodeID) {
             nodeIndex = i;
             break;
         }
     }
-    if (nodeIndex == -1)
-        return; // Node not found
+    if (nodeIndex == -1) return;
 
-    // Remove node by swapping with last and shrinking array
+    // 2. Remove node
     ctx->nodes[nodeIndex] = ctx->nodes[ctx->nodeCount - 1];
     ctx->nodeCount--;
-    ctx->nodes = realloc(ctx->nodes, sizeof(Node) * ctx->nodeCount);
 
-    // 2. Remove pins belonging to node and collect their IDs
-    int *pinsToDelete = malloc(sizeof(int) * ctx->pinCount);
+    if (ctx->nodeCount == 0) {
+        free(ctx->nodes);
+        ctx->nodes = NULL;
+    } else {
+        Node *resized = realloc(ctx->nodes, ctx->nodeCount * sizeof(Node));
+        if (resized) ctx->nodes = resized;
+    }
+
+    // 3. Track pins to delete
+    int *pinsToDelete = malloc(ctx->pinCount * sizeof(int));
     int pinsToDeleteCount = 0;
 
-    for (int i = 0; i < ctx->pinCount; /*increment inside*/)
-    {
-        if (ctx->pins[i].nodeID == nodeID)
-        {
+    for (int i = 0; i < ctx->pinCount;) {
+        if (ctx->pins[i].nodeID == nodeID) {
             pinsToDelete[pinsToDeleteCount++] = ctx->pins[i].id;
-
-            // Remove pin by swapping with last and shrinking
             ctx->pins[i] = ctx->pins[ctx->pinCount - 1];
             ctx->pinCount--;
-            ctx->pins = realloc(ctx->pins, sizeof(Pin) * ctx->pinCount);
-            // Don't increment i because we swapped a new pin into i
-        }
-        else
-        {
+
+            if (ctx->pinCount == 0) {
+                free(ctx->pins);
+                ctx->pins = NULL;
+                break;
+            } else {
+                Pin *resized = realloc(ctx->pins, ctx->pinCount * sizeof(Pin));
+                if (resized) ctx->pins = resized;
+            }
+        } else {
             i++;
         }
     }
 
-    // 3. Remove all links connected to deleted pins
-    for (int i = 0; i < ctx->linkCount; /* increment inside */)
-    {
-        bool outputDeleted = false;
-        bool inputDeleted = false;
-
-        for (int j = 0; j < pinsToDeleteCount; j++)
-        {
-            if (ctx->links[i].outputPinID == pinsToDelete[j])
-                outputDeleted = true;
-            if (ctx->links[i].inputPinID == pinsToDelete[j])
-                inputDeleted = true;
-            if (outputDeleted && inputDeleted)
+    // 4. Delete links connected to those pins
+    for (int i = 0; i < ctx->linkCount;) {
+        bool remove = false;
+        for (int j = 0; j < pinsToDeleteCount; j++) {
+            if (ctx->links[i].inputPinID == pinsToDelete[j] ||
+                ctx->links[i].outputPinID == pinsToDelete[j]) {
+                remove = true;
                 break;
+            }
         }
 
-        if (outputDeleted || inputDeleted)
-        {
-            // Remove link by swapping with last and shrinking
+        if (remove) {
             ctx->links[i] = ctx->links[ctx->linkCount - 1];
             ctx->linkCount--;
-            ctx->links = realloc(ctx->links, sizeof(Link) * ctx->linkCount);
-            // Don't increment i because we swapped a new element into i
-        }
-        else
-        {
+
+            if (ctx->linkCount == 0) {
+                free(ctx->links);
+                ctx->links = NULL;
+                break;
+            } else {
+                Link *resized = realloc(ctx->links, ctx->linkCount * sizeof(Link));
+                if (resized) ctx->links = resized;
+            }
+        } else {
             i++;
         }
     }

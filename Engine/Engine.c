@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(240);
 
-    char *projectPath = PrepareProjectPath(handleProjectManager());
+    char *projectPath = PrepareProjectPath(/*handleProjectManager()*/"Tetris"); //temporary hardcode
     MaximizeWindow();
 
     FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);

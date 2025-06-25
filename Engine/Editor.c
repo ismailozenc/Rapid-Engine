@@ -27,31 +27,13 @@ typedef struct
 {
     char *CGFilePath;
 
-    int lastNodeID;
-
-    bool isDraggingScreen;
-    int draggingNodeIndex;
-    Vector2 dragOffset;
+    int screenWidth;
+    int screenHeight;
+    int bottomBarHeight;
 
     char **logMessages;
     int logCount;
     int logCapacity;
-
-    bool menuOpen;
-    bool submenuOpen;
-    Vector2 menuPosition;
-    Vector2 submenuPosition;
-
-    int screenWidth;
-    int screenHeight;
-    int bottomBarHeight;
-    int scrollIndex;
-
-    Pin lastClickedPin;
-
-    bool isConnecting;
-
-    int hoveredItem;
 
     bool delayFrames;
 
@@ -59,6 +41,19 @@ typedef struct
     Vector2 prevMousePos;
     Vector2 mousePosAtStartOfDrag;
     Vector2 rightClickPos;
+
+    bool isDraggingScreen;
+    int draggingNodeIndex;
+    Vector2 dragOffset;
+
+    bool menuOpen;
+    bool submenuOpen;
+    Vector2 menuPosition;
+    Vector2 submenuPosition;
+    int scrollIndex;
+    int hoveredItem;
+
+    Pin lastClickedPin;
 
     Font font;
 
@@ -72,14 +67,10 @@ EditorContext InitEditorContext()
     EC.CGFilePath = malloc(MAX_PATH_LENGTH);
     EC.CGFilePath[0] = '\0';
 
-    EC.lastNodeID = 0;
-
     EC.lastClickedPin = INVALID_PIN;
 
     EC.scrollIndex = 0;
     EC.hoveredItem = -1;
-
-    EC.isConnecting = false;
 
     EC.mousePos = (Vector2){0, 0};
 
@@ -197,20 +188,20 @@ void DrawBottomBar(EditorContext *EC)
 {
     Color BottomBarColor = BLACK;
 
-    DrawRectangle(0, (*EC).screenHeight - (*EC).bottomBarHeight, (*EC).screenWidth, (*EC).bottomBarHeight, BottomBarColor);
-    DrawLineEx((Vector2){0, (*EC).screenHeight - (*EC).bottomBarHeight}, (Vector2){(*EC).screenWidth, (*EC).screenHeight - (*EC).bottomBarHeight}, 2, WHITE);
+    DrawRectangle(0, EC->screenHeight - EC->bottomBarHeight, EC->screenWidth, EC->bottomBarHeight, BottomBarColor);
+    DrawLineEx((Vector2){0, EC->screenHeight - EC->bottomBarHeight}, (Vector2){EC->screenWidth, EC->screenHeight - EC->bottomBarHeight}, 2, WHITE);
 
-    DrawRectangleRounded((Rectangle){85, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    DrawTextEx((*EC).font, "Save", (Vector2){90, (*EC).screenHeight - (*EC).bottomBarHeight + 30}, 20, 2, WHITE);
+    DrawRectangleRounded((Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+    DrawTextEx(EC->font, "Save", (Vector2){90, EC->screenHeight - EC->bottomBarHeight + 30}, 20, 2, WHITE);
 
-    DrawRectangleRounded((Rectangle){10, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    DrawTextEx((*EC).font, "Run", (Vector2){20, (*EC).screenHeight - (*EC).bottomBarHeight + 30}, 20, 2, WHITE);
+    DrawRectangleRounded((Rectangle){10, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+    DrawTextEx(EC->font, "Run", (Vector2){20, EC->screenHeight - EC->bottomBarHeight + 30}, 20, 2, WHITE);
 
-    int y = (*EC).screenHeight - 60;
+    int y = EC->screenHeight - 60;
 
-    for (int i = (*EC).logCount - 1; i >= 0 && y >= (*EC).screenHeight - (*EC).bottomBarHeight + 50; i--)
+    for (int i = EC->logCount - 1; i >= 0 && y >= EC->screenHeight - EC->bottomBarHeight + 50; i--)
     {
-        DrawTextEx((*EC).font, (*EC).logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
+        DrawTextEx(EC->font, EC->logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
         y -= 25;
     }
 }
@@ -219,9 +210,9 @@ bool CheckBottomBarCollisions(EditorContext *EC, GraphContext *graph)
 {
 
     // Save button collisions
-    if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){85, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}))
+    if (CheckCollisionPointRec(EC->mousePos, (Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}))
     {
-        DrawRectangleRounded((Rectangle){85, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
+        DrawRectangleRounded((Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
             if (SaveGraphToFile(EC->CGFilePath, graph) == 0)
@@ -238,9 +229,9 @@ bool CheckBottomBarCollisions(EditorContext *EC, GraphContext *graph)
     }
 
     // Run button collisions
-    if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){10, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}))
+    if (CheckCollisionPointRec(EC->mousePos, (Rectangle){10, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}))
     {
-        DrawRectangleRounded((Rectangle){10, (*EC).screenHeight - (*EC).bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
+        DrawRectangleRounded((Rectangle){10, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
             // Compile and run CoreGraph
@@ -380,7 +371,7 @@ bool CheckNodeCollisions(EditorContext *EC, GraphContext *graph)
 {
     for (int i = 0; i < graph->nodeCount; i++)
     {
-        if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
+        if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             return true;
         }
@@ -413,73 +404,73 @@ const char *DrawNodeMenu(EditorContext *EC)
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 
-    if (GetMouseWheelMove() < 0 && (*EC).scrollIndex < menuItemCount - 5)
-        (*EC).scrollIndex++;
-    if (GetMouseWheelMove() > 0 && (*EC).scrollIndex > 0)
-        (*EC).scrollIndex--;
+    if (GetMouseWheelMove() < 0 && EC->scrollIndex < menuItemCount - 5)
+        EC->scrollIndex++;
+    if (GetMouseWheelMove() > 0 && EC->scrollIndex > 0)
+        EC->scrollIndex--;
 
-    (*EC).menuPosition = (*EC).rightClickPos;
-    if ((*EC).menuPosition.x + MENU_WIDTH > (*EC).screenWidth)
+    EC->menuPosition = EC->rightClickPos;
+    if (EC->menuPosition.x + MENU_WIDTH > EC->screenWidth)
     {
-        (*EC).menuPosition.x -= MENU_WIDTH;
+        EC->menuPosition.x -= MENU_WIDTH;
     }
 
-    DrawRectangle((*EC).menuPosition.x, (*EC).menuPosition.y, MENU_WIDTH, menuHeight, MenuColor);
-    DrawRectangleLinesEx((Rectangle){(*EC).menuPosition.x, (*EC).menuPosition.y, MENU_WIDTH, menuHeight}, MENU_BORDER_THICKNESS, BorderColor);
+    DrawRectangleRounded((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.4f, 8, MenuColor);
+    DrawRectangleRoundedLinesEx((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.4, 8, MENU_BORDER_THICKNESS, BorderColor);
 
     for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
     {
-        int itemIndex = i + (*EC).scrollIndex;
+        int itemIndex = i + EC->scrollIndex;
         if (itemIndex >= menuItemCount)
             break;
 
-        Rectangle itemRect = {(*EC).menuPosition.x, (*EC).menuPosition.y + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
-        if (CheckCollisionPointRec((*EC).mousePos, itemRect))
+        Rectangle itemRect = {EC->menuPosition.x, EC->menuPosition.y + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
+        if (CheckCollisionPointRec(EC->mousePos, itemRect))
         {
             DrawRectangleRec(itemRect, HighlightColor);
-            (*EC).hoveredItem = itemIndex;
-            (*EC).submenuOpen = true;
-            (*EC).submenuPosition.x = ((*EC).menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > (*EC).screenWidth) ? ((*EC).menuPosition.x - SUBMENU_WIDTH) : ((*EC).menuPosition.x + MENU_WIDTH);
-            (*EC).submenuPosition.y = itemRect.y;
+            EC->hoveredItem = itemIndex;
+            EC->submenuOpen = true;
+            EC->submenuPosition.x = (EC->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > EC->screenWidth) ? (EC->menuPosition.x - SUBMENU_WIDTH) : (EC->menuPosition.x + MENU_WIDTH);
+            EC->submenuPosition.y = itemRect.y;
         }
-        Rectangle subMenuRect = {(*EC).submenuPosition.x, (*EC).submenuPosition.y, SUBMENU_WIDTH, subMenuCounts[(*EC).hoveredItem] * MENU_ITEM_HEIGHT};
-        if (CheckCollisionPointRec((*EC).mousePos, subMenuRect))
+        Rectangle subMenuRect = {EC->submenuPosition.x, EC->submenuPosition.y, SUBMENU_WIDTH, subMenuCounts[EC->hoveredItem] * MENU_ITEM_HEIGHT};
+        if (CheckCollisionPointRec(EC->mousePos, subMenuRect))
         {
-            (*EC).submenuOpen = true;
+            EC->submenuOpen = true;
         }
-        DrawText(menuItems[itemIndex], (*EC).menuPosition.x + 10, (*EC).menuPosition.y + i * MENU_ITEM_HEIGHT + 10, 25, WHITE);
+        DrawText(menuItems[itemIndex], EC->menuPosition.x + 10, EC->menuPosition.y + i * MENU_ITEM_HEIGHT + 10, 25, WHITE);
     }
 
     // Scrollbar
     float scrollBarHeight = (menuHeight / menuItemCount) * (int)MENU_VISIBLE_ITEMS;
-    float scrollBarY = (*EC).menuPosition.y + ((*EC).scrollIndex * (menuHeight / menuItemCount));
-    DrawRectangle((*EC).menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
+    float scrollBarY = EC->menuPosition.y + (EC->scrollIndex * (menuHeight / menuItemCount));
+    DrawRectangle(EC->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        (*EC).menuOpen = false;
+        EC->menuOpen = false;
     }
 
-    if ((*EC).submenuOpen && (*EC).hoveredItem >= 0 && (*EC).hoveredItem < menuItemCount)
+    if (EC->submenuOpen && EC->hoveredItem >= 0 && EC->hoveredItem < menuItemCount)
     {
-        int subCount = subMenuCounts[(*EC).hoveredItem];
+        int subCount = subMenuCounts[EC->hoveredItem];
         float submenuHeight = subCount * MENU_ITEM_HEIGHT;
-        DrawRectangle((*EC).submenuPosition.x, (*EC).submenuPosition.y, SUBMENU_WIDTH, submenuHeight, MenuColor);
-        DrawRectangleLinesEx((Rectangle){(*EC).submenuPosition.x, (*EC).submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, MENU_BORDER_THICKNESS, BorderColor);
+        DrawRectangle(EC->submenuPosition.x, EC->submenuPosition.y, SUBMENU_WIDTH, submenuHeight, MenuColor);
+        DrawRectangleLinesEx((Rectangle){EC->submenuPosition.x, EC->submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, MENU_BORDER_THICKNESS, BorderColor);
         for (int j = 0; j < subCount; j++)
         {
-            Rectangle subItemRect = {(*EC).submenuPosition.x, (*EC).submenuPosition.y + j * MENU_ITEM_HEIGHT, SUBMENU_WIDTH, MENU_ITEM_HEIGHT};
-            if (CheckCollisionPointRec((*EC).mousePos, subItemRect))
+            Rectangle subItemRect = {EC->submenuPosition.x, EC->submenuPosition.y + j * MENU_ITEM_HEIGHT, SUBMENU_WIDTH, MENU_ITEM_HEIGHT};
+            if (CheckCollisionPointRec(EC->mousePos, subItemRect))
             {
                 DrawRectangleRec(subItemRect, HighlightColor);
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 {
-                    (*EC).delayFrames = true;
+                    EC->delayFrames = true;
                     // Handle click event for submenu item
-                    return subMenuItems[(*EC).hoveredItem][j];
+                    return subMenuItems[EC->hoveredItem][j];
                 }
             }
-            DrawText(subMenuItems[(*EC).hoveredItem][j], (*EC).submenuPosition.x + 10, (*EC).submenuPosition.y + j * MENU_ITEM_HEIGHT + 10, 25, WHITE);
+            DrawText(subMenuItems[EC->hoveredItem][j], EC->submenuPosition.x + 10, EC->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10, 25, WHITE);
         }
     }
 
@@ -488,45 +479,45 @@ const char *DrawNodeMenu(EditorContext *EC)
 
 void HandleDragging(EditorContext *EC, GraphContext *graph)
 {
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && (*EC).draggingNodeIndex == -1)
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex == -1)
     {
         SetTargetFPS(140);
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            if (CheckCollisionPointRec((*EC).mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
+            if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
             {
-                (*EC).draggingNodeIndex = i;
-                (*EC).dragOffset = (Vector2){(*EC).mousePos.x - graph->nodes[i].position.x, (*EC).mousePos.y - graph->nodes[i].position.y};
+                EC->draggingNodeIndex = i;
+                EC->dragOffset = (Vector2){EC->mousePos.x - graph->nodes[i].position.x, EC->mousePos.y - graph->nodes[i].position.y};
                 return;
             }
         }
 
-        (*EC).isDraggingScreen = true;
-        (*EC).prevMousePos = (*EC).mousePos;
-        (*EC).mousePosAtStartOfDrag = (*EC).mousePos;
+        EC->isDraggingScreen = true;
+        EC->prevMousePos = EC->mousePos;
+        EC->mousePosAtStartOfDrag = EC->mousePos;
     }
 
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && (*EC).draggingNodeIndex != -1)
+    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex != -1)
     {
-        graph->nodes[(*EC).draggingNodeIndex].position.x = (*EC).mousePos.x - (*EC).dragOffset.x;
-        graph->nodes[(*EC).draggingNodeIndex].position.y = (*EC).mousePos.y - (*EC).dragOffset.y;
-        DrawRectangleRounded((Rectangle){graph->nodes[(*EC).draggingNodeIndex].position.x, graph->nodes[(*EC).draggingNodeIndex].position.y, getNodeInfoByType(graph->nodes[(*EC).draggingNodeIndex].type, "width"), getNodeInfoByType(graph->nodes[(*EC).draggingNodeIndex].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+        graph->nodes[EC->draggingNodeIndex].position.x = EC->mousePos.x - EC->dragOffset.x;
+        graph->nodes[EC->draggingNodeIndex].position.y = EC->mousePos.y - EC->dragOffset.y;
+        DrawRectangleRounded((Rectangle){graph->nodes[EC->draggingNodeIndex].position.x, graph->nodes[EC->draggingNodeIndex].position.y, getNodeInfoByType(graph->nodes[EC->draggingNodeIndex].type, "width"), getNodeInfoByType(graph->nodes[EC->draggingNodeIndex].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
     }
-    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && (*EC).isDraggingScreen)
+    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->isDraggingScreen)
     {
         for (int i = 0; i < graph->nodeCount; i++)
         {
             graph->nodes[i].position.x = graph->nodes[i].position.x + EC->mousePos.x - EC->prevMousePos.x;
             graph->nodes[i].position.y = graph->nodes[i].position.y + EC->mousePos.y - EC->prevMousePos.y;
         }
-        (*EC).prevMousePos = (*EC).mousePos;
+        EC->prevMousePos = EC->mousePos;
     }
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
     {
         SetTargetFPS(60);
-        (*EC).draggingNodeIndex = -1;
-        (*EC).isDraggingScreen = false;
+        EC->draggingNodeIndex = -1;
+        EC->isDraggingScreen = false;
     }
 }
 
@@ -535,7 +526,7 @@ void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
     int offsetX = EC->mousePosAtStartOfDrag.x - EC->mousePos.x;
     int offsetY = EC->mousePosAtStartOfDrag.y - EC->mousePos.y;
 
-    if ((*EC).isDraggingScreen == false)
+    if (EC->isDraggingScreen == false)
     {
         offsetX = 0;
         offsetY = 0;
@@ -585,33 +576,14 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
 
 bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
 {
-    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && (*EC).mousePos.y < (*EC).screenHeight - (*EC).bottomBarHeight)
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && EC->mousePos.y < EC->screenHeight - EC->bottomBarHeight)
     {
-        (*EC).menuOpen = true;
-        (*EC).rightClickPos = (*EC).mousePos;
-        (*EC).scrollIndex = 0;
+        EC->menuOpen = true;
+        EC->rightClickPos = EC->mousePos;
+        EC->scrollIndex = 0;
     }
 
-    return CheckNodeCollisions(EC, graph) || CheckBottomBarCollisions(EC, graph) || (*EC).draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
-}
-
-NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
-{
-    if (strcmp(strType, "num") == 0)
-        return NODE_NUM;
-    if (strcmp(strType, "string") == 0)
-        return NODE_STRING;
-    if (strcmp(strType, "ex") == 0)
-        return NODE_EX;
-    if (strcmp(strType, "print") == 0)
-        return NODE_PRINT;
-    if (strcmp(strType, "add") == 0)
-        return NODE_ADD;
-    if (strcmp(strType, "delay") == 0)
-        return NODE_DELAY;
-    if (strcmp(strType, "branch") == 0)
-        return NODE_BRANCH;
-    return NODE_UNKNOWN;
+    return CheckNodeCollisions(EC, graph) || CheckBottomBarCollisions(EC, graph) || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
 }
 
 int main(int argc, char *argv[])
@@ -619,7 +591,7 @@ int main(int argc, char *argv[])
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1600, 1000, "CG Editor");
     MaximizeWindow();
-    SetTargetFPS(40);
+    SetTargetFPS(60);
 
     EditorContext EC = InitEditorContext();
 
@@ -644,29 +616,14 @@ int main(int argc, char *argv[])
 
     SetProjectPaths(&EC, argv[1]);
 
-    GraphContext graph;
-    InitGraphContext(&graph);
+    GraphContext graph = InitGraphContext();
 
-    /*switch (LoadNodesFromFile(EC.CGFilePath, &NodeList, &nodeCount, &EC.lastNodeID))
-    {
-    case 0:
+    if(LoadGraphFromFile(EC.CGFilePath, &graph)){
         AddToLog(&EC, "Loaded CoreGraph file");
-        break;
-    case 1:
-        AddToLog(&EC, "Failed to open file");
-        break;
-    case 2:
-        AddToLog(&EC, "Corrupted CoreGraph file");
-        break;
-    case 3:
-        AddToLog(&EC, "Failed memory allocation");
-        break;
-    default:
-        AddToLog(&EC, "Error while loading nodes from file");
-        break;
-    }*/
-
-    LoadGraphFromFile(EC.CGFilePath, &graph);
+    }
+    else{
+        AddToLog(&EC, "Couldn't find CoreGraph file");
+    }
 
     AddToLog(&EC, "Welcome!");
 
@@ -700,11 +657,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        /*char str[30];
-        sprintf(str, "%d", graph.links[0].inputPin.id);
-        DrawText(str, 50, 50, 50, WHITE);*/
-
-        DrawFPS(10, 10);
+        DrawFPS(10, 10);//
 
         EndDrawing();
     }

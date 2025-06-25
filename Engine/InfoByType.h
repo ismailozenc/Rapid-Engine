@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TYPE_SIZE 16
+#define MAX_TYPE_LENGTH 16
 #define typesCount 4
 
 typedef enum
@@ -102,4 +102,23 @@ const char* NodeTypeToString(NodeType type) {
         case NODE_BRANCH:  return "branch";
         default:           return "invalid";
     }
+}
+
+NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
+{
+    if (strcmp(strType, "num") == 0)
+        return NODE_NUM;
+    if (strcmp(strType, "string") == 0)
+        return NODE_STRING;
+    if (strcmp(strType, "ex") == 0)
+        return NODE_EX;
+    if (strcmp(strType, "print") == 0)
+        return NODE_PRINT;
+    if (strcmp(strType, "add") == 0)
+        return NODE_ADD;
+    if (strcmp(strType, "delay") == 0)
+        return NODE_DELAY;
+    if (strcmp(strType, "branch") == 0)
+        return NODE_BRANCH;
+    return NODE_UNKNOWN;
 }

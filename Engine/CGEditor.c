@@ -1,71 +1,22 @@
-#include <stdio.h>
-#include "raylib.h"
+#include "CGEditor.h"
 #include <direct.h>
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
 #include <math.h>
 #include "shell_execute.h"
-#include "Nodes.h"
-
-#define MENU_WIDTH 250
-#define MENU_ITEM_HEIGHT 40
-#define MENU_VISIBLE_ITEMS 5.5
-#define MENU_BORDER_THICKNESS 3
-#define SUBMENU_WIDTH 200
-
-#define MAX_PATH_LENGTH 1024
-#define MAX_TYPE_LENGTH 16
-
-#ifdef _WIN32
-#define PATH_SEPARATOR '\\'
-#else
-#define PATH_SEPARATOR '/'
-#endif
-
-typedef struct
-{
-    char *CGFilePath;
-
-    int screenWidth;
-    int screenHeight;
-    int bottomBarHeight;
-
-    char **logMessages;
-    int logCount;
-    int logCapacity;
-
-    bool delayFrames;
-
-    Vector2 mousePos;
-    Vector2 prevMousePos;
-    Vector2 mousePosAtStartOfDrag;
-    Vector2 rightClickPos;
-
-    bool isDraggingScreen;
-    int draggingNodeIndex;
-    Vector2 dragOffset;
-
-    bool menuOpen;
-    bool submenuOpen;
-    Vector2 menuPosition;
-    Vector2 submenuPosition;
-    int scrollIndex;
-    int hoveredItem;
-
-    Pin lastClickedPin;
-
-    Font font;
-
-    // float zoom;
-} EditorContext;
 
 EditorContext InitEditorContext()
 {
     EditorContext EC = {0};
 
+    EC.editorOpen = false;
+
     EC.CGFilePath = malloc(MAX_PATH_LENGTH);
     EC.CGFilePath[0] = '\0';
+
+    EC.fileName = malloc(MAX_PATH_LENGTH);
+    EC.fileName[0] = '\0';
 
     EC.lastClickedPin = INVALID_PIN;
 
@@ -101,6 +52,9 @@ void FreeEditorContext(EditorContext *EC)
     if (EC->CGFilePath)
         free(EC->CGFilePath);
 
+    if (EC->fileName)
+        free(EC->fileName);
+
     for (int i = 0; i < EC->logCount; i++)
     {
         free(EC->logMessages[i]);
@@ -131,30 +85,36 @@ void SetProjectPaths(EditorContext *EC, const char *projectName)
     snprintf(EC->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
 }
 
-void AddToLog(EditorContext *EC, const char *newLine)
+void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
 {
-    if (EC->logCount >= EC->logCapacity)
+    int offsetX = EC->mousePosAtStartOfDrag.x - EC->mousePos.x;
+    int offsetY = EC->mousePosAtStartOfDrag.y - EC->mousePos.y;
+
+    if (EC->isDraggingScreen == false)
     {
-        EC->logCapacity += 100;
-        EC->logMessages = realloc(EC->logMessages, sizeof(char *) * EC->logCapacity);
+        offsetX = 0;
+        offsetY = 0;
     }
 
-    time_t timestamp = time(NULL);
-    struct tm *tm_info = localtime(&timestamp);
+    int startX = (offsetX / gridSpacing) * gridSpacing - gridSpacing;
+    int startY = (offsetY / gridSpacing) * gridSpacing - gridSpacing;
 
-    int hour = tm_info->tm_hour;
-    int minute = tm_info->tm_min;
+    for (int y = startY; y < EC->screenHeight + offsetY; y += gridSpacing - 5)
+    {
+        int worldY = y;
+        int row = worldY / (gridSpacing - 5);
 
-    size_t lineLength = strlen(newLine);
-    char *message = malloc(16 + lineLength + 6);
+        for (int x = startX; x < EC->screenWidth + offsetX; x += gridSpacing)
+        {
+            float drawX = (float)(x - offsetX + (row % 2) * 25);
+            float drawY = (float)(y - offsetY);
 
-    snprintf(message, 16 + lineLength + 6, "%02d:%02d %s", hour, minute, newLine);
-
-    EC->logMessages[EC->logCount] = malloc(strlen(message) + 1);
-    strcpy(EC->logMessages[EC->logCount], message);
-
-    EC->logCount++;
-    free(message);
+            DrawRectangleRounded(
+                (Rectangle){drawX, drawY, 20 - (row % 2) * 5, 10 + (row % 2) * 5},
+                1.0f, 8,
+                (Color){128, 128, 128, 10});
+        }
+    }
 }
 
 void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color color)
@@ -182,77 +142,6 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
         DrawLineEx(prev, point, thickness, color);
         prev = point;
     }
-}
-
-void DrawBottomBar(EditorContext *EC)
-{
-    Color BottomBarColor = BLACK;
-
-    DrawRectangle(0, EC->screenHeight - EC->bottomBarHeight, EC->screenWidth, EC->bottomBarHeight, BottomBarColor);
-    DrawLineEx((Vector2){0, EC->screenHeight - EC->bottomBarHeight}, (Vector2){EC->screenWidth, EC->screenHeight - EC->bottomBarHeight}, 2, WHITE);
-
-    DrawRectangleRounded((Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    DrawTextEx(EC->font, "Save", (Vector2){90, EC->screenHeight - EC->bottomBarHeight + 30}, 20, 2, WHITE);
-
-    DrawRectangleRounded((Rectangle){10, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
-    DrawTextEx(EC->font, "Run", (Vector2){20, EC->screenHeight - EC->bottomBarHeight + 30}, 20, 2, WHITE);
-
-    int y = EC->screenHeight - 60;
-
-    for (int i = EC->logCount - 1; i >= 0 && y >= EC->screenHeight - EC->bottomBarHeight + 50; i--)
-    {
-        DrawTextEx(EC->font, EC->logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
-        y -= 25;
-    }
-}
-
-bool CheckBottomBarCollisions(EditorContext *EC, GraphContext *graph)
-{
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
-    {
-        if (SaveGraphToFile(EC->CGFilePath, graph) == 0)
-        {
-            AddToLog(EC, "Saved successfully!");
-        }
-        else
-        {
-            AddToLog(EC, "ERROR SAVING CHANGES!");
-        }
-    }
-
-    // Save button collisions
-    if (CheckCollisionPointRec(EC->mousePos, (Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}))
-    {
-        DrawRectangleRounded((Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        {
-            if (SaveGraphToFile(EC->CGFilePath, graph) == 0)
-            {
-                AddToLog(EC, "Saved successfully!");
-            }
-            else
-            {
-                AddToLog(EC, "ERROR SAVING CHANGES!");
-            }
-        }
-
-        return true;
-    }
-
-    // Run button collisions
-    if (CheckCollisionPointRec(EC->mousePos, (Rectangle){10, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}))
-    {
-        DrawRectangleRounded((Rectangle){10, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        {
-            // Compile and run CoreGraph
-            AddToLog(EC, "Compiler not ready"); ////
-        }
-
-        return true;
-    }
-
-    return false;
 }
 
 void DrawNodes(EditorContext *EC, GraphContext *graph)
@@ -283,7 +172,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         }
         else
         {
-            AddToLog(EC, "Error drawing connection");
+            //AddToLog(EC, "Error drawing connection");
         }
     }
 
@@ -532,38 +421,6 @@ void HandleDragging(EditorContext *EC, GraphContext *graph)
     }
 }
 
-void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
-{
-    int offsetX = EC->mousePosAtStartOfDrag.x - EC->mousePos.x;
-    int offsetY = EC->mousePosAtStartOfDrag.y - EC->mousePos.y;
-
-    if (EC->isDraggingScreen == false)
-    {
-        offsetX = 0;
-        offsetY = 0;
-    }
-
-    int startX = (offsetX / gridSpacing) * gridSpacing - gridSpacing;
-    int startY = (offsetY / gridSpacing) * gridSpacing - gridSpacing;
-
-    for (int y = startY; y < EC->screenHeight + offsetY; y += gridSpacing - 5)
-    {
-        int worldY = y;
-        int row = worldY / (gridSpacing - 5);
-
-        for (int x = startX; x < EC->screenWidth + offsetX; x += gridSpacing)
-        {
-            float drawX = (float)(x - offsetX + (row % 2) * 25);
-            float drawY = (float)(y - offsetY);
-
-            DrawRectangleRounded(
-                (Rectangle){drawX, drawY, 20 - (row % 2) * 5, 10 + (row % 2) * 5},
-                1.0f, 8,
-                (Color){128, 128, 128, 10});
-        }
-    }
-}
-
 int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view)
 {
     BeginTextureMode(view);
@@ -575,10 +432,10 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
 
     DrawNodes(EC, graph);
 
-    //DrawBottomBar(EC);
-
     DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){20, 20}, 40, 4, Fade(WHITE, 0.2f));
     DrawTextEx(GetFontDefault(), "TM", (Vector2){230, 10}, 15, 1, Fade(WHITE, 0.2f));
+
+    DrawFPS(10, 10);
 
     EndTextureMode();
 
@@ -587,101 +444,36 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
 
 bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
 {
-    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && EC->mousePos.y/* < EC->screenHeight - EC->bottomBarHeight*/)
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && EC->mousePos.y)
     {
         EC->menuOpen = true;
         EC->rightClickPos = EC->mousePos;
         EC->scrollIndex = 0;
     }
 
-    return CheckNodeCollisions(EC, graph)/* || CheckBottomBarCollisions(EC, graph)*/ || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
+    return CheckNodeCollisions(EC, graph) || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
 }
 
-int main(int argc, char *argv[])
+void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport)
 {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1600, 1000, "CG Editor");
-    MaximizeWindow();
-    SetTargetFPS(60);
+    EC->screenWidth = GetScreenWidth();
+    EC->screenHeight = GetScreenHeight();
+    EC->bottomBarHeight = EC->screenHeight * 0.25;
+    EC->mousePos = GetMousePosition();
 
-    EditorContext EC = InitEditorContext();
-
-    if (EC.font.texture.id == 0)
+    if (CheckAllCollisions(EC, graph) || EC->delayFrames)
     {
-        AddToLog(&EC, "Couldn't load font");
-    }
-    else
-    {
-        AddToLog(&EC, "Loaded font");
+        DrawFullTexture(EC, graph, *viewport);
+        !EC->delayFrames;
     }
 
-    AddToLog(&EC, "Initialized window");
-
-    if (argc < 2)
+    if (EC->menuOpen)
     {
-        AddToLog(&EC, "Error: No project file specified.");
-        ShellExecuteA(NULL, "open", "ProjectManager.exe", NULL, NULL, SW_SHOWNORMAL);
-        exit(1);
-    }
-    AddToLog(&EC, "Recieved project file");
-
-    SetProjectPaths(&EC, argv[1]);
-
-    GraphContext graph = InitGraphContext();
-
-    if (LoadGraphFromFile(EC.CGFilePath, &graph))
-    {
-        AddToLog(&EC, "Loaded CoreGraph file");
-    }
-    else
-    {
-        AddToLog(&EC, "Couldn't find CoreGraph file");
-    }
-
-    AddToLog(&EC, "Welcome!");
-
-    RenderTexture2D view = LoadRenderTexture(GetScreenWidth() - 100, GetScreenHeight() - 100);
-
-    while (!WindowShouldClose())
-    {
-        EC.screenWidth = GetScreenWidth();
-        EC.screenHeight = GetScreenHeight();
-        EC.bottomBarHeight = EC.screenHeight * 0.25;
-        EC.mousePos = GetMousePosition();
-
-        BeginDrawing();
-        ClearBackground((Color){40, 42, 54, 255});
-
-        if (CheckAllCollisions(&EC, &graph) || EC.delayFrames)
+        char createdNode[MAX_TYPE_LENGTH];
+        strcpy(createdNode, DrawNodeMenu(EC));
+        if (strcmp(createdNode, "NULL") != 0)
         {
-            DrawFullTexture(&EC, &graph, view);
-            !EC.delayFrames;
+            CreateNode(graph, StringToNodeType(createdNode), EC->rightClickPos);
         }
-
-        DrawTextureRec(view.texture, (Rectangle){0, 0, view.texture.width, -view.texture.height}, (Vector2){0, 0}, WHITE);
-
-        if (EC.menuOpen)
-        {
-            char createdNode[MAX_TYPE_LENGTH];
-            strcpy(createdNode, DrawNodeMenu(&EC));
-            if (strcmp(createdNode, "NULL") != 0)
-            {
-                CreateNode(&graph, StringToNodeType(createdNode), EC.rightClickPos);
-            }
-        }
-
-        EndDrawing();
     }
-
-    CloseWindow();
-
-    FreeEditorContext(&EC);
-
-    FreeGraphContext(&graph);
-
-    UnloadRenderTexture(view);
-
-    UnloadFont(EC.font);
-
-    return 0;
 }

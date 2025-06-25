@@ -47,7 +47,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_EX, 5, 5, 240, 200, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}}
 };
 
-int getNodeInfoByType(NodeType type, char *info){
+static inline int getNodeInfoByType(NodeType type, char *info){
     for(int i = 0; i < typesCount; i++){
         if(type == NodeInfoByType[i].type){
             if(strcmp(info, "inputCount") == 0){
@@ -68,7 +68,7 @@ int getNodeInfoByType(NodeType type, char *info){
     return -1;
 }
 
-PinType *getInputsByType(NodeType type) {
+static inline PinType *getInputsByType(NodeType type) {
     if (!NodeInfoByType) return NULL;
 
     for (int i = 0; i < typesCount; i++) {
@@ -78,7 +78,7 @@ PinType *getInputsByType(NodeType type) {
     }
     return NULL;
 }
-PinType *getOutputsByType(NodeType type) {
+static inline PinType *getOutputsByType(NodeType type) {
     if (!NodeInfoByType) return NULL;
 
     for (int i = 0; i < typesCount; i++) {
@@ -89,7 +89,7 @@ PinType *getOutputsByType(NodeType type) {
     return NULL;
 }
 
-const char* NodeTypeToString(NodeType type) {
+static inline const char* NodeTypeToString(NodeType type) {
     switch (type) {
         case NODE_UNKNOWN: return "unknown";
         case NODE_NUM:     return "num";
@@ -104,7 +104,7 @@ const char* NodeTypeToString(NodeType type) {
     }
 }
 
-NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
+static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
 {
     if (strcmp(strType, "num") == 0)
         return NODE_NUM;

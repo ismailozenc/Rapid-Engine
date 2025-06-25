@@ -4,14 +4,19 @@
 #include <stdlib.h>
 #include <time.h>
 #include "shell_execute.h"
+#include "CGEditor.h"
 
 double lastClickTime = 0;
 const double doubleClickThreshold = 0.5;
 
+char openedFileName[32] = "Game";
+bool isEditorOpened = false;
+
 char *PrepareProjectPath(int argc, char *argv[])
 {
     char *projectPath = malloc(260);
-    if (!projectPath) return NULL;
+    if (!projectPath)
+        return NULL;
 
     getcwd(projectPath, 260);
 
@@ -46,7 +51,7 @@ void RefreshBottomBar(FilePathList *files, char *projectPath)
     *files = LoadDirectoryFilesEx(projectPath, NULL, false);
 }
 
-void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath, Font font)
+void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath, Font font, EditorContext *EC)
 {
 
     int xOffset = 50;
@@ -138,8 +143,9 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
                     char *buff = malloc(sizeof(fileName));
                     strcpy(buff, fileName);
                     buff[strlen(fileName) - 3] = '\0';
-                    ShellExecuteA(NULL, "open", "Editor.exe", buff, NULL, SW_SHOWNORMAL);
+                    strcpy(openedFileName, buff);
                     free(buff);
+                    isEditorOpened = true;
                 }
                 else if (GetFileType(fileName) != 0)
                 {
@@ -203,13 +209,12 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
     }
 }
 
-void BuildViewTexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D view, Font font)
+void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D UI, Font font, EditorContext *EC)
 {
-    BeginTextureMode(view);
-    ClearBackground(BLACK);
+    BeginTextureMode(UI);
 
-    Color BottomBarColor = {38, 38, 38, 150};
-    Color LeftSideBarColor = {70, 70, 70, 150};
+    Color BottomBarColor = {28, 28, 28, 255};
+    Color LeftSideBarColor = {50, 50, 50, 255};
 
     if (screenWidth > screenHeight)
     {
@@ -220,7 +225,7 @@ void BuildViewTexture(int screenWidth, int screenHeight, int sideBarWidth, int b
     DrawRectangle(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight, BottomBarColor);
     DrawLineEx((Vector2){0, screenHeight - bottomBarHeight}, (Vector2){screenWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
-    LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, font);
+    LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, font, EC);
 
     EndTextureMode();
 }
@@ -286,11 +291,15 @@ int main(int argc, char *argv[])
     FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1600, 1000, "GameEngine");
+    InitWindow(1600, 1000, "RapidEngine");
     MaximizeWindow();
     SetTargetFPS(240);
 
-    RenderTexture2D view = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+    RenderTexture2D viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    int mode = 1;
+    bool editorInitialized = false;
 
     bool isFirstFrame = true;
     int refreshDelayFrames = 0;
@@ -298,6 +307,10 @@ int main(int argc, char *argv[])
     int prevScreenHeight = GetScreenHeight();
 
     Font font = LoadFontEx("fonts/arialbd.ttf", 64, NULL, 0);
+
+    EditorContext EC = InitEditorContext();
+    GraphContext graph = InitGraphContext();
+    ;
 
     while (!WindowShouldClose())
     {
@@ -311,19 +324,19 @@ int main(int argc, char *argv[])
 
         if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
         {
-            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view, font);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
             refreshDelayFrames = 1;
             prevScreenWidth = screenWidth;
             prevScreenHeight = screenHeight;
         }
         else if (refreshDelayFrames > 0)
         {
-            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view, font);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
             refreshDelayFrames--;
         }
         else if (isFirstFrame)
         {
-            BuildViewTexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, view, font);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
             isFirstFrame = false;
         }
 
@@ -332,16 +345,51 @@ int main(int argc, char *argv[])
 
         DrawFPS(10, 10);
 
-        DrawTextureRec(view.texture, (Rectangle){0, 0, view.texture.width, -view.texture.height}, (Vector2){0, 0}, WHITE);
+        DrawTextureRec(viewport.texture, (Rectangle){0, 0, UI.texture.width, -UI.texture.height}, (Vector2){0, 0}, WHITE);
+
+        DrawTextureRec(UI.texture, (Rectangle){0, 0, UI.texture.width, -UI.texture.height}, (Vector2){0, 0}, WHITE);
+
+        // DrawTextureRec(viewport.texture, (Rectangle){sideBarWidth, 0, screenWidth - sideBarWidth, -(screenHeight - bottomBarHeight)}, (Vector2){sideBarWidth, 0}, WHITE);
+
+        if (!isEditorOpened)
+        {
+            BeginTextureMode(viewport);
+            // ClearBackground(BLACK);
+            EndTextureMode();
+        }
+        else if (isEditorOpened)
+        {
+            if (strcmp(openedFileName, EC.fileName) != 0)
+            {
+                FreeEditorContext(&EC);
+                FreeGraphContext(&graph);
+
+                EC = InitEditorContext();
+                graph = InitGraphContext();
+
+                SetProjectPaths(&EC, openedFileName);
+
+                LoadGraphFromFile(EC.CGFilePath, &graph);
+
+                strcpy(EC.fileName, openedFileName);
+            }
+
+            handleEditor(&EC, &graph, &viewport);
+        }
 
         EndDrawing();
     }
 
     UnloadDirectoryFiles(files);
 
-    UnloadRenderTexture(view);
+    UnloadRenderTexture(UI);
+    UnloadRenderTexture(viewport);
 
     UnloadFont(font);
+    UnloadFont(EC.font);
+
+    FreeEditorContext(&EC);
+    FreeGraphContext(&graph);
 
     return 0;
 }

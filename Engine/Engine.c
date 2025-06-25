@@ -5,6 +5,7 @@
 #include <time.h>
 #include "shell_execute.h"
 #include "CGEditor.h"
+#include "ProjectManager.h"
 
 double lastClickTime = 0;
 const double doubleClickThreshold = 0.5;
@@ -12,7 +13,7 @@ const double doubleClickThreshold = 0.5;
 char openedFileName[32] = "Game";
 bool isEditorOpened = false;
 
-char *PrepareProjectPath(int argc, char *argv[])
+char *PrepareProjectPath(char *fileName)
 {
     char *projectPath = malloc(260);
     if (!projectPath)
@@ -23,7 +24,7 @@ char *PrepareProjectPath(int argc, char *argv[])
     projectPath[strlen(projectPath) - 7] = '\0';
 
     strcat(projectPath, "\\Projects\\");
-    strcat(projectPath, argv[1]);
+    strcat(projectPath, fileName);
 
     return projectPath;
 }
@@ -280,29 +281,23 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
-    {
-        ShellExecuteA(NULL, "open", "ProjectManager.exe", NULL, NULL, SW_SHOWNORMAL);
-        return 1;
-    }
 
-    char *projectPath = PrepareProjectPath(argc, argv);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
+    InitWindow(1600, 1000, "RapidEngine");
+    SetTargetFPS(240);
+
+    char *projectPath = PrepareProjectPath(handleProjectManager());
+    MaximizeWindow();
 
     FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);
-
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1600, 1000, "RapidEngine");
-    MaximizeWindow();
-    SetTargetFPS(240);
 
     RenderTexture2D UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
     RenderTexture2D viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     int mode = 1;
     bool editorInitialized = false;
-
-    bool isFirstFrame = true;
-    int refreshDelayFrames = 0;
+    
+    bool delayFrames = true;
     int prevScreenWidth = GetScreenWidth();
     int prevScreenHeight = GetScreenHeight();
 
@@ -310,7 +305,6 @@ int main(int argc, char *argv[])
 
     EditorContext EC = InitEditorContext();
     GraphContext graph = InitGraphContext();
-    ;
 
     while (!WindowShouldClose())
     {
@@ -325,25 +319,18 @@ int main(int argc, char *argv[])
         if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
         {
             BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
-            refreshDelayFrames = 1;
+            delayFrames = true;
             prevScreenWidth = screenWidth;
             prevScreenHeight = screenHeight;
         }
-        else if (refreshDelayFrames > 0)
+        else if (delayFrames)
         {
             BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
-            refreshDelayFrames--;
-        }
-        else if (isFirstFrame)
-        {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
-            isFirstFrame = false;
+            delayFrames = false;
         }
 
         BeginDrawing();
         ClearBackground(BLACK);
-
-        DrawFPS(10, 10);
 
         DrawTextureRec(viewport.texture, (Rectangle){0, 0, UI.texture.width, -UI.texture.height}, (Vector2){0, 0}, WHITE);
 
@@ -379,6 +366,8 @@ int main(int argc, char *argv[])
 
         EndDrawing();
     }
+
+    free(projectPath);
 
     UnloadDirectoryFiles(files);
 

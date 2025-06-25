@@ -30,6 +30,7 @@ EditorContext InitEditorContext()
 
     EC.draggingNodeIndex = -1;
     EC.dragOffset = (Vector2){0};
+    EC.isDraggingScreen = false;
 
     EC.delayFrames = true;
 
@@ -172,7 +173,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         }
         else
         {
-            //AddToLog(EC, "Error drawing connection");
+            // AddToLog(EC, "Error drawing connection");
         }
     }
 
@@ -186,6 +187,9 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             hoveredNodeIndex = i;
+            if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
+                DeleteNode(graph, graph->nodes[i].id); //deletion problem
+            }
         }
     }
 
@@ -252,6 +256,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
     {
         DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, "width") + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, "height") + 2}, 0.2f, 8, (Color){255, 255, 255, 30});
+        EC->delayFrames = true;
     }
 
     if (EC->lastClickedPin.id != -1)
@@ -395,6 +400,7 @@ void HandleDragging(EditorContext *EC, GraphContext *graph)
         EC->isDraggingScreen = true;
         EC->prevMousePos = EC->mousePos;
         EC->mousePosAtStartOfDrag = EC->mousePos;
+        return;
     }
 
     if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex != -1)
@@ -412,8 +418,7 @@ void HandleDragging(EditorContext *EC, GraphContext *graph)
         }
         EC->prevMousePos = EC->mousePos;
     }
-
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
+    else if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
     {
         SetTargetFPS(60);
         EC->draggingNodeIndex = -1;
@@ -461,11 +466,21 @@ void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewp
     EC->bottomBarHeight = EC->screenHeight * 0.25;
     EC->mousePos = GetMousePosition();
 
-    if (CheckAllCollisions(EC, graph) || EC->delayFrames)
+    if (CheckAllCollisions(EC, graph))
     {
         DrawFullTexture(EC, graph, *viewport);
-        !EC->delayFrames;
+        EC->delayFrames = true;
     }
+    else if (EC->delayFrames == true)
+    {
+        DrawFullTexture(EC, graph, *viewport);
+        EC->delayFrames = false;
+    }
+
+    char str[30];
+    sprintf(str, "%d", EC->isDraggingScreen);
+    DrawText(str, 10, 10, 50, WHITE);
+    DrawFPS(50, 50);
 
     if (EC->menuOpen)
     {

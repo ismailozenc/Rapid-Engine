@@ -1,17 +1,11 @@
-#include "raylib.h"
-#include <direct.h>
+#include "ProjectManager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <direct.h>
+
+#include "raylib.h"
 #include "shell_execute.h"
-
-#define MAX_PROJECT_NAME 99
-
-typedef struct ProjectOptions
-{
-    char projectName[MAX_PROJECT_NAME];
-    bool is3D;
-} ProjectOptions;
 
 void DrawMovingDotAlongRectangle()
 {
@@ -541,26 +535,16 @@ int WindowCreateProject(char *projectFileName, Font font)
     return 2;
 }
 
-void EndProjectManager(char *projectFileName)
+char *handleProjectManager()
 {
-    EndDrawing;
-    CloseWindow();
-    ShellExecuteA(NULL, "open", "Engine.exe", projectFileName, NULL, SW_SHOWNORMAL);
-}
-
-int main()
-{
-    SetConfigFlags(FLAG_WINDOW_UNDECORATED);
-    InitWindow(1600, 1000, "Project manager");
-    SetTargetFPS(100);
-
     Font font = LoadFontEx("fonts/arialbd.ttf", 256, NULL, 0);
     Font fontRE = LoadFontEx("fonts/sonsie.ttf", 256, NULL, 0);
 
     int windowMode = 0;
-    char *projectFileName;
+    char *projectFileName = malloc(MAX_PROJECT_NAME * sizeof(char));
+    projectFileName[0] = '\0';
 
-    while (!WindowShouldClose())
+    while (1)
     {
         Vector2 mousePoint = GetMousePosition();
 
@@ -580,15 +564,12 @@ int main()
 
         else if (windowMode == 3)
         {
-            EndProjectManager(projectFileName);
-            return 0;
+            UnloadFont(font);
+            UnloadFont(fontRE);
+
+            return projectFileName;
         }
 
         EndDrawing();
     }
-
-    UnloadFont(font);
-    UnloadFont(fontRE);
-
-    return 0;
 }

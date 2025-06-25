@@ -441,8 +441,6 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
     DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){20, 20}, 40, 4, Fade(WHITE, 0.2f));
     DrawTextEx(GetFontDefault(), "TM", (Vector2){230, 10}, 15, 1, Fade(WHITE, 0.2f));
 
-    DrawFPS(10, 10);
-
     EndTextureMode();
 
     return 0;
@@ -477,11 +475,6 @@ void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewp
         DrawFullTexture(EC, graph, *viewport);
         EC->delayFrames = false;
     }
-
-    char str[30];
-    sprintf(str, "%d", EC->isDraggingScreen);
-    DrawText(str, 10, 10, 50, WHITE);
-    DrawFPS(50, 50);
 
     if (EC->menuOpen)
     {

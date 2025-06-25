@@ -351,6 +351,20 @@ int CreateProject(ProjectOptions PO)
 
     fclose(file);
 
+    sprintf(mainPath, "%s\\%s.cg", projectPath, PO.projectName);
+
+    file = fopen(mainPath, "w");
+
+    if (file == NULL)
+    {
+        printf("Error creating file!\n");
+        return 1;
+    }
+
+    printf("File created successfully: %s\n", mainPath);
+
+    fclose(file);
+
     char foldersPath[512];
 
     sprintf(foldersPath, "%s\\Assets", projectPath);

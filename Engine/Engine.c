@@ -13,6 +13,42 @@ const double doubleClickThreshold = 0.5;
 char openedFileName[32] = "Game";
 bool isEditorOpened = false;
 
+void DrawTopBar()
+{
+    DrawRectangleLinesEx((Rectangle){1, 1, GetScreenWidth() - 1, GetScreenHeight() - 1}, 4.0f, WHITE);
+
+    float half = 10;
+
+    Vector2 p1 = {GetScreenWidth() - 25 - half, 25 - half};
+    Vector2 p2 = {GetScreenWidth() - 25 + half, 25 + half};
+    Vector2 p3 = {GetScreenWidth() - 25 - half, 25 + half};
+    Vector2 p4 = {GetScreenWidth() - 25 + half, 25 - half};
+
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){GetScreenWidth() - 50, 0, 50, 50}))
+    {
+        DrawRectangle(GetScreenWidth() - 50, 0, 50, 50, RED);
+        DrawFPS(10, 10);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            CloseWindow();
+        }
+    }
+
+    DrawLineEx(p1, p2, 2, WHITE);
+    DrawLineEx(p3, p4, 2, WHITE);
+
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){GetScreenWidth() - 100, 0, 50, 50}))
+    {
+        DrawRectangle(GetScreenWidth() - 100, 0, 50, 50, GRAY);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            MinimizeWindow();
+        }
+    }
+
+    DrawLineEx((Vector2){GetScreenWidth() - 85, 25}, (Vector2){GetScreenWidth() - 65, 25}, 2, WHITE);
+}
+
 char *PrepareProjectPath(char *fileName)
 {
     char *projectPath = malloc(260);
@@ -210,9 +246,10 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
     }
 }
 
-void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D UI, Font font, EditorContext *EC)
+void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D *UI, Font font, EditorContext *EC)
 {
-    BeginTextureMode(UI);
+    BeginTextureMode(*UI);
+    ClearBackground((Color){255, 255, 255, 0});
 
     Color BottomBarColor = {28, 28, 28, 255};
     Color LeftSideBarColor = {50, 50, 50, 255};
@@ -227,6 +264,8 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     DrawLineEx((Vector2){0, screenHeight - bottomBarHeight}, (Vector2){screenWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
     LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, font, EC);
+
+    DrawTopBar();
 
     EndTextureMode();
 }
@@ -258,6 +297,11 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
         return 1;
     }
 
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){GetScreenWidth() - 100, 0, 100, 50}))
+    {
+        return 1;
+    }
+
     for (int i = 0; i < fileCount; i++)
     {
         Rectangle fileRect = {xOffset, yOffset, 150, 60};
@@ -279,14 +323,14 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(240);
 
-    char *projectPath = PrepareProjectPath(/*handleProjectManager()*/"Tetris"); //temporary hardcode
+    char *projectPath = PrepareProjectPath(/*handleProjectManager()*/ "Tetris"); // temporary hardcode
     MaximizeWindow();
 
     FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);
@@ -296,7 +340,7 @@ int main(int argc, char *argv[])
     RenderTexture2D viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     int mode = 1;
     bool editorInitialized = false;
-    
+
     bool delayFrames = true;
     int prevScreenWidth = GetScreenWidth();
     int prevScreenHeight = GetScreenHeight();
@@ -318,30 +362,28 @@ int main(int argc, char *argv[])
 
         if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
         {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, font, &EC);
             delayFrames = true;
             prevScreenWidth = screenWidth;
             prevScreenHeight = screenHeight;
         }
         else if (delayFrames)
         {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, UI, font, &EC);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, font, &EC);
             delayFrames = false;
         }
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        DrawTextureRec(viewport.texture, (Rectangle){0, 0, UI.texture.width, -UI.texture.height}, (Vector2){0, 0}, WHITE);
+        DrawTextureRec(viewport.texture, (Rectangle){0, 0, viewport.texture.width, -viewport.texture.height}, (Vector2){0, 0}, WHITE);
 
         DrawTextureRec(UI.texture, (Rectangle){0, 0, UI.texture.width, -UI.texture.height}, (Vector2){0, 0}, WHITE);
-
-        // DrawTextureRec(viewport.texture, (Rectangle){sideBarWidth, 0, screenWidth - sideBarWidth, -(screenHeight - bottomBarHeight)}, (Vector2){sideBarWidth, 0}, WHITE);
 
         if (!isEditorOpened)
         {
             BeginTextureMode(viewport);
-            // ClearBackground(BLACK);
+            ClearBackground(BLACK);
             EndTextureMode();
         }
         else if (isEditorOpened)
@@ -359,6 +401,8 @@ int main(int argc, char *argv[])
                 LoadGraphFromFile(EC.CGFilePath, &graph);
 
                 strcpy(EC.fileName, openedFileName);
+
+                DrawFullTexture(&EC, &graph, viewport);
             }
 
             handleEditor(&EC, &graph, &viewport);

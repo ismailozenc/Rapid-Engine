@@ -44,7 +44,7 @@ typedef struct InfoByType{
 static InfoByType NodeInfoByType[] = {
     {NODE_NUM, 2, 1, 120, 100, {PIN_FLOW, PIN_INT}, {PIN_FLOW}},
     {NODE_STRING, 2, 1, 120, 100, {PIN_FLOW, PIN_INT}, {PIN_FLOW}},
-    {NODE_EX, 5, 5, 240, 200, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}}
+    {NODE_EX, 5, 5, 240, 200, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}}
 };
 
 int getNodeInfoByType(NodeType type, char *info){

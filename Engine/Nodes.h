@@ -49,7 +49,6 @@ typedef struct Pin
     PinType type;
     int nodeID;
     int posInNode; //
-    bool isFlow;
     bool isInput;
     Vector2 position;
 } Pin;

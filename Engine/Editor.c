@@ -208,6 +208,17 @@ void DrawBottomBar(EditorContext *EC)
 
 bool CheckBottomBarCollisions(EditorContext *EC, GraphContext *graph)
 {
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
+    {
+        if (SaveGraphToFile(EC->CGFilePath, graph) == 0)
+        {
+            AddToLog(EC, "Saved successfully!");
+        }
+        else
+        {
+            AddToLog(EC, "ERROR SAVING CHANGES!");
+        }
+    }
 
     // Save button collisions
     if (CheckCollisionPointRec(EC->mousePos, (Rectangle){85, EC->screenHeight - EC->bottomBarHeight + 25, 60, 30}))
@@ -618,10 +629,12 @@ int main(int argc, char *argv[])
 
     GraphContext graph = InitGraphContext();
 
-    if(LoadGraphFromFile(EC.CGFilePath, &graph)){
+    if (LoadGraphFromFile(EC.CGFilePath, &graph))
+    {
         AddToLog(&EC, "Loaded CoreGraph file");
     }
-    else{
+    else
+    {
         AddToLog(&EC, "Couldn't find CoreGraph file");
     }
 
@@ -657,7 +670,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        DrawFPS(10, 10);//
+        DrawFPS(10, 10); //
 
         EndDrawing();
     }

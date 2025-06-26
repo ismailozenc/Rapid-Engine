@@ -13,6 +13,13 @@ const double doubleClickThreshold = 0.5;
 char openedFileName[32] = "Game";
 bool isEditorOpened = false;
 
+void EmergencyExit(EditorContext *EC)
+{
+    // write logs to file
+
+    exit(1);
+}
+
 void AddToLog(EditorContext *EC, const char *newLine)
 {
     if (EC->logCount >= EC->logCapacity)
@@ -280,14 +287,18 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     ClearBackground((Color){255, 255, 255, 0});
 
     Color BottomBarColor = {28, 28, 28, 255};
-    Color LeftSideBarColor = {50, 50, 50, 255};
+    Color VariablesBarColor = {50, 50, 50, 255};
+    Color LogColor = {15, 15, 15, 255};
 
     if (screenWidth > screenHeight && screenWidth > 1000)
     {
-        DrawRectangle(0, 0, sideBarWidth, screenHeight - bottomBarHeight, LeftSideBarColor);
+        int sideBarMiddleY = (screenHeight - bottomBarHeight) / 2;
+
+        DrawRectangle(0, 0, sideBarWidth, sideBarMiddleY, VariablesBarColor);
+        DrawRectangle(0, sideBarMiddleY, sideBarWidth, screenHeight - bottomBarHeight, LogColor);
         DrawLineEx((Vector2){sideBarWidth, 0}, (Vector2){sideBarWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
-        DrawLineEx((Vector2){0, (screenHeight - bottomBarHeight) / 2}, (Vector2){sideBarWidth, (screenHeight - bottomBarHeight) / 2}, 2, WHITE);
+        DrawLineEx((Vector2){0, sideBarMiddleY}, (Vector2){sideBarWidth, sideBarMiddleY}, 2, WHITE);
 
         int y = screenHeight - bottomBarHeight - 25;
 
@@ -364,11 +375,28 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
 int main()
 {
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE/* | FLAG_WINDOW_UNDECORATED*/);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(240);
 
+    EditorContext EC = InitEditorContext();
+    GraphContext graph = InitGraphContext();
+
+    AddToLog(&EC, "Initialized window");
+
+    if (EC.font.texture.id == 0)
+    {
+        AddToLog(&EC, "Couldn't load font");
+    }
+
     char *projectPath = PrepareProjectPath(/*handleProjectManager()*/ "Tetris"); // temporary hardcode
+
+    if (projectPath == NULL || projectPath[0] == '\0')
+    {
+        AddToLog(&EC, "Couldn't find file");
+        EmergencyExit(&EC);
+    }
+
     MaximizeWindow();
 
     FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);
@@ -376,21 +404,25 @@ int main()
     RenderTexture2D UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
     RenderTexture2D viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+    if (UI.id == 0 || viewport.id == 0)
+    {
+        AddToLog(&EC, "Couldn't load textures");
+        EmergencyExit(&EC);
+    }
+
+    AddToLog(&EC, "All resources loaded");
+
     int mode = 1;
     bool editorInitialized = false;
 
     int prevScreenWidth = GetScreenWidth();
     int prevScreenHeight = GetScreenHeight();
 
-    Font font = LoadFontEx("fonts/arialbd.ttf", 64, NULL, 0);
-
-    EditorContext EC = InitEditorContext();
-    GraphContext graph = InitGraphContext();
+    AddToLog(&EC, "Welcome!");
 
     while (!WindowShouldClose())
     {
-        AddToLog(&EC, "Aaaaa");
-
         int screenWidth = GetScreenWidth();
         int screenHeight = GetScreenHeight();
 
@@ -401,14 +433,14 @@ int main()
 
         if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
         {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, font, &EC);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, EC.font, &EC);
             EC.engineDelayFrames = true;
             prevScreenWidth = screenWidth;
             prevScreenHeight = screenHeight;
         }
         else if (EC.engineDelayFrames)
         {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, font, &EC);
+            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, EC.font, &EC);
             EC.engineDelayFrames = false;
         }
 
@@ -457,7 +489,6 @@ int main()
     UnloadRenderTexture(UI);
     UnloadRenderTexture(viewport);
 
-    UnloadFont(font);
     UnloadFont(EC.font);
 
     FreeEditorContext(&EC);

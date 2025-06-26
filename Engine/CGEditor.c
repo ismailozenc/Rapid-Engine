@@ -174,7 +174,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         }
         else
         {
-            // AddToLog(EC, "Error drawing connection");
+            //AddToLog(EC, "Error drawing connection");
         }
     }
 

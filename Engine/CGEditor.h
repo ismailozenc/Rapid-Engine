@@ -29,13 +29,13 @@ typedef struct
 
     int screenWidth;
     int screenHeight;
-    int bottomBarHeight;
 
     char **logMessages;
     int logCount;
     int logCapacity;
 
     bool delayFrames;
+    bool engineDelayFrames;
 
     Vector2 mousePos;
     Vector2 prevMousePos;

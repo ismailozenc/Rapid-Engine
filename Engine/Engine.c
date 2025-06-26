@@ -13,6 +13,35 @@ const double doubleClickThreshold = 0.5;
 char openedFileName[32] = "Game";
 bool isEditorOpened = false;
 
+void AddToLog(EditorContext *EC, const char *newLine)
+{
+    if (EC->logCount >= EC->logCapacity)
+    {
+        EC->logCapacity += 100;
+        EC->logMessages = realloc(EC->logMessages, sizeof(char *) * EC->logCapacity);
+    }
+
+    time_t timestamp = time(NULL);
+    struct tm *tm_info = localtime(&timestamp);
+
+    int hour = tm_info->tm_hour;
+    int minute = tm_info->tm_min;
+    int second = tm_info->tm_sec;
+
+    size_t lineLength = strlen(newLine);
+    char *message = malloc(16 + lineLength + 6);
+
+    snprintf(message, 16 + lineLength + 6, "%02d:%02d:%02d %s", hour, minute, second, newLine);
+
+    EC->logMessages[EC->logCount] = malloc(strlen(message) + 1);
+    strcpy(EC->logMessages[EC->logCount], message);
+
+    EC->logCount++;
+    free(message);
+
+    EC->engineDelayFrames = true;
+}
+
 void DrawTopBar()
 {
     DrawRectangleLinesEx((Rectangle){1, 1, GetScreenWidth() - 1, GetScreenHeight() - 1}, 4.0f, WHITE);
@@ -27,7 +56,6 @@ void DrawTopBar()
     if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){GetScreenWidth() - 50, 0, 50, 50}))
     {
         DrawRectangle(GetScreenWidth() - 50, 0, 50, 50, RED);
-        DrawFPS(10, 10);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             CloseWindow();
@@ -254,10 +282,20 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     Color BottomBarColor = {28, 28, 28, 255};
     Color LeftSideBarColor = {50, 50, 50, 255};
 
-    if (screenWidth > screenHeight)
+    if (screenWidth > screenHeight && screenWidth > 1000)
     {
         DrawRectangle(0, 0, sideBarWidth, screenHeight - bottomBarHeight, LeftSideBarColor);
         DrawLineEx((Vector2){sideBarWidth, 0}, (Vector2){sideBarWidth, screenHeight - bottomBarHeight}, 2, WHITE);
+
+        DrawLineEx((Vector2){0, (screenHeight - bottomBarHeight) / 2}, (Vector2){sideBarWidth, (screenHeight - bottomBarHeight) / 2}, 2, WHITE);
+
+        int y = screenHeight - bottomBarHeight - 25;
+
+        for (int i = EC->logCount - 1; i >= 0 && y > (screenHeight - bottomBarHeight) / 2; i--)
+        {
+            DrawTextEx(EC->font, EC->logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
+            y -= 25;
+        }
     }
 
     DrawRectangle(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight, BottomBarColor);
@@ -326,7 +364,7 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
 int main()
 {
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE/* | FLAG_WINDOW_UNDECORATED*/);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(240);
 
@@ -341,7 +379,6 @@ int main()
     int mode = 1;
     bool editorInitialized = false;
 
-    bool delayFrames = true;
     int prevScreenWidth = GetScreenWidth();
     int prevScreenHeight = GetScreenHeight();
 
@@ -352,6 +389,8 @@ int main()
 
     while (!WindowShouldClose())
     {
+        AddToLog(&EC, "Aaaaa");
+
         int screenWidth = GetScreenWidth();
         int screenHeight = GetScreenHeight();
 
@@ -363,14 +402,14 @@ int main()
         if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
         {
             BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, font, &EC);
-            delayFrames = true;
+            EC.engineDelayFrames = true;
             prevScreenWidth = screenWidth;
             prevScreenHeight = screenHeight;
         }
-        else if (delayFrames)
+        else if (EC.engineDelayFrames)
         {
             BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, font, &EC);
-            delayFrames = false;
+            EC.engineDelayFrames = false;
         }
 
         BeginDrawing();

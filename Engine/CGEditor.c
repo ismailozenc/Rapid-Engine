@@ -33,6 +33,7 @@ EditorContext InitEditorContext()
     EC.isDraggingScreen = false;
 
     EC.delayFrames = true;
+    EC.engineDelayFrames = true;
 
     EC.menuOpen = false;
     EC.submenuOpen = false;
@@ -462,7 +463,6 @@ void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewp
 {
     EC->screenWidth = GetScreenWidth();
     EC->screenHeight = GetScreenHeight();
-    EC->bottomBarHeight = EC->screenHeight * 0.25;
     EC->mousePos = GetMousePosition();
 
     if (CheckAllCollisions(EC, graph))

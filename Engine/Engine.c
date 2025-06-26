@@ -37,7 +37,8 @@ Logs InitLogs()
 
 typedef struct EngineContext
 {
-    int screenWidth, screenHeight, bottomBarHeight, sideBarWidth;
+    int screenWidth, screenHeight, bottomBarHeight, sideBarWidth, sideBarMiddleY;
+    Vector2 mousePos;
     RenderTexture2D viewport, UI;
     char *projectPath;
     Font font;
@@ -51,6 +52,8 @@ EngineContext InitEngineContext()
 
     engine.screenWidth = GetScreenWidth();
     engine.screenHeight = GetScreenHeight();
+
+    engine.mousePos = GetMousePosition();
 
     engine.viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
@@ -364,7 +367,7 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
     }
 }
 
-void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, EngineContext *engine)
+void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, EngineContext *engine, GraphContext *graph, char *CGFilePath)
 {
     BeginTextureMode(engine->UI);
     ClearBackground((Color){255, 255, 255, 0});
@@ -375,19 +378,47 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
 
     if (screenWidth > screenHeight && screenWidth > 1000)
     {
-        int sideBarMiddleY = (screenHeight - bottomBarHeight) / 2;
-
-        DrawRectangle(0, 0, sideBarWidth, sideBarMiddleY, VariablesBarColor);
-        DrawRectangle(0, sideBarMiddleY, sideBarWidth, screenHeight - bottomBarHeight, LogColor);
+        DrawRectangle(0, 0, sideBarWidth, engine->sideBarMiddleY, VariablesBarColor);
+        DrawRectangle(0, engine->sideBarMiddleY, sideBarWidth, screenHeight - bottomBarHeight, LogColor);
         DrawLineEx((Vector2){sideBarWidth, 0}, (Vector2){sideBarWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
-        DrawLineEx((Vector2){0, sideBarMiddleY}, (Vector2){sideBarWidth, sideBarMiddleY}, 2, WHITE);
+        DrawLineEx((Vector2){0, engine->sideBarMiddleY}, (Vector2){sideBarWidth, engine->sideBarMiddleY}, 2, WHITE);
 
-        int y = screenHeight - bottomBarHeight - 25;
+        DrawRectangleRounded((Rectangle){sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+        DrawTextEx(engine->font, "Save", (Vector2){sideBarWidth - 135, engine->sideBarMiddleY + 20}, 20, 2, WHITE);
+        if (CheckCollisionPointRec(engine->mousePos, (Rectangle){sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}))
+        {
+            DrawRectangleRounded((Rectangle){sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                if (SaveGraphToFile(CGFilePath, graph) == 0)
+                {
+                    AddToLog(engine, "Saved successfully!", 0);
+                }
+                else
+                {
+                    AddToLog(engine, "ERROR SAVING CHANGES!", 1);
+                }
+            }
+        }
+
+        DrawRectangleRounded((Rectangle){sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+        DrawTextEx(engine->font, "Run", (Vector2){sideBarWidth - 60, engine->sideBarMiddleY + 20}, 20, 2, WHITE);
+        if (CheckCollisionPointRec(engine->mousePos, (Rectangle){sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}))
+        {
+            DrawRectangleRounded((Rectangle){sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                //Interpret CG
+                AddToLog(engine, "Interpreter not ready", 2);
+            }
+        }
+
+        int y = screenHeight - bottomBarHeight - 30;
 
         Color messageColor;
 
-        for (int i = engine->logs.count - 1; i >= 0 && y > (screenHeight - bottomBarHeight) / 2; i--)
+        for (int i = engine->logs.count - 1; i >= 0 && y > engine->sideBarMiddleY + 50; i--)
         {
             messageColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW : RED;
 
@@ -406,17 +437,29 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     EndTextureMode();
 }
 
-int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath)
+int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph)
 {
     int xOffset = 50;
-    int yOffset = screenHeight - bottomBarHeight + 70;
+    int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
     Vector2 mousePos = GetMousePosition();
     Rectangle tooltipRect = {0};
     char *currentPath = projectPath;
 
-    Rectangle backButton = {30, screenHeight - bottomBarHeight + 10, 65, 30};
+    Rectangle backButton = {30, engine->screenHeight - engine->bottomBarHeight + 10, 65, 30};
 
-    Rectangle refreshButton = {110, screenHeight - bottomBarHeight + 10, 100, 30};
+    Rectangle refreshButton = {110, engine->screenHeight - engine->bottomBarHeight + 10, 100, 30};
+
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
+    {
+        if (SaveGraphToFile(CGFilePath, graph) == 0)
+        {
+            AddToLog(engine, "Saved successfully!", 0);
+        }
+        else
+        {
+            AddToLog(engine, "ERROR SAVING CHANGES!", 2);
+        }
+    }
 
     if (CheckCollisionPointRec(mousePos, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
@@ -438,6 +481,11 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
         return 1;
     }
 
+    if (CheckCollisionPointRec(mousePos, (Rectangle){engine->sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}) || CheckCollisionPointRec(mousePos, (Rectangle){engine->sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}))
+    {
+        return 1;
+    }
+
     for (int i = 0; i < fileCount; i++)
     {
         Rectangle fileRect = {xOffset, yOffset, 150, 60};
@@ -449,7 +497,7 @@ int CheckCollisions(int fileCount, int screenHeight, int screenWidth, int bottom
 
         xOffset += 250;
 
-        if (xOffset + 100 >= screenWidth)
+        if (xOffset + 100 >= engine->screenWidth)
         {
             xOffset = 50;
             yOffset += 120;
@@ -506,17 +554,20 @@ int main()
 
     while (!WindowShouldClose())
     {
+        engine.mousePos = GetMousePosition();
+
         engine.screenWidth = GetScreenWidth();
         engine.screenHeight = GetScreenHeight();
 
         engine.sideBarWidth = engine.screenWidth * 0.2;
         engine.bottomBarHeight = engine.screenHeight * 0.25;
+        engine.sideBarMiddleY = (engine.screenHeight - engine.bottomBarHeight) / 2;
 
-        int collisionResult = CheckCollisions(files.count, engine.screenHeight, engine.screenWidth, engine.bottomBarHeight, projectPath);
+        int collisionResult = CheckCollisions(&engine, files.count, projectPath, editor.CGFilePath, &graph);
 
         if (collisionResult == 1 || prevScreenWidth != engine.screenWidth || prevScreenHeight != engine.screenHeight)
         {
-            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &files, projectPath, &engine);
+            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &files, projectPath, &engine, &graph, editor.CGFilePath);
             engine.delayFrames = true;
             prevScreenWidth = engine.screenWidth;
             prevScreenHeight = engine.screenHeight;
@@ -524,7 +575,7 @@ int main()
         }
         else if (engine.delayFrames)
         {
-            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &files, projectPath, &engine);
+            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &files, projectPath, &engine, &graph, editor.CGFilePath);
             engine.delayFrames = false;
             SetTargetFPS(60);
         }
@@ -550,7 +601,8 @@ int main()
             }
 
             handleEditor(&editor, &graph, &engine.viewport);
-            if(editor.newLogMessage){
+            if (editor.newLogMessage)
+            {
                 AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
             }
         }

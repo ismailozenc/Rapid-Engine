@@ -13,40 +13,122 @@ const double doubleClickThreshold = 0.5;
 char openedFileName[32] = "Game";
 bool isEditorOpened = false;
 
-void EmergencyExit(EditorContext *EC)
+typedef struct LogEntry
 {
-    // write logs to file
+    char message[256];
+    int level; // 0 = Info, 1 = Warning, 2 = Error
+} LogEntry;
+
+typedef struct Logs
+{
+    LogEntry *entries;
+    int count;
+    int capacity;
+} Logs;
+
+Logs InitLogs()
+{
+    Logs logs;
+    logs.count = 0;
+    logs.capacity = 100;
+    logs.entries = malloc(sizeof(LogEntry) * logs.capacity);
+    return logs;
+}
+
+typedef struct EngineContext
+{
+    int screenWidth, screenHeight, bottomBarHeight, sideBarWidth;
+    RenderTexture2D viewport, UI;
+    char *projectPath;
+    Font font;
+    Logs logs;
+    bool delayFrames;
+} EngineContext;
+
+EngineContext InitEngineContext()
+{
+    EngineContext engine = {0};
+
+    engine.screenWidth = GetScreenWidth();
+    engine.screenHeight = GetScreenHeight();
+
+    engine.viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+    engine.logs = InitLogs();
+
+    engine.delayFrames = true;
+
+    engine.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+
+    return engine;
+}
+
+void FreeEngineContext(EngineContext *engine)
+{
+    if (engine->projectPath)
+    {
+        free(engine->projectPath);
+        engine->projectPath = NULL;
+    }
+
+    if (engine->logs.entries)
+    {
+        free(engine->logs.entries);
+        engine->logs.entries = NULL;
+    }
+
+    UnloadRenderTexture(engine->viewport);
+    UnloadRenderTexture(engine->UI);
+
+    // Do NOT unload engine->font here if font is shared globally or managed outside
+
+    engine->delayFrames = false;
+}
+
+void EmergencyExit(EngineContext *engine)
+{
+    FILE *logFile = fopen("engine_log.txt", "w");
+    if (logFile)
+    {
+        for (int i = 0; i < engine->logs.count; i++)
+        {
+            fprintf(logFile, "[%s] %s\n",
+                    engine->logs.entries[i].level == 0 ? "INFO" : engine->logs.entries[i].level == 1 ? "WARN"
+                                                                                                     : "ERROR",
+                    engine->logs.entries[i].message);
+        }
+        fclose(logFile);
+    }
 
     exit(1);
 }
 
-void AddToLog(EditorContext *EC, const char *newLine)
+void AddToLog(EngineContext *engine, const char *newLine, int level)
 {
-    if (EC->logCount >= EC->logCapacity)
+    if (engine->logs.count >= engine->logs.capacity)
     {
-        EC->logCapacity += 100;
-        EC->logMessages = realloc(EC->logMessages, sizeof(char *) * EC->logCapacity);
+        engine->logs.capacity += 100;
+        engine->logs.entries = realloc(engine->logs.entries, sizeof(LogEntry) * engine->logs.capacity);
+        if (!engine->logs.entries)
+        {
+            // handle out-of-memory error gracefully
+            exit(1);
+        }
     }
 
     time_t timestamp = time(NULL);
     struct tm *tm_info = localtime(&timestamp);
 
-    int hour = tm_info->tm_hour;
-    int minute = tm_info->tm_min;
-    int second = tm_info->tm_sec;
+    char timeStampedMessage[256];
+    snprintf(timeStampedMessage, sizeof(timeStampedMessage), "%02d:%02d:%02d %s",
+             tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, newLine);
 
-    size_t lineLength = strlen(newLine);
-    char *message = malloc(16 + lineLength + 6);
+    strncpy(engine->logs.entries[engine->logs.count].message, timeStampedMessage, sizeof(engine->logs.entries[0].message));
+    engine->logs.entries[engine->logs.count].level = level;
 
-    snprintf(message, 16 + lineLength + 6, "%02d:%02d:%02d %s", hour, minute, second, newLine);
-
-    EC->logMessages[EC->logCount] = malloc(strlen(message) + 1);
-    strcpy(EC->logMessages[EC->logCount], message);
-
-    EC->logCount++;
-    free(message);
-
-    EC->engineDelayFrames = true;
+    engine->logs.count++;
+    engine->delayFrames = true;
 }
 
 void DrawTopBar()
@@ -66,6 +148,7 @@ void DrawTopBar()
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             CloseWindow();
+            return;
         }
     }
 
@@ -123,7 +206,7 @@ void RefreshBottomBar(FilePathList *files, char *projectPath)
     *files = LoadDirectoryFilesEx(projectPath, NULL, false);
 }
 
-void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath, Font font, EditorContext *EC)
+void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int bottomBarHeight, char *projectPath, Font font)
 {
 
     int xOffset = 50;
@@ -281,9 +364,9 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
     }
 }
 
-void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, RenderTexture2D *UI, Font font, EditorContext *EC)
+void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, EngineContext *engine)
 {
-    BeginTextureMode(*UI);
+    BeginTextureMode(engine->UI);
     ClearBackground((Color){255, 255, 255, 0});
 
     Color BottomBarColor = {28, 28, 28, 255};
@@ -302,9 +385,13 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
 
         int y = screenHeight - bottomBarHeight - 25;
 
-        for (int i = EC->logCount - 1; i >= 0 && y > (screenHeight - bottomBarHeight) / 2; i--)
+        Color messageColor;
+
+        for (int i = engine->logs.count - 1; i >= 0 && y > (screenHeight - bottomBarHeight) / 2; i--)
         {
-            DrawTextEx(EC->font, EC->logMessages[i], (Vector2){20, y}, 20, 2, WHITE);
+            messageColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW : RED;
+
+            DrawTextEx(engine->font, engine->logs.entries[i].message, (Vector2){20, y}, 20, 2, messageColor);
             y -= 25;
         }
     }
@@ -312,7 +399,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     DrawRectangle(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight, BottomBarColor);
     DrawLineEx((Vector2){0, screenHeight - bottomBarHeight}, (Vector2){screenWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
-    LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, font, EC);
+    LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, engine->font);
 
     DrawTopBar();
 
@@ -377,107 +464,98 @@ int main()
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
     InitWindow(1600, 1000, "RapidEngine");
-    SetTargetFPS(240);
-
-    EditorContext EC = InitEditorContext();
-    GraphContext graph = InitGraphContext();
-
-    AddToLog(&EC, "Initialized window");
-
-    if (EC.font.texture.id == 0)
-    {
-        AddToLog(&EC, "Couldn't load font");
-    }
+    SetTargetFPS(140);
 
     char *projectPath = PrepareProjectPath(/*handleProjectManager()*/ "Tetris"); // temporary hardcode
 
-    if (projectPath == NULL || projectPath[0] == '\0')
-    {
-        AddToLog(&EC, "Couldn't find file");
-        EmergencyExit(&EC);
-    }
+    SetTargetFPS(60);
 
     MaximizeWindow();
 
-    FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);
+    EngineContext engine = InitEngineContext();
+    EditorContext editor = InitEditorContext();
+    GraphContext graph = InitGraphContext();
 
-    RenderTexture2D UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    AddToLog(&engine, "Initialized window", 0);
 
-    RenderTexture2D viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-
-    if (UI.id == 0 || viewport.id == 0)
+    if (engine.font.texture.id == 0 || editor.font.texture.id == 0)
     {
-        AddToLog(&EC, "Couldn't load textures");
-        EmergencyExit(&EC);
+        AddToLog(&engine, "Couldn't load font", 1);
     }
 
-    AddToLog(&EC, "All resources loaded");
+    if (projectPath == NULL || projectPath[0] == '\0')
+    {
+        AddToLog(&engine, "Couldn't find file", 2);
+        EmergencyExit(&engine);
+    }
 
-    int mode = 1;
-    bool editorInitialized = false;
+    FilePathList files = LoadDirectoryFilesEx(projectPath, NULL, false);
+
+    if (engine.UI.id == 0 || engine.viewport.id == 0)
+    {
+        AddToLog(&engine, "Couldn't load textures", 2);
+        EmergencyExit(&engine);
+    }
+
+    AddToLog(&engine, "All resources loaded", 0);
 
     int prevScreenWidth = GetScreenWidth();
     int prevScreenHeight = GetScreenHeight();
 
-    AddToLog(&EC, "Welcome!");
+    AddToLog(&engine, "Welcome!", 0);
 
     while (!WindowShouldClose())
     {
-        int screenWidth = GetScreenWidth();
-        int screenHeight = GetScreenHeight();
+        engine.screenWidth = GetScreenWidth();
+        engine.screenHeight = GetScreenHeight();
 
-        int sideBarWidth = screenWidth * 0.2;
-        int bottomBarHeight = screenHeight * 0.25;
+        engine.sideBarWidth = engine.screenWidth * 0.2;
+        engine.bottomBarHeight = engine.screenHeight * 0.25;
 
-        int collisionResult = CheckCollisions(files.count, screenHeight, screenWidth, bottomBarHeight, projectPath);
+        int collisionResult = CheckCollisions(files.count, engine.screenHeight, engine.screenWidth, engine.bottomBarHeight, projectPath);
 
-        if (collisionResult == 1 || prevScreenWidth != screenWidth || prevScreenHeight != screenHeight)
+        if (collisionResult == 1 || prevScreenWidth != engine.screenWidth || prevScreenHeight != engine.screenHeight)
         {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, EC.font, &EC);
-            EC.engineDelayFrames = true;
-            prevScreenWidth = screenWidth;
-            prevScreenHeight = screenHeight;
+            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &files, projectPath, &engine);
+            engine.delayFrames = true;
+            prevScreenWidth = engine.screenWidth;
+            prevScreenHeight = engine.screenHeight;
+            SetTargetFPS(140);
         }
-        else if (EC.engineDelayFrames)
+        else if (engine.delayFrames)
         {
-            BuildUITexture(screenWidth, screenHeight, sideBarWidth, bottomBarHeight, &files, projectPath, &UI, EC.font, &EC);
-            EC.engineDelayFrames = false;
+            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &files, projectPath, &engine);
+            engine.delayFrames = false;
+            SetTargetFPS(60);
         }
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        DrawTextureRec(viewport.texture, (Rectangle){0, 0, viewport.texture.width, -viewport.texture.height}, (Vector2){0, 0}, WHITE);
+        DrawTextureRec(engine.viewport.texture, (Rectangle){0, 0, engine.viewport.texture.width, -engine.viewport.texture.height}, (Vector2){0, 0}, WHITE);
 
-        DrawTextureRec(UI.texture, (Rectangle){0, 0, UI.texture.width, -UI.texture.height}, (Vector2){0, 0}, WHITE);
+        DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
         if (!isEditorOpened)
         {
-            BeginTextureMode(viewport);
+            BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
             EndTextureMode();
         }
         else if (isEditorOpened)
         {
-            if (strcmp(openedFileName, EC.fileName) != 0)
+            if (strcmp(openedFileName, editor.fileName) != 0)
             {
-                FreeEditorContext(&EC);
-                FreeGraphContext(&graph);
-
-                EC = InitEditorContext();
-                graph = InitGraphContext();
-
-                SetProjectPaths(&EC, openedFileName);
-
-                LoadGraphFromFile(EC.CGFilePath, &graph);
-
-                strcpy(EC.fileName, openedFileName);
-
-                DrawFullTexture(&EC, &graph, viewport);
+                OpenNewCGFile(&editor, &graph, openedFileName);
             }
 
-            handleEditor(&EC, &graph, &viewport);
+            handleEditor(&editor, &graph, &engine.viewport);
+            if(editor.newLogMessage){
+                AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
+            }
         }
+
+        DrawFPS(10, 10);
 
         EndDrawing();
     }
@@ -486,12 +564,11 @@ int main()
 
     UnloadDirectoryFiles(files);
 
-    UnloadRenderTexture(UI);
-    UnloadRenderTexture(viewport);
+    UnloadFont(editor.font);
+    UnloadFont(engine.font);
 
-    UnloadFont(EC.font);
-
-    FreeEditorContext(&EC);
+    FreeEngineContext(&engine);
+    FreeEditorContext(&editor);
     FreeGraphContext(&graph);
 
     return 0;

@@ -30,12 +30,7 @@ typedef struct
     int screenWidth;
     int screenHeight;
 
-    char **logMessages;
-    int logCount;
-    int logCapacity;
-
     bool delayFrames;
-    bool engineDelayFrames;
 
     Vector2 mousePos;
     Vector2 prevMousePos;
@@ -57,6 +52,10 @@ typedef struct
 
     Font font;
 
+    bool newLogMessage;
+    char logMessage[128];
+    int logMessageLevel;
+
     // float zoom;
 } EditorContext;
 
@@ -64,7 +63,11 @@ EditorContext InitEditorContext(void);
 
 void FreeEditorContext(EditorContext *EC);
 
+void AddToEngineLog(EditorContext *editor, char *message, int level);
+
 void SetProjectPaths(EditorContext *EC, const char *projectName);
+
+void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName);
 
 void DrawBackgroundGrid(EditorContext *EC, int gridSpacing);
 

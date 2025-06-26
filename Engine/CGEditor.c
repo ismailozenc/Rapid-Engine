@@ -33,18 +33,15 @@ EditorContext InitEditorContext()
     EC.isDraggingScreen = false;
 
     EC.delayFrames = true;
-    EC.engineDelayFrames = true;
 
     EC.menuOpen = false;
     EC.submenuOpen = false;
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
-    EC.logCapacity = 100;
-    EC.logCount = 0;
-    EC.logMessages = malloc(sizeof(char *) * EC.logCapacity);
-
     EC.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+
+    EC.newLogMessage = false;
 
     return EC;
 }
@@ -56,12 +53,12 @@ void FreeEditorContext(EditorContext *EC)
 
     if (EC->fileName)
         free(EC->fileName);
+}
 
-    for (int i = 0; i < EC->logCount; i++)
-    {
-        free(EC->logMessages[i]);
-    }
-    free(EC->logMessages);
+void AddToEngineLog(EditorContext *editor, char *message, int level){
+    strncpy(editor->logMessage, message, 128 * sizeof(char));
+    editor->logMessageLevel = level;
+    editor->newLogMessage = true;
 }
 
 void SetProjectPaths(EditorContext *EC, const char *projectName)
@@ -85,6 +82,21 @@ void SetProjectPaths(EditorContext *EC, const char *projectName)
     cwd[len - 7] = '\0';
 
     snprintf(EC->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
+}
+
+void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName)
+{
+    FreeEditorContext(editor);
+    FreeGraphContext(graph);
+
+    *editor = InitEditorContext();
+    *graph = InitGraphContext();
+
+    SetProjectPaths(editor, openedFileName);
+
+    LoadGraphFromFile(editor->CGFilePath, graph);
+
+    strcpy(editor->fileName, openedFileName);
 }
 
 void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
@@ -174,7 +186,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         }
         else
         {
-            //AddToLog(EC, "Error drawing connection");
+            AddToEngineLog(EC, "Error drawing connection", 1);
         }
     }
 
@@ -188,8 +200,9 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             hoveredNodeIndex = i;
-            if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
-                DeleteNode(graph, graph->nodes[i].id); //deletion problem
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            {
+                DeleteNode(graph, graph->nodes[i].id);
                 EC->menuOpen = false;
                 return;
             }
@@ -461,6 +474,8 @@ bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
 
 void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport)
 {
+    EC->newLogMessage = false;
+
     EC->screenWidth = GetScreenWidth();
     EC->screenHeight = GetScreenHeight();
     EC->mousePos = GetMousePosition();

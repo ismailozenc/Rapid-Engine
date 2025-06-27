@@ -6,6 +6,8 @@
 #include <math.h>
 #include "shell_execute.h"
 
+void AddToEngineLog(EditorContext *editor, char *message, int level);
+
 EditorContext InitEditorContext()
 {
     EditorContext EC = {0};
@@ -40,6 +42,10 @@ EditorContext InitEditorContext()
     Vector2 submenuPosition = {0, 0};
 
     EC.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+    if (EC.font.texture.id == 0)
+    {
+        AddToEngineLog(&EC, "Couldn't load font", 1);
+    }
 
     EC.newLogMessage = false;
 

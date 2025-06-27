@@ -40,11 +40,13 @@ typedef struct EngineContext
     int screenWidth, screenHeight, bottomBarHeight, sideBarWidth, sideBarMiddleY;
     Vector2 mousePos;
     RenderTexture2D viewport, UI;
+    Texture2D resizeButton;
     char *projectPath;
     Font font;
     Logs logs;
     bool delayFrames;
     FilePathList files;
+    bool isDraggingResizeButton;
 } EngineContext;
 
 void AddToLog(EngineContext *engine, const char *newLine, int level);
@@ -59,18 +61,24 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.screenWidth = GetScreenWidth();
     engine.screenHeight = GetScreenHeight();
+    engine.sideBarWidth = engine.screenWidth * 0.2;
+    engine.bottomBarHeight = engine.screenHeight * 0.25;
+
+    engine.sideBarMiddleY = (engine.screenHeight - engine.bottomBarHeight) / 2;
 
     engine.mousePos = GetMousePosition();
 
     engine.viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-    if (engine.UI.id == 0 || engine.viewport.id == 0)
+    engine.resizeButton = LoadTexture("resize_btn2.png");
+    if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
         EmergencyExit(&engine);
     }
 
     engine.delayFrames = true;
+    engine.isDraggingResizeButton = false;
 
     engine.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
     if (engine.font.texture.id == 0)
@@ -84,7 +92,8 @@ EngineContext InitEngineContext(char *projectPath)
         AddToLog(&engine, "Couldn't find file", 2);
         EmergencyExit(&engine);
     }
-    else{
+    else
+    {
         engine.projectPath = projectPath;
     }
 
@@ -109,6 +118,7 @@ void FreeEngineContext(EngineContext *engine)
 
     UnloadRenderTexture(engine->viewport);
     UnloadRenderTexture(engine->UI);
+    UnloadTexture(engine->resizeButton);
 }
 
 void AddToLog(EngineContext *engine, const char *newLine, int level)
@@ -395,7 +405,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     ClearBackground((Color){255, 255, 255, 0});
 
     Color BottomBarColor = {28, 28, 28, 255};
-    Color VariablesBarColor = {50, 50, 50, 255};
+    Color VariablesBarColor = {28, 28, 28, 255};
     Color LogColor = {15, 15, 15, 255};
 
     if (screenWidth > screenHeight && screenWidth > 1000)
@@ -405,6 +415,23 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
         DrawLineEx((Vector2){sideBarWidth, 0}, (Vector2){sideBarWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
         DrawLineEx((Vector2){0, engine->sideBarMiddleY}, (Vector2){sideBarWidth, engine->sideBarMiddleY}, 2, WHITE);
+        DrawTexture(engine->resizeButton, sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
+        engine->mousePos = GetMousePosition();
+        if (CheckCollisionPointCircle(engine->mousePos, (Vector2){sideBarWidth / 2, engine->sideBarMiddleY}, 10))
+        {
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+            {
+                engine->isDraggingResizeButton = true;
+            }
+        }
+        if (engine->isDraggingResizeButton)
+        {
+            engine->sideBarMiddleY += GetMouseDelta().y;
+            if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
+            {
+                engine->isDraggingResizeButton = false;
+            }
+        }
 
         DrawRectangleRounded((Rectangle){sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
         DrawTextEx(engine->font, "Save", (Vector2){sideBarWidth - 135, engine->sideBarMiddleY + 20}, 20, 2, WHITE);
@@ -509,6 +536,11 @@ int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, cha
         return 1;
     }
 
+    if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, 10) || engine->isDraggingResizeButton)
+    {
+        return 1;
+    }
+
     for (int i = 0; i < fileCount; i++)
     {
         Rectangle fileRect = {xOffset, yOffset, 150, 60};
@@ -561,7 +593,6 @@ int main()
         engine.screenHeight = GetScreenHeight();
         engine.sideBarWidth = engine.screenWidth * 0.2;
         engine.bottomBarHeight = engine.screenHeight * 0.25;
-        engine.sideBarMiddleY = (engine.screenHeight - engine.bottomBarHeight) / 2;
 
         int collisionResult = CheckCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph);
 

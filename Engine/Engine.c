@@ -299,26 +299,26 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
         switch (GetFileType(fileName))
         {
         case 0:
-            fileColor = YELLOW;
+            fileColor = (Color){200, 160, 50, 255};
             break;
         case 1:
-            fileColor = BLUE;
+            fileColor = (Color){40, 100, 180, 255};
             break;
         case 2:
-            fileColor = GREEN;
+            fileColor = (Color){80, 150, 80, 255};
             break;
         case 3:
-            fileColor = WHITE;
+            fileColor = (Color){120, 90, 180, 255};
             break;
         case 4:
-            fileColor = RED;
+            fileColor = (Color){160, 40, 40, 255};
             break;
         default:
-            fileColor = GRAY;
+            fileColor = (Color){110, 110, 110, 255};
             break;
         }
 
-        DrawRectangleRec(fileRect, fileColor);
+        DrawRectangleRounded(fileRect, 0.5f, 8, fileColor);
 
         bool isHovered = CheckCollisionPointRec(mousePos, fileRect);
 
@@ -372,11 +372,11 @@ void LoadFiles(FilePathList *files, int screenHeight, int screenWidth, int botto
             }
         }
 
-        DrawTextEx(font, buff, (Vector2){xOffset + 10, yOffset + 15}, 25, 0, BLACK);
+        DrawTextEx(font, buff, (Vector2){xOffset + 10, yOffset + 16}, 25, 0, BLACK);
 
         if (isHovered)
         {
-            DrawRectangleRec(fileRect, CLITERAL(Color){255, 255, 255, 100});
+            DrawRectangleRounded(fileRect, 0.5f, 8, CLITERAL(Color){255, 255, 255, 100});
 
             snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", fileName, GetFileLength((*files).paths[i]));
             tooltipRect = (Rectangle){xOffset, yOffset - 61, MeasureTextEx(font, tooltipText, 20, 0).x + 20, 60};
@@ -422,6 +422,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
             {
                 engine->isDraggingResizeButton = true;
+                SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
             }
         }
         if (engine->isDraggingResizeButton)
@@ -430,6 +431,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
             if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
             {
                 engine->isDraggingResizeButton = false;
+                SetMouseCursor(MOUSE_CURSOR_ARROW);
             }
         }
 
@@ -461,6 +463,10 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
                 // Interpret CG
                 AddToLog(engine, "Interpreter not ready", 2);
             }
+            SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
+        }
+        else{
+            SetMouseCursor(MOUSE_CURSOR_ARROW);
         }
 
         int y = screenHeight - bottomBarHeight - 30;

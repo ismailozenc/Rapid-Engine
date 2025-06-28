@@ -119,12 +119,12 @@ void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
     int startX = (offsetX / gridSpacing) * gridSpacing - gridSpacing;
     int startY = (offsetY / gridSpacing) * gridSpacing - gridSpacing;
 
-    for (int y = startY; y < EC->screenHeight + offsetY; y += gridSpacing - 5)
+    for (int y = startY; y < EC->screenHeight; y += gridSpacing - 5)
     {
         int worldY = y;
         int row = worldY / (gridSpacing - 5);
 
-        for (int x = startX; x < EC->screenWidth + offsetX; x += gridSpacing)
+        for (int x = startX; x < 2560; x += gridSpacing)
         {
             float drawX = (float)(x - offsetX + (row % 2) * 25);
             float drawY = (float)(y - offsetY);
@@ -478,13 +478,13 @@ bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
     return CheckNodeCollisions(EC, graph) || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
 }
 
-void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport)
+void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight)
 {
     EC->newLogMessage = false;
 
-    EC->screenWidth = GetScreenWidth();
-    EC->screenHeight = GetScreenHeight();
-    EC->mousePos = GetMousePosition();
+    EC->screenWidth = screenWidth;
+    EC->screenHeight = screenHeight;
+    EC->mousePos = mousePos;
 
     if (CheckAllCollisions(EC, graph))
     {

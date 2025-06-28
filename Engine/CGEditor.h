@@ -85,6 +85,6 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
 
 bool CheckAllCollisions(EditorContext *EC, GraphContext *graph);
 
-void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport);
+void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight);
 
 #endif

@@ -112,7 +112,7 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.mousePos = GetMousePosition();
 
-    engine.viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    engine.viewport = LoadRenderTexture(GetScreenWidth() - engine.sideBarWidth, GetScreenHeight() - engine.bottomBarHeight);
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.resizeButton = LoadTexture("resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
@@ -677,6 +677,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
                          });
 
     LoadFiles(engine);
+
     DrawUIElements(engine);
 
     DrawTopBar(); //
@@ -828,14 +829,12 @@ int main()
         engine.screenWidth = GetScreenWidth();
         engine.screenHeight = GetScreenHeight();
 
-        int collisionResult = CheckCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph);
-
         if (prevScreenWidth != engine.screenWidth || prevScreenHeight != engine.screenHeight)
         {
             engine.delayFrames = true;
         }
 
-        if (collisionResult == 1)
+        if (CheckCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph))
         {
             engine.cursor = MOUSE_CURSOR_POINTING_HAND;
             BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &engine.files, projectPath, &engine, &graph, editor.CGFilePath);
@@ -857,7 +856,19 @@ int main()
         BeginDrawing();
         ClearBackground(BLACK);
 
-        DrawTextureRec(engine.viewport.texture, (Rectangle){0, 0, engine.viewport.texture.width, -engine.viewport.texture.height}, (Vector2){0, 0}, WHITE);
+        int visibleW = engine.screenWidth - engine.sideBarWidth;
+        int visibleH = engine.screenHeight - engine.bottomBarHeight;
+
+        int srcX = (engine.viewport.texture.width - visibleW) / 2.0f;
+        int srcY = (engine.viewport.texture.height - visibleH) / 2.0f;
+
+        DrawTexturePro(
+            engine.viewport.texture,
+            (Rectangle){srcX, srcY, visibleW, -visibleH},
+            (Rectangle){engine.sideBarWidth, 0, visibleW, visibleH},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
@@ -865,6 +876,7 @@ int main()
         {
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
+            DrawTextEx(engine.font, "Game Screen", (Vector2){engine.screenWidth / 2, engine.screenHeight / 2}, 50, 0, WHITE);
             EndTextureMode();
         }
         else if (isEditorOpened)
@@ -873,14 +885,26 @@ int main()
             {
                 OpenNewCGFile(&editor, &graph, openedFileName);
             }
+            int localX = engine.mousePos.x - engine.sideBarWidth;
+            int localY = engine.mousePos.y;
 
-            handleEditor(&editor, &graph, &engine.viewport);
+            // Then, add offset in source texture
+            int textureX = srcX + localX;
+            int textureY = srcY + localY;
+            handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, visibleW, visibleH);
             if (editor.newLogMessage)
             {
                 AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
             }
         }
 
+        if (IsKeyPressed(KEY_K))
+        {
+            for (int i = 0; i < engine.uiElementCount; i++)
+            {
+                AddToLog(&engine, engine.uiElements[i].name, 0);
+            }
+        }
         DrawFPS(10, 10);
 
         EndDrawing();

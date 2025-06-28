@@ -490,11 +490,13 @@ void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewp
     {
         DrawFullTexture(EC, graph, *viewport);
         EC->delayFrames = true;
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
     }
     else if (EC->delayFrames == true)
     {
         DrawFullTexture(EC, graph, *viewport);
         EC->delayFrames = false;
+        SetMouseCursor(MOUSE_CURSOR_ARROW);
     }
 
     if (EC->menuOpen)

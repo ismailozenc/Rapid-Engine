@@ -35,6 +35,21 @@ Logs InitLogs()
     return logs;
 }
 
+typedef struct UIElement{
+    bool isRec;
+    Vector2 pos;
+    union {
+        Vector2 recSize;
+        int radius;
+    };
+    Color color;
+    int layer;
+    float roundness;
+    int roundSegments;
+    char text[32];
+    Vector2 textPos;
+}UIElement;
+
 typedef struct EngineContext
 {
     int screenWidth, screenHeight, bottomBarHeight, sideBarWidth, sideBarMiddleY;
@@ -47,6 +62,9 @@ typedef struct EngineContext
     bool delayFrames;
     FilePathList files;
     int draggingResizeButtonID;
+    int cursor;
+    UIElement uiElements[100]; //temporary hardcoded size
+    int uiElementCount;
 } EngineContext;
 
 void AddToLog(EngineContext *engine, const char *newLine, int level);
@@ -96,6 +114,8 @@ EngineContext InitEngineContext(char *projectPath)
     {
         engine.projectPath = projectPath;
     }
+
+    engine.cursor = MOUSE_CURSOR_POINTING_HAND;
 
     engine.files = LoadDirectoryFilesEx(projectPath, NULL, false);
 
@@ -408,7 +428,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     Color VariablesBarColor = {28, 28, 28, 255};
     Color LogColor = {15, 15, 15, 255};
 
-    if (screenWidth > screenHeight && screenWidth > 1000)
+    if (engine->screenWidth > engine->screenHeight && engine->screenWidth > 1000)
     {
         DrawRectangle(0, 0, sideBarWidth, engine->sideBarMiddleY, VariablesBarColor);
         DrawRectangle(0, engine->sideBarMiddleY, sideBarWidth, screenHeight - bottomBarHeight, LogColor);
@@ -439,12 +459,12 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
         if (CheckCollisionPointRec(engine->mousePos, (Rectangle){sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}))
         {
             DrawRectangleRounded((Rectangle){sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, Fade(WHITE, 0.6f));
+            engine->cursor = MOUSE_CURSOR_NOT_ALLOWED;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 // Interpret CG
                 AddToLog(engine, "Interpreter not ready", 2);
             }
-            // SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
         }
 
         int y = screenHeight - bottomBarHeight - 30;
@@ -464,42 +484,48 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
     DrawRectangle(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight, BottomBarColor);
     DrawLineEx((Vector2){0, screenHeight - bottomBarHeight}, (Vector2){screenWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
+    // resize buttons
     DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
     DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
     DrawTexture(engine->resizeButton, sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
     if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
-        if(CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, 10)){
+        if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, 10))
+        {
             engine->draggingResizeButtonID = 1;
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
         }
-        else if(CheckCollisionPointCircle(engine->mousePos, (Vector2){sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, 10)){
+        else if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, 10))
+        {
             engine->draggingResizeButtonID = 2;
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
         }
-        else if(CheckCollisionPointCircle(engine->mousePos, (Vector2){sideBarWidth / 2, engine->sideBarMiddleY}, 10)){
+        else if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, 10))
+        {
             engine->draggingResizeButtonID = 3;
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
         }
     }
-    else if(IsMouseButtonUp(MOUSE_LEFT_BUTTON)){
-        SetMouseCursor(MOUSE_CURSOR_ARROW);
+
+    if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
+    {
         engine->draggingResizeButtonID = 0;
     }
 
-    switch(engine->draggingResizeButtonID){
-        case 0:
-            break;
-        case 1:
-            engine->bottomBarHeight -= GetMouseDelta().y;
-            break;
-        case 2:
-            engine->sideBarWidth += GetMouseDelta().x;
-            break;
-        case 3:
-            engine->sideBarMiddleY += GetMouseDelta().y;
-            break;
-        default:
-            break;
+    switch (engine->draggingResizeButtonID)
+    {
+    case 0:
+        break;
+    case 1:
+        engine->bottomBarHeight -= GetMouseDelta().y;
+        engine->cursor = MOUSE_CURSOR_RESIZE_NS;
+        break;
+    case 2:
+        engine->sideBarWidth += GetMouseDelta().x;
+        engine->cursor = MOUSE_CURSOR_RESIZE_EW;
+        break;
+    case 3:
+        engine->sideBarMiddleY += GetMouseDelta().y;
+        engine->cursor = MOUSE_CURSOR_RESIZE_NS;
+        break;
+    default:
+        break;
     }
 
     LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, engine->font);
@@ -553,7 +579,7 @@ int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, cha
         return 1;
     }
 
-    if (engine->draggingResizeButtonID > 0)
+    if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, 10) || CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, 10) || CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, 10))
     {
         return 1;
     }
@@ -611,18 +637,24 @@ int main()
 
         int collisionResult = CheckCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph);
 
-        if (collisionResult == 1 || prevScreenWidth != engine.screenWidth || prevScreenHeight != engine.screenHeight)
+        if(prevScreenWidth != engine.screenWidth || prevScreenHeight != engine.screenHeight){engine.delayFrames = true;}
+
+        if (collisionResult == 1)
         {
+            engine.cursor = MOUSE_CURSOR_POINTING_HAND;
             BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &engine.files, projectPath, &engine, &graph, editor.CGFilePath);
             engine.delayFrames = true;
             prevScreenWidth = engine.screenWidth;
             prevScreenHeight = engine.screenHeight;
+            SetMouseCursor(engine.cursor);
             SetTargetFPS(140);
         }
         else if (engine.delayFrames)
         {
             BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &engine.files, projectPath, &engine, &graph, editor.CGFilePath);
             engine.delayFrames = false;
+            engine.cursor = MOUSE_CURSOR_ARROW;
+            SetMouseCursor(engine.cursor);
             SetTargetFPS(60);
         }
 

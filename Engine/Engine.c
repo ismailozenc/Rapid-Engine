@@ -46,7 +46,7 @@ typedef struct EngineContext
     Logs logs;
     bool delayFrames;
     FilePathList files;
-    bool isDraggingResizeButton;
+    int draggingResizeButtonID;
 } EngineContext;
 
 void AddToLog(EngineContext *engine, const char *newLine, int level);
@@ -64,13 +64,13 @@ EngineContext InitEngineContext(char *projectPath)
     engine.sideBarWidth = engine.screenWidth * 0.2;
     engine.bottomBarHeight = engine.screenHeight * 0.25;
 
-    engine.sideBarMiddleY = (engine.screenHeight - engine.bottomBarHeight) / 2;
+    engine.sideBarMiddleY = (engine.screenHeight - engine.bottomBarHeight) / 2 + 20;
 
     engine.mousePos = GetMousePosition();
 
     engine.viewport = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-    engine.resizeButton = LoadTexture("resize_btn2.png");
+    engine.resizeButton = LoadTexture("resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
@@ -78,7 +78,7 @@ EngineContext InitEngineContext(char *projectPath)
     }
 
     engine.delayFrames = true;
-    engine.isDraggingResizeButton = false;
+    engine.draggingResizeButtonID = 0;
 
     engine.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
     if (engine.font.texture.id == 0)
@@ -415,25 +415,6 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
         DrawLineEx((Vector2){sideBarWidth, 0}, (Vector2){sideBarWidth, screenHeight - bottomBarHeight}, 2, WHITE);
 
         DrawLineEx((Vector2){0, engine->sideBarMiddleY}, (Vector2){sideBarWidth, engine->sideBarMiddleY}, 2, WHITE);
-        DrawTexture(engine->resizeButton, sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
-        engine->mousePos = GetMousePosition();
-        if (CheckCollisionPointCircle(engine->mousePos, (Vector2){sideBarWidth / 2, engine->sideBarMiddleY}, 10))
-        {
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-            {
-                engine->isDraggingResizeButton = true;
-                SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
-            }
-        }
-        if (engine->isDraggingResizeButton)
-        {
-            engine->sideBarMiddleY += GetMouseDelta().y;
-            if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
-            {
-                engine->isDraggingResizeButton = false;
-                SetMouseCursor(MOUSE_CURSOR_ARROW);
-            }
-        }
 
         DrawRectangleRounded((Rectangle){sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
         DrawTextEx(engine->font, "Save", (Vector2){sideBarWidth - 135, engine->sideBarMiddleY + 20}, 20, 2, WHITE);
@@ -463,10 +444,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
                 // Interpret CG
                 AddToLog(engine, "Interpreter not ready", 2);
             }
-            SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-        }
-        else{
-            SetMouseCursor(MOUSE_CURSOR_ARROW);
+            // SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
         }
 
         int y = screenHeight - bottomBarHeight - 30;
@@ -485,6 +463,44 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
 
     DrawRectangle(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight, BottomBarColor);
     DrawLineEx((Vector2){0, screenHeight - bottomBarHeight}, (Vector2){screenWidth, screenHeight - bottomBarHeight}, 2, WHITE);
+
+    DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
+    DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
+    DrawTexture(engine->resizeButton, sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
+    if(IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+        if(CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, 10)){
+            engine->draggingResizeButtonID = 1;
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+        }
+        else if(CheckCollisionPointCircle(engine->mousePos, (Vector2){sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, 10)){
+            engine->draggingResizeButtonID = 2;
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+        }
+        else if(CheckCollisionPointCircle(engine->mousePos, (Vector2){sideBarWidth / 2, engine->sideBarMiddleY}, 10)){
+            engine->draggingResizeButtonID = 3;
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+        }
+    }
+    else if(IsMouseButtonUp(MOUSE_LEFT_BUTTON)){
+        SetMouseCursor(MOUSE_CURSOR_ARROW);
+        engine->draggingResizeButtonID = 0;
+    }
+
+    switch(engine->draggingResizeButtonID){
+        case 0:
+            break;
+        case 1:
+            engine->bottomBarHeight -= GetMouseDelta().y;
+            break;
+        case 2:
+            engine->sideBarWidth += GetMouseDelta().x;
+            break;
+        case 3:
+            engine->sideBarMiddleY += GetMouseDelta().y;
+            break;
+        default:
+            break;
+    }
 
     LoadFiles(files, screenHeight, screenWidth, bottomBarHeight, projectPath, engine->font);
 
@@ -517,12 +533,7 @@ int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, cha
         }
     }
 
-    if (CheckCollisionPointRec(mousePos, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-    {
-        return 1;
-    }
-
-    if (CheckCollisionPointRec(mousePos, refreshButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    if (GetKeyPressed() != 0 || IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_LEFT_BUTTON))
     {
         return 1;
     }
@@ -542,7 +553,7 @@ int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, cha
         return 1;
     }
 
-    if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, 10) || engine->isDraggingResizeButton)
+    if (engine->draggingResizeButtonID > 0)
     {
         return 1;
     }
@@ -597,8 +608,6 @@ int main()
         engine.mousePos = GetMousePosition();
         engine.screenWidth = GetScreenWidth();
         engine.screenHeight = GetScreenHeight();
-        engine.sideBarWidth = engine.screenWidth * 0.2;
-        engine.bottomBarHeight = engine.screenHeight * 0.25;
 
         int collisionResult = CheckCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph);
 

@@ -49,6 +49,7 @@ typedef struct UIElement
             Vector2 recSize;
             float roundness;
             int roundSegments;
+            Color hoverColor;
         } rect;
 
         struct
@@ -91,6 +92,7 @@ typedef struct EngineContext
     int cursor;
     UIElement uiElements[MAX_UI_ELEMENTS]; // temporary hardcoded size
     int uiElementCount;
+    int hoveredUIElementIndex;
 } EngineContext;
 
 void AddToLog(EngineContext *engine, const char *newLine, int level);
@@ -144,6 +146,8 @@ EngineContext InitEngineContext(char *projectPath)
     engine.cursor = MOUSE_CURSOR_POINTING_HAND;
 
     engine.files = LoadDirectoryFilesEx(projectPath, NULL, false);
+
+    engine.hoveredUIElementIndex = -1;
 
     return engine;
 }
@@ -310,24 +314,8 @@ void LoadFiles(EngineContext *engine)
     char *currentPath = engine->projectPath;
 
     AddUIElement(engine, (UIElement){
-                             .name = "BackButton",
-                             .type = 0, // rect
-                             .rect = {.pos = {30, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {65, 30}, .roundness = 0, .roundSegments = 0},
-                             .color = (Color){70, 70, 70, 150},
-                             .layer = 0,
-                             .text = {.string = "Back", .textPos = {35, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
-
-    AddUIElement(engine, (UIElement){
-                             .name = "RefreshButton",
-                             .type = 0, // rect
-                             .rect = {.pos = {110, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {100, 30}, .roundness = 0, .roundSegments = 0},
-                             .color = (Color){70, 70, 70, 150},
-                             .layer = 0,
-                             .text = {.string = "Refresh", .textPos = {119, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
-
-    AddUIElement(engine, (UIElement){
                              .name = "CurrentPathText",
-                             .type = 3, // text only
+                             .type = 3,
                              .color = (Color){0, 0, 0, 0},
                              .layer = 0,
                              .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
@@ -335,44 +323,28 @@ void LoadFiles(EngineContext *engine)
     engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
 
     Rectangle backButton = {30, engine->screenHeight - engine->bottomBarHeight + 10, 65, 30};
-    if (CheckCollisionPointRec(mousePos, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-    {
-        char *lastSlash = strrchr(currentPath, '\\');
-        if (lastSlash != NULL)
-        {
-            *lastSlash = '\0';
-        }
-        RefreshBottomBar(&engine->files, currentPath);
-    }
 
     Rectangle refreshButton = {110, engine->screenHeight - engine->bottomBarHeight + 10, 100, 30};
-    if (CheckCollisionPointRec(mousePos, refreshButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-    {
-        RefreshBottomBar(&engine->files, currentPath);
-    }
 
     if (CheckCollisionPointRec(mousePos, backButton))
     {
-        AddUIElement(engine, (UIElement){
-                                 .name = "BackButtonHover",
-                                 .type = 0,
-                                 .rect = {.pos = {30, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {65, 30}, .roundness = 0, .roundSegments = 0},
-                                 .color = (Color){255, 255, 255, 100},
-                                 .layer = 1,
-                                 .text = {.string = "", .textPos = {0, 0}, .textSize = 0, .textSpacing = 0, .textColor = {0, 0, 0, 0}} // no text
-                             });
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            char *lastSlash = strrchr(currentPath, '\\');
+            if (lastSlash != NULL)
+            {
+                *lastSlash = '\0';
+            }
+            RefreshBottomBar(&engine->files, currentPath);
+        }
     }
 
     if (CheckCollisionPointRec(mousePos, refreshButton))
     {
-        AddUIElement(engine, (UIElement){
-                                 .name = "RefreshButtonHover",
-                                 .type = 0,
-                                 .rect = {.pos = {110, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {100, 30}, .roundness = 0, .roundSegments = 0},
-                                 .color = (Color){255, 255, 255, 100},
-                                 .layer = 1,
-                                 .text = {.string = "", .textPos = {0, 0}, .textSize = 0, .textSpacing = 0, .textColor = {0, 0, 0, 0}} // no text
-                             });
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            RefreshBottomBar(&engine->files, currentPath);
+        }
     }
 
     for (int i = 0; i < engine->files.count; i++)
@@ -407,9 +379,9 @@ void LoadFiles(EngineContext *engine)
         AddUIElement(engine, (UIElement){
                                  .name = "FileRect",
                                  .type = 0,
-                                 .rect = {.pos = {fileRect.x, fileRect.y}, .recSize = {fileRect.width, fileRect.height}, .roundness = 0.5f, .roundSegments = 8},
+                                 .rect = {.pos = {fileRect.x, fileRect.y}, .recSize = {fileRect.width, fileRect.height}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = fileColor,
-                                 .layer = 0,
+                                 .layer = 1,
                                  .text = {.string = "", .textPos = {0, 0}, .textSize = 0, .textSpacing = 0, .textColor = {0, 0, 0, 0}}});
 
         char buff[256];
@@ -437,58 +409,49 @@ void LoadFiles(EngineContext *engine)
                                  .name = "FileNameText",
                                  .type = 3,
                                  .color = (Color){0, 0, 0, 0},
-                                 .layer = 1,
+                                 .layer = 2,
                                  .text = {.string = "", .textPos = {fileRect.x + 10, fileRect.y + 16}, .textSize = 25, .textSpacing = 0, .textColor = BLACK}});
         strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
         engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
 
-        bool isHovered = CheckCollisionPointRec(mousePos, fileRect);
-        if (isHovered)
+        if (CheckCollisionPointRec(mousePos, fileRect))
         {
-            AddUIElement(engine, (UIElement){
-                                     .name = "FilesHover",
-                                     .type = 0,
-                                     .rect = {.pos = {fileRect.x, fileRect.y}, .recSize = {fileRect.width, fileRect.height}, .roundness = 0.5f, .roundSegments = 8},
-                                     .color = (Color){255, 255, 255, 100},
-                                     .layer = 2,
-                                     .text = {.string = "", .textPos = {0, 0}, .textSize = 0, .textSpacing = 0, .textColor = {0, 0, 0, 0}}});
 
             snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", fileName, GetFileLength(engine->files.paths[i]));
             tooltipRect = (Rectangle){xOffset, yOffset - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
             showTooltip = true;
-        }
-
-        if (isHovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        {
-            double currentTime = GetTime();
-            static double lastClickTime = 0;
-            static const double doubleClickThreshold = 0.3;
-
-            if (currentTime - lastClickTime <= doubleClickThreshold)
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                if (GetFileType(fileName) == 2)
+                double currentTime = GetTime();
+                static double lastClickTime = 0;
+                static const double doubleClickThreshold = 0.3;
+
+                if (currentTime - lastClickTime <= doubleClickThreshold)
                 {
-                    char *buff = malloc(strlen(fileName) + 1);
-                    strcpy(buff, fileName);
-                    buff[strlen(fileName) - 3] = '\0';
-                    strcpy(openedFileName, buff);
-                    free(buff);
-                    isEditorOpened = true;
+                    if (GetFileType(fileName) == 2)
+                    {
+                        char *buff = malloc(strlen(fileName) + 1);
+                        strcpy(buff, fileName);
+                        buff[strlen(fileName) - 3] = '\0';
+                        strcpy(openedFileName, buff);
+                        free(buff);
+                        isEditorOpened = true;
+                    }
+                    else if (GetFileType(fileName) != 0)
+                    {
+                        char command[512];
+                        snprintf(command, sizeof(command), "start \"\" \"%s\"", engine->files.paths[i]);
+                        system(command);
+                    }
+                    else
+                    {
+                        strcat(currentPath, "\\");
+                        strcat(currentPath, fileName);
+                        RefreshBottomBar(&engine->files, currentPath);
+                    }
                 }
-                else if (GetFileType(fileName) != 0)
-                {
-                    char command[512];
-                    snprintf(command, sizeof(command), "start \"\" \"%s\"", engine->files.paths[i]);
-                    system(command);
-                }
-                else
-                {
-                    strcat(currentPath, "\\");
-                    strcat(currentPath, fileName);
-                    RefreshBottomBar(&engine->files, currentPath);
-                }
+                lastClickTime = currentTime;
             }
-            lastClickTime = currentTime;
         }
 
         xOffset += 250;
@@ -543,6 +506,10 @@ void DrawUIElements(EngineContext *engine)
             DrawTextEx(engine->font, el->text.string, el->text.textPos, el->text.textSize, el->text.textSpacing, el->text.textColor);
         }
     }
+
+    if(engine->hoveredUIElementIndex != -1 && engine->uiElements[engine->hoveredUIElementIndex].type == 0){
+        DrawRectangleRounded((Rectangle){engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments, engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor);
+    }
 }
 
 void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bottomBarHeight, FilePathList *files, char *projectPath, EngineContext *engine, GraphContext *graph, char *CGFilePath)
@@ -589,7 +556,7 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
         AddUIElement(engine, (UIElement){
                                  .name = "SaveButton",
                                  .type = 0,
-                                 .rect = {.pos = {sideBarWidth - 140, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8},
+                                 .rect = {.pos = {sideBarWidth - 140, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){255, 255, 255, 50},
                                  .layer = 1,
                                  .text = {.string = "Save", .textPos = {sideBarWidth - 135, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
@@ -597,14 +564,6 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
 
         if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}))
         {
-            AddUIElement(engine, (UIElement){
-                                     .name = "SaveButtonHover",
-                                     .type = 0,
-                                     .rect = {.pos = {sideBarWidth - 140, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8},
-                                     .color = Fade(WHITE, 0.6f),
-                                     .layer = 2,
-                                 });
-
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 if (SaveGraphToFile(CGFilePath, graph) == 0)
@@ -612,12 +571,12 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
                 else
                     AddToLog(engine, "ERROR SAVING CHANGES!", 1);
             }
-        }
+        } //move collision handling out
 
         AddUIElement(engine, (UIElement){
                                  .name = "RunButton",
                                  .type = 0,
-                                 .rect = {.pos = {sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8},
+                                 .rect = {.pos = {sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){255, 255, 255, 50},
                                  .layer = 1,
                                  .text = {.string = "Run", .textPos = {engine->sideBarWidth - 60, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
@@ -625,22 +584,13 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
 
         if (CheckCollisionPointRec(engine->mousePos, (Rectangle){sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}))
         {
-            AddUIElement(engine, (UIElement){
-                                     .name = "RunButtonHover",
-                                     .type = 0,
-                                     .rect = {.pos = {sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8},
-                                     .color = Fade(WHITE, 0.6f),
-                                     .layer = 2,
-                                 });
-
             engine->cursor = MOUSE_CURSOR_NOT_ALLOWED;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 AddToLog(engine, "Interpreter not ready", 2);
             }
-        }
+        } //move collision handling out
 
-        // Logs (just adding text elements)
         int y = screenHeight - bottomBarHeight - 30;
         for (int i = engine->logs.count - 1; i >= 0 && y > engine->sideBarMiddleY + 50; i--)
         {
@@ -676,11 +626,57 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
                              .layer = 0,
                          });
 
-    LoadFiles(engine);
+    AddUIElement(engine, (UIElement){
+                             .name = "BackButton",
+                             .type = 0,
+                             .rect = {.pos = {30, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {65, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
+                             .color = (Color){70, 70, 70, 150},
+                             .layer = 1,
+                             .text = {.string = "Back", .textPos = {35, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
 
-    DrawUIElements(engine);
+    AddUIElement(engine, (UIElement){
+                             .name = "RefreshButton",
+                             .type = 0,
+                             .rect = {.pos = {110, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {100, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
+                             .color = (Color){70, 70, 70, 150},
+                             .layer = 1,
+                             .text = {.string = "Refresh", .textPos = {119, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
 
-    DrawTopBar(); //
+    LoadFiles(engine); //move collision handling out
+
+    AddUIElement(engine, (UIElement){
+                             .name = "TopBar",
+                             .type = 0,
+                             .rect = {.pos = {GetScreenWidth() - 100, 0}, .recSize = {100, 50}, .roundness = 0.0f, .roundSegments = 0},
+                             .color = (Color){0, 0, 0, 0},
+                             .layer = 1,
+                         }); //split
+
+    DrawUIElements(engine); //should be lower
+
+    DrawTopBar(); //move collision handling out //
+
+    AddUIElement(engine, (UIElement){
+                             .name = "BottomBarResizeButton",
+                             .type = 1,
+                             .circle = {.center = (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, .radius = 10},
+                             .color = (Color){255, 255, 255, 255},
+                             .layer = 1,
+                         });
+    AddUIElement(engine, (UIElement){
+                             .name = "SideBarResizeButton",
+                             .type = 1,
+                             .circle = {.center = (Vector2){sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, .radius = 10},
+                             .color = (Color){255, 255, 255, 255},
+                             .layer = 1,
+                         });
+    AddUIElement(engine, (UIElement){
+                             .name = "SideBarMiddleResizeButton",
+                             .type = 1,
+                             .circle = {.center = (Vector2){sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10}, .radius = 10},
+                             .color = (Color){255, 255, 255, 255},
+                             .layer = 1,
+                         });
 
     DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
     DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
@@ -699,12 +695,12 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
         {
             engine->draggingResizeButtonID = 3;
         }
-    }
+    } //move collision handling out
 
     if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
     {
         engine->draggingResizeButtonID = 0;
-    }
+    } //move collision handling out
 
     switch (engine->draggingResizeButtonID)
     {
@@ -724,12 +720,12 @@ void BuildUITexture(int screenWidth, int screenHeight, int sideBarWidth, int bot
         break;
     default:
         break;
-    }
+    } //move collision handling out
 
     EndTextureMode();
 }
 
-int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph)
+int HandleCollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph)
 {
     int xOffset = 50;
     int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
@@ -758,42 +754,23 @@ int CheckCollisions(EngineContext *engine, int fileCount, char *projectPath, cha
         return 1;
     }
 
-    if (CheckCollisionPointRec(mousePos, backButton) || CheckCollisionPointRec(mousePos, refreshButton))
+    for (int i = 0; i < engine->uiElementCount; i++)
     {
-        return 1;
+        if (engine->uiElements[i].type == 0 && engine->uiElements[i].layer != 0)
+        {
+            if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->uiElements[i].rect.pos.x, engine->uiElements[i].rect.pos.y, engine->uiElements[i].rect.recSize.x, engine->uiElements[i].rect.recSize.y}))
+            {
+                engine->hoveredUIElementIndex = i;
+                return 1;
+            }
+        }
     }
 
-    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){GetScreenWidth() - 100, 0, 100, 50}))
-    {
-        return 1;
-    }
-
-    if (CheckCollisionPointRec(mousePos, (Rectangle){engine->sideBarWidth - 140, engine->sideBarMiddleY + 15, 60, 30}) || CheckCollisionPointRec(mousePos, (Rectangle){engine->sideBarWidth - 70, engine->sideBarMiddleY + 15, 60, 30}))
-    {
-        return 1;
-    }
+    engine->hoveredUIElementIndex = -1;
 
     if (CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, 10) || CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, 10) || CheckCollisionPointCircle(engine->mousePos, (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, 10))
     {
         return 1;
-    }
-
-    for (int i = 0; i < fileCount; i++)
-    {
-        Rectangle fileRect = {xOffset, yOffset, 150, 60};
-
-        if (CheckCollisionPointRec(mousePos, fileRect))
-        {
-            return 1;
-        }
-
-        xOffset += 250;
-
-        if (xOffset + 100 >= engine->screenWidth)
-        {
-            xOffset = 50;
-            yOffset += 120;
-        }
     }
 
     return 0;
@@ -832,25 +809,25 @@ int main()
         if (prevScreenWidth != engine.screenWidth || prevScreenHeight != engine.screenHeight)
         {
             engine.delayFrames = true;
-        }
-
-        if (CheckCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph))
-        {
-            engine.cursor = MOUSE_CURSOR_POINTING_HAND;
-            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &engine.files, projectPath, &engine, &graph, editor.CGFilePath);
-            engine.delayFrames = true;
             prevScreenWidth = engine.screenWidth;
             prevScreenHeight = engine.screenHeight;
+        }
+
+        if (HandleCollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph))
+        {
+            BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &engine.files, projectPath, &engine, &graph, editor.CGFilePath);
+            engine.cursor = MOUSE_CURSOR_POINTING_HAND;
             SetMouseCursor(engine.cursor);
             SetTargetFPS(140);
+            engine.delayFrames = true;
         }
         else if (engine.delayFrames)
         {
             BuildUITexture(engine.screenWidth, engine.screenHeight, engine.sideBarWidth, engine.bottomBarHeight, &engine.files, projectPath, &engine, &graph, editor.CGFilePath);
-            engine.delayFrames = false;
             engine.cursor = MOUSE_CURSOR_ARROW;
             SetMouseCursor(engine.cursor);
             SetTargetFPS(60);
+            engine.delayFrames = false;
         }
 
         BeginDrawing();
@@ -888,10 +865,12 @@ int main()
             int localX = engine.mousePos.x - engine.sideBarWidth;
             int localY = engine.mousePos.y;
 
-            // Then, add offset in source texture
             int textureX = srcX + localX;
             int textureY = srcY + localY;
-            handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, visibleW, visibleH);
+            if (CheckCollisionPointRec(engine.mousePos, (Rectangle){engine.sideBarWidth, 0, engine.screenWidth - engine.sideBarWidth, engine.screenHeight - engine.bottomBarHeight}) || editor.delayFrames)
+            {
+                handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, visibleW, visibleH);
+            }
             if (editor.newLogMessage)
             {
                 AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
@@ -902,7 +881,9 @@ int main()
         {
             for (int i = 0; i < engine.uiElementCount; i++)
             {
-                AddToLog(&engine, engine.uiElements[i].name, 0);
+                char str[32];
+                sprintf(str, "%d", engine.uiElementCount);
+                AddToLog(&engine, str, 0);
             }
         }
         DrawFPS(10, 10);

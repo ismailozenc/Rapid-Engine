@@ -336,14 +336,17 @@ const char *DrawNodeMenu(EditorContext *EC)
     if (GetMouseWheelMove() > 0 && EC->scrollIndex > 0)
         EC->scrollIndex--;
 
-    EC->menuPosition = EC->rightClickPos;
+    EC->menuPosition.x = EC->rightClickPos.x;
+    EC->menuPosition.y = EC->rightClickPos.y;
+
+    
     if (EC->menuPosition.x + MENU_WIDTH > EC->screenWidth)
     {
         EC->menuPosition.x -= MENU_WIDTH;
     }
 
-    DrawRectangleRounded((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.4f, 8, MenuColor);
-    DrawRectangleRoundedLinesEx((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.4, 8, MENU_BORDER_THICKNESS, BorderColor);
+    DrawRectangleRounded((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2f, 8, MenuColor);
+    DrawRectangleRoundedLinesEx((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2, 8, MENU_BORDER_THICKNESS, BorderColor);
 
     for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
     {
@@ -360,17 +363,12 @@ const char *DrawNodeMenu(EditorContext *EC)
             EC->submenuPosition.x = (EC->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > EC->screenWidth) ? (EC->menuPosition.x - SUBMENU_WIDTH) : (EC->menuPosition.x + MENU_WIDTH);
             EC->submenuPosition.y = itemRect.y;
         }
-        Rectangle subMenuRect = {EC->submenuPosition.x, EC->submenuPosition.y, SUBMENU_WIDTH, subMenuCounts[EC->hoveredItem] * MENU_ITEM_HEIGHT};
-        if (CheckCollisionPointRec(EC->mousePos, subMenuRect))
-        {
-            EC->submenuOpen = true;
-        }
         DrawText(menuItems[itemIndex], EC->menuPosition.x + 10, EC->menuPosition.y + i * MENU_ITEM_HEIGHT + 10, 25, WHITE);
     }
 
     // Scrollbar
-    float scrollBarHeight = (menuHeight / menuItemCount) * (int)MENU_VISIBLE_ITEMS;
-    float scrollBarY = EC->menuPosition.y + (EC->scrollIndex * (menuHeight / menuItemCount));
+    float scrollBarHeight = (menuHeight / (menuItemCount*2)) * (int)MENU_VISIBLE_ITEMS;
+    float scrollBarY = EC->menuPosition.y + 20 + (EC->scrollIndex * (menuHeight / menuItemCount));
     DrawRectangle(EC->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -458,8 +456,15 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
 
     DrawNodes(EC, graph);
 
-    DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){20, 20}, 40, 4, Fade(WHITE, 0.2f));
-    DrawTextEx(GetFontDefault(), "TM", (Vector2){230, 10}, 15, 1, Fade(WHITE, 0.2f));
+    if (EC->menuOpen)
+    {
+        char createdNode[MAX_TYPE_LENGTH];
+        strcpy(createdNode, DrawNodeMenu(EC));
+        if (strcmp(createdNode, "NULL") != 0)
+        {
+            CreateNode(graph, StringToNodeType(createdNode), EC->rightClickPos);
+        }
+    }
 
     EndTextureMode();
 
@@ -468,14 +473,15 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
 
 bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
 {
-    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && EC->mousePos.y)
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
     {
         EC->menuOpen = true;
         EC->rightClickPos = EC->mousePos;
         EC->scrollIndex = 0;
+        EC->delayFrames = true;
     }
 
-    return CheckNodeCollisions(EC, graph) || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1;
+    return CheckNodeCollisions(EC, graph) || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1 || EC->menuOpen;
 }
 
 void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight)
@@ -497,15 +503,5 @@ void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewp
         DrawFullTexture(EC, graph, *viewport);
         EC->delayFrames = false;
         SetMouseCursor(MOUSE_CURSOR_ARROW);
-    }
-
-    if (EC->menuOpen)
-    {
-        char createdNode[MAX_TYPE_LENGTH];
-        strcpy(createdNode, DrawNodeMenu(EC));
-        if (strcmp(createdNode, "NULL") != 0)
-        {
-            CreateNode(graph, StringToNodeType(createdNode), EC->rightClickPos);
-        }
     }
 }

@@ -9,8 +9,7 @@
 
 #define MAX_UI_ELEMENTS 100
 
-double lastClickTime = 0;
-const double doubleClickThreshold = 0.5;
+const double doubleClickThreshold = 0.3;
 
 char openedFileName[32] = "Game";
 bool isEditorOpened = false;
@@ -309,86 +308,6 @@ int GetFileType(const char *fileName)
     return -1;
 }
 
-void RefreshBottomBar(FilePathList *files, char *projectPath)
-{
-    *files = LoadDirectoryFilesEx(projectPath, NULL, false);
-}
-
-void LoadFiles(EngineContext *engine)
-{
-    int xOffset = 50;
-    int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
-
-    for (int i = 0; i < engine->files.count; i++)
-    {
-        const char *fileName = GetFileName(engine->files.paths[i]);
-
-        Color fileColor;
-
-        switch (GetFileType(fileName))
-        {
-        case 0:
-            fileColor = (Color){200, 160, 50, 255};
-            break;
-        case 1:
-            fileColor = (Color){40, 100, 180, 255};
-            break;
-        case 2:
-            fileColor = (Color){80, 150, 80, 255};
-            break;
-        case 3:
-            fileColor = (Color){120, 90, 180, 255};
-            break;
-        case 4:
-            fileColor = (Color){160, 40, 40, 255};
-            break;
-        default:
-            fileColor = (Color){110, 110, 110, 255};
-            break;
-        }
-
-        char buff[256];
-        strncpy(buff, fileName, sizeof(buff) - 1);
-        buff[sizeof(buff) - 1] = '\0';
-
-        if (MeasureTextEx(engine->font, fileName, 25, 0).x > 135)
-        {
-            for (int j = (int)strlen(buff) - 1; j >= 0; j--)
-            {
-                buff[j] = '\0';
-                if (MeasureText(buff, 25) < 135)
-                {
-                    if (j > 2)
-                    {
-                        buff[j - 2] = '\0';
-                        strcat(buff, "...");
-                    }
-                    break;
-                }
-            }
-        }
-
-        AddUIElement(engine, (UIElement){
-                                 .name = "File",
-                                 .shape = UIRectangle,
-                                 .type = OPEN_FILE,
-                                 .rect = {.pos = {xOffset, yOffset}, .recSize = {150, 60}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                 .color = fileColor,
-                                 .layer = 1,
-                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = BLACK}});
-        strncpy(engine->uiElements[engine->uiElementCount - 1].name, engine->files.paths[i], 256);
-        strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
-        engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
-
-        xOffset += 250;
-        if (xOffset + 100 >= engine->screenWidth)
-        {
-            xOffset = 50;
-            yOffset += 120;
-        }
-    }
-}
-
 void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph)
 {
     if (engine->hoveredUIElementIndex != -1)
@@ -428,13 +347,13 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                 {
                     *lastSlash = '\0';
                 }
-                RefreshBottomBar(&engine->files, engine->currentPath);
+                engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
             }
             break;
         case REFRESH_FILES:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                RefreshBottomBar(&engine->files, engine->currentPath);
+                engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
             }
             break;
         case CLOSE_WINDOW:
@@ -486,7 +405,6 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             {
                 double currentTime = GetTime();
                 static double lastClickTime = 0;
-                static const double doubleClickThreshold = 0.3;
 
                 if (currentTime - lastClickTime <= doubleClickThreshold)
                 {
@@ -509,7 +427,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                     {
                         strcat(engine->currentPath, "\\");
                         strcat(engine->currentPath, engine->uiElements[engine->hoveredUIElementIndex].text.string);
-                        RefreshBottomBar(&engine->files, engine->currentPath);
+                        engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
                     }
                 }
                 lastClickTime = currentTime;
@@ -616,8 +534,26 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              });
 
         int y = engine->screenHeight - engine->bottomBarHeight - 30;
+        char cutMessage[256];
         for (int i = engine->logs.count - 1; i >= 0 && y > engine->sideBarMiddleY + 50; i--)
         {
+            int j;
+            for (j = 0; j < strlen(engine->logs.entries[i].message); j++)
+            {
+                char temp[256];
+                strncpy(temp, engine->logs.entries[i].message, j);
+                temp[j] = '\0';
+                if (MeasureTextEx(engine->font, temp, 20, 2).x < engine->sideBarWidth - 35)
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            strncpy(cutMessage, engine->logs.entries[i].message, j);
+            cutMessage[j] = '\0';
             AddUIElement(engine, (UIElement){
                                      .name = "LogText",
                                      .shape = UIText,
@@ -625,7 +561,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .text = {.textPos = {20, y}, .textSize = 20, .textSpacing = 2, .textColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW
                                                                                                                                                                                                      : RED},
                                      .layer = 0});
-            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->logs.entries[i].message, 127);
+            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
             y -= 25;
         }
@@ -677,7 +613,77 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
     strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->currentPath, 256);
     engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
 
-    LoadFiles(engine);
+    int xOffset = 50;
+    int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
+
+    for (int i = 0; i < engine->files.count; i++)
+    {
+        const char *fileName = GetFileName(engine->files.paths[i]);
+
+        Color fileColor;
+
+        switch (GetFileType(fileName))
+        {
+        case 0:
+            fileColor = (Color){200, 160, 50, 255};
+            break;
+        case 1:
+            fileColor = (Color){40, 100, 180, 255};
+            break;
+        case 2:
+            fileColor = (Color){80, 150, 80, 255};
+            break;
+        case 3:
+            fileColor = (Color){120, 90, 180, 255};
+            break;
+        case 4:
+            fileColor = (Color){160, 40, 40, 255};
+            break;
+        default:
+            fileColor = (Color){110, 110, 110, 255};
+            break;
+        }
+
+        char buff[256];
+        strncpy(buff, fileName, sizeof(buff) - 1);
+        buff[sizeof(buff) - 1] = '\0';
+
+        if (MeasureTextEx(engine->font, fileName, 25, 0).x > 135)
+        {
+            for (int j = (int)strlen(buff) - 1; j >= 0; j--)
+            {
+                buff[j] = '\0';
+                if (MeasureText(buff, 25) < 135)
+                {
+                    if (j > 2)
+                    {
+                        buff[j - 2] = '\0';
+                        strcat(buff, "...");
+                    }
+                    break;
+                }
+            }
+        }
+
+        AddUIElement(engine, (UIElement){
+                                 .name = "File",
+                                 .shape = UIRectangle,
+                                 .type = OPEN_FILE,
+                                 .rect = {.pos = {xOffset, yOffset}, .recSize = {150, 60}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                 .color = fileColor,
+                                 .layer = 1,
+                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = BLACK}});
+        strncpy(engine->uiElements[engine->uiElementCount - 1].name, engine->files.paths[i], 256);
+        strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
+        engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
+
+        xOffset += 250;
+        if (xOffset + 100 >= engine->screenWidth)
+        {
+            xOffset = 50;
+            yOffset += 120;
+        }
+    }
 
     AddUIElement(engine, (UIElement){
                              .name = "TopBarClose",
@@ -723,6 +729,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
     DrawUIElements(engine, CGFilePath, graph);
 
+    // special symbols and textures
     DrawRectangleLinesEx((Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()}, 4.0f, WHITE);
 
     DrawLineEx((Vector2){GetScreenWidth() - 35, 15}, (Vector2){GetScreenWidth() - 15, 35}, 2, WHITE);
@@ -732,27 +739,10 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
     DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
     DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
-    DrawTexture(engine->resizeButton, engine->sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
-
-    switch (engine->draggingResizeButtonID)
+    if (engine->sideBarWidth > 150)
     {
-    case 0:
-        break;
-    case 1:
-        engine->bottomBarHeight -= GetMouseDelta().y;
-        engine->cursor = MOUSE_CURSOR_RESIZE_NS;
-        break;
-    case 2:
-        engine->sideBarWidth += GetMouseDelta().x;
-        engine->cursor = MOUSE_CURSOR_RESIZE_EW;
-        break;
-    case 3:
-        engine->sideBarMiddleY += GetMouseDelta().y;
-        engine->cursor = MOUSE_CURSOR_RESIZE_NS;
-        break;
-    default:
-        break;
-    } // move collision handling out
+        DrawTexture(engine->resizeButton, engine->sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
+    }
 
     EndTextureMode();
 }
@@ -771,10 +761,41 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         }
     }
 
-    if (IsMouseButtonUp(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID != 0)
+    if (engine->draggingResizeButtonID != 0)
     {
-        engine->draggingResizeButtonID = 0;
-        engine->hasResizedBar = true;
+        if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
+        {
+            engine->draggingResizeButtonID = 0;
+            engine->hasResizedBar = true;
+        }
+
+        switch (engine->draggingResizeButtonID)
+        {
+        case 0:
+            break;
+        case 1:
+            engine->bottomBarHeight -= GetMouseDelta().y;
+            if (engine->bottomBarHeight < 50 && GetMouseDelta().y > 0)
+            {
+                engine->bottomBarHeight = 5;
+            }
+            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
+            break;
+        case 2:
+            engine->sideBarWidth += GetMouseDelta().x;
+            if (engine->sideBarWidth < 50 && GetMouseDelta().x < 0)
+            {
+                engine->sideBarWidth = 5;
+            }
+            engine->cursor = MOUSE_CURSOR_RESIZE_EW;
+            break;
+        case 3:
+            engine->sideBarMiddleY += GetMouseDelta().y;
+            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
+            break;
+        default:
+            break;
+        }
     }
 
     if (GetKeyPressed() != 0 || IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_LEFT_BUTTON))

@@ -56,6 +56,8 @@ typedef struct
     char logMessage[128];
     int logMessageLevel;
 
+    Vector2 cameraOffset;
+
     // float zoom;
 } EditorContext;
 

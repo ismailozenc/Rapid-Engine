@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "shell_execute.h"
+#include "raymath.h"
 
 void AddToEngineLog(EditorContext *editor, char *message, int level);
 
@@ -49,6 +50,8 @@ EditorContext InitEditorContext()
 
     EC.newLogMessage = false;
 
+    EC.cameraOffset = (Vector2){0, 0};
+
     return EC;
 }
 
@@ -61,7 +64,8 @@ void FreeEditorContext(EditorContext *EC)
         free(EC->fileName);
 }
 
-void AddToEngineLog(EditorContext *editor, char *message, int level){
+void AddToEngineLog(EditorContext *editor, char *message, int level)
+{
     strncpy(editor->logMessage, message, 128 * sizeof(char));
     editor->logMessageLevel = level;
     editor->newLogMessage = true;
@@ -107,30 +111,29 @@ void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileN
 
 void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
 {
-    int offsetX = EC->mousePosAtStartOfDrag.x - EC->mousePos.x;
-    int offsetY = EC->mousePosAtStartOfDrag.y - EC->mousePos.y;
 
-    if (EC->isDraggingScreen == false)
+    if (EC->isDraggingScreen)
     {
-        offsetX = 0;
-        offsetY = 0;
+        Vector2 delta = GetMouseDelta();
+        EC->cameraOffset = Vector2Subtract(EC->cameraOffset, delta);
     }
 
-    int startX = (offsetX / gridSpacing) * gridSpacing - gridSpacing;
-    int startY = (offsetY / gridSpacing) * gridSpacing - gridSpacing;
+    Vector2 offset = EC->cameraOffset;
 
-    for (int y = startY; y < EC->screenHeight; y += gridSpacing - 5)
+    int startX = -((int)offset.x % gridSpacing) - gridSpacing;
+    int startY = -((int)offset.y % gridSpacing) - gridSpacing;
+
+    for (int y = startY; y < EC->screenHeight + gridSpacing; y += gridSpacing)
     {
-        int worldY = y;
-        int row = worldY / (gridSpacing - 5);
+        int row = (y + (int)offset.y) / gridSpacing;
 
-        for (int x = startX; x < 2560; x += gridSpacing)
+        for (int x = startX; x < 2560 + gridSpacing; x += gridSpacing)
         {
-            float drawX = (float)(x - offsetX + (row % 2) * 25);
-            float drawY = (float)(y - offsetY);
+            float drawX = (float)(x + (row % 2) * (gridSpacing / 2));
+            float drawY = (float)(y);
 
             DrawRectangleRounded(
-                (Rectangle){drawX, drawY, 20 - (row % 2) * 5, 10 + (row % 2) * 5},
+                (Rectangle){drawX, drawY, 15, 15},
                 1.0f, 8,
                 (Color){128, 128, 128, 10});
         }
@@ -339,7 +342,6 @@ const char *DrawNodeMenu(EditorContext *EC)
     EC->menuPosition.x = EC->rightClickPos.x;
     EC->menuPosition.y = EC->rightClickPos.y;
 
-    
     if (EC->menuPosition.x + MENU_WIDTH > EC->screenWidth)
     {
         EC->menuPosition.x -= MENU_WIDTH;
@@ -367,7 +369,7 @@ const char *DrawNodeMenu(EditorContext *EC)
     }
 
     // Scrollbar
-    float scrollBarHeight = (menuHeight / (menuItemCount*2)) * (int)MENU_VISIBLE_ITEMS;
+    float scrollBarHeight = (menuHeight / (menuItemCount * 2)) * (int)MENU_VISIBLE_ITEMS;
     float scrollBarY = EC->menuPosition.y + 20 + (EC->scrollIndex * (menuHeight / menuItemCount));
     DrawRectangle(EC->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
 

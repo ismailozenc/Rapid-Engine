@@ -62,7 +62,7 @@ Logs InitLogs()
 
 typedef struct UIElement
 {
-    char name[32];
+    char name[256];
     UIElementShape shape;
     UIElementCollisionType type;
     union
@@ -318,24 +318,10 @@ void LoadFiles(EngineContext *engine)
 {
     int xOffset = 50;
     int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
-    Vector2 mousePos = GetMousePosition();
-    char tooltipText[256] = "";
-    Rectangle tooltipRect = {0};
-
-    AddUIElement(engine, (UIElement){
-                             .name = "CurrentPath",
-                             .shape = UIText,
-                             .type = NO_COLLISION_ACTION,
-                             .color = (Color){0, 0, 0, 0},
-                             .layer = 0,
-                             .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
-    strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->currentPath, 256);
-    engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
 
     for (int i = 0; i < engine->files.count; i++)
     {
         const char *fileName = GetFileName(engine->files.paths[i]);
-        Rectangle fileRect = {xOffset, yOffset, 150, 60};
 
         Color fileColor;
 
@@ -386,61 +372,13 @@ void LoadFiles(EngineContext *engine)
                                  .name = "File",
                                  .shape = UIRectangle,
                                  .type = OPEN_FILE,
-                                 .rect = {.pos = {fileRect.x, fileRect.y}, .recSize = {fileRect.width, fileRect.height}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                 .rect = {.pos = {xOffset, yOffset}, .recSize = {150, 60}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = fileColor,
                                  .layer = 1,
-                                 .text = {.string = "", .textPos = {fileRect.x + 10, fileRect.y + 16}, .textSize = 25, .textSpacing = 0, .textColor = BLACK}});
+                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = BLACK}});
+        strncpy(engine->uiElements[engine->uiElementCount - 1].name, engine->files.paths[i], 256);
         strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
         engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
-
-        if (CheckCollisionPointRec(mousePos, fileRect))
-        {
-
-            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", fileName, GetFileLength(engine->files.paths[i]));
-            tooltipRect = (Rectangle){xOffset, yOffset - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
-            AddUIElement(engine, (UIElement){
-                                     .name = "Tooltip",
-                                     .shape = UIRectangle,
-                                     .type = NO_COLLISION_ACTION,
-                                     .rect = {.pos = {tooltipRect.x, tooltipRect.y}, .recSize = {tooltipRect.width, tooltipRect.height}, .roundness = 0, .roundSegments = 0},
-                                     .color = DARKGRAY,
-                                     .layer = 10,
-                                     .text = {.string = "", .textPos = {tooltipRect.x + 10, tooltipRect.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, tooltipText, 255);
-            engine->uiElements[engine->uiElementCount - 1].text.string[255] = '\0';
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                double currentTime = GetTime();
-                static double lastClickTime = 0;
-                static const double doubleClickThreshold = 0.3;
-
-                if (currentTime - lastClickTime <= doubleClickThreshold)
-                {
-                    if (GetFileType(fileName) == 2)
-                    {
-                        char *buff = malloc(strlen(fileName) + 1);
-                        strcpy(buff, fileName);
-                        buff[strlen(fileName) - 3] = '\0';
-                        strcpy(openedFileName, buff);
-                        free(buff);
-                        isEditorOpened = true;
-                    }
-                    else if (GetFileType(fileName) != 0)
-                    {
-                        char command[512];
-                        snprintf(command, sizeof(command), "start \"\" \"%s\"", engine->files.paths[i]);
-                        system(command);
-                    }
-                    else
-                    {
-                        strcat(engine->currentPath, "\\");
-                        strcat(engine->currentPath, fileName);
-                        RefreshBottomBar(&engine->files, engine->currentPath);
-                    }
-                }
-                lastClickTime = currentTime;
-            }
-        }
 
         xOffset += 250;
         if (xOffset + 100 >= engine->screenWidth)
@@ -453,28 +391,6 @@ void LoadFiles(EngineContext *engine)
 
 void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph)
 {
-    for (int i = 0; i < engine->uiElementCount; i++)
-    {
-        UIElement *el = &engine->uiElements[i];
-        switch (el->shape)
-        {
-        case 0:
-            DrawRectangleRounded((Rectangle){el->rect.pos.x, el->rect.pos.y, el->rect.recSize.x, el->rect.recSize.y}, el->rect.roundness, el->rect.roundSegments, el->color);
-            break;
-        case 1:
-            DrawCircleV(el->circle.center, el->circle.radius, el->color);
-            break;
-        case 2:
-            DrawLineEx(el->line.startPos, el->line.engPos, el->line.thickness, el->color);
-            break;
-        }
-
-        if (el->text.string[0] != '\0')
-        {
-            DrawTextEx(engine->font, el->text.string, el->text.textPos, el->text.textSize, el->text.textSpacing, el->text.textColor);
-        }
-    }
-
     if (engine->hoveredUIElementIndex != -1)
     {
         engine->cursor = MOUSE_CURSOR_POINTING_HAND;
@@ -552,6 +468,84 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                 engine->draggingResizeButtonID = 3;
             }
             break;
+        case OPEN_FILE:
+            char tooltipText[256] = "";
+            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", engine->uiElements[engine->hoveredUIElementIndex].text.string, GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
+            Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
+            AddUIElement(engine, (UIElement){
+                                     .name = "Tooltip",
+                                     .shape = UIRectangle,
+                                     .type = NO_COLLISION_ACTION,
+                                     .rect = {.pos = {tooltipRect.x, tooltipRect.y}, .recSize = {tooltipRect.width, tooltipRect.height}, .roundness = 0, .roundSegments = 0},
+                                     .color = DARKGRAY,
+                                     .layer = 1,
+                                     .text = {.string = "", .textPos = {tooltipRect.x + 10, tooltipRect.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
+            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, tooltipText, 255);
+            engine->uiElements[engine->uiElementCount - 1].text.string[255] = '\0';
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                double currentTime = GetTime();
+                static double lastClickTime = 0;
+                static const double doubleClickThreshold = 0.3;
+
+                if (currentTime - lastClickTime <= doubleClickThreshold)
+                {
+                    if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == 2)
+                    {
+                        char *buff = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
+                        strcpy(buff, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        buff[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
+                        strcpy(openedFileName, buff);
+                        free(buff);
+                        isEditorOpened = true;
+                    }
+                    else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != 0)
+                    {
+                        char command[512];
+                        snprintf(command, sizeof(command), "start \"\" \"%s\"", engine->uiElements[engine->hoveredUIElementIndex].name);
+                        system(command);
+                    }
+                    else
+                    {
+                        strcat(engine->currentPath, "\\");
+                        strcat(engine->currentPath, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        RefreshBottomBar(&engine->files, engine->currentPath);
+                    }
+                }
+                lastClickTime = currentTime;
+            }
+
+            break;
+        }
+    }
+
+    for (int i = 0; i < engine->uiElementCount; i++)
+    {
+        UIElement *el = &engine->uiElements[i];
+        switch (el->shape)
+        {
+        case UIRectangle:
+            DrawRectangleRounded((Rectangle){el->rect.pos.x, el->rect.pos.y, el->rect.recSize.x, el->rect.recSize.y}, el->rect.roundness, el->rect.roundSegments, el->color);
+            break;
+        case UICircle:
+            DrawCircleV(el->circle.center, el->circle.radius, el->color);
+            break;
+        case UILine:
+            DrawLineEx(el->line.startPos, el->line.engPos, el->line.thickness, el->color);
+            break;
+        }
+
+        if (el->text.string[0] != '\0')
+        {
+            DrawTextEx(engine->font, el->text.string, el->text.textPos, el->text.textSize, el->text.textSpacing, el->text.textColor);
+        }
+    }
+
+    if (engine->hoveredUIElementIndex != -1)
+    {
+        if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
+        {
+            DrawRectangleRounded((Rectangle){engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments, engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor);
         }
     }
 }
@@ -673,7 +667,17 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .layer = 1,
                              .text = {.string = "Refresh", .textPos = {119, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
 
-    LoadFiles(engine); // move collision handling out
+    AddUIElement(engine, (UIElement){
+                             .name = "CurrentPath",
+                             .shape = UIText,
+                             .type = NO_COLLISION_ACTION,
+                             .color = (Color){0, 0, 0, 0},
+                             .layer = 0,
+                             .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
+    strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->currentPath, 256);
+    engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
+
+    LoadFiles(engine);
 
     AddUIElement(engine, (UIElement){
                              .name = "TopBarClose",
@@ -753,7 +757,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
     EndTextureMode();
 }
 
-int HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph)
+bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph)
 {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
     {
@@ -775,7 +779,7 @@ int HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, 
 
     if (GetKeyPressed() != 0 || IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_LEFT_BUTTON))
     {
-        return 1;
+        return true;
     }
 
     for (int i = 0; i < engine->uiElementCount; i++)
@@ -785,19 +789,19 @@ int HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, 
             if (engine->uiElements[i].shape == UIRectangle && CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->uiElements[i].rect.pos.x, engine->uiElements[i].rect.pos.y, engine->uiElements[i].rect.recSize.x, engine->uiElements[i].rect.recSize.y}))
             {
                 engine->hoveredUIElementIndex = i;
-                return 1;
+                return true;
             }
             else if (engine->uiElements[i].shape == UICircle && CheckCollisionPointCircle(engine->mousePos, engine->uiElements[i].circle.center, engine->uiElements[i].circle.radius))
             {
                 engine->hoveredUIElementIndex = i;
-                return 1;
+                return true;
             }
         }
     }
 
     engine->hoveredUIElementIndex = -1;
 
-    return 0;
+    return false;
 }
 
 void contextChangePerFrame(EngineContext *engine)
@@ -861,21 +865,14 @@ int main()
         BeginDrawing();
         ClearBackground(BLACK);
 
-        DrawTexturePro(
-            engine.viewport.texture,
-            (Rectangle){(engine.viewport.texture.width - engine.viewportWidth) / 2.0f, (engine.viewport.texture.height - engine.viewportHeight) / 2.0f, engine.viewportWidth, -engine.viewportHeight},
-            (Rectangle){engine.sideBarWidth, 0, engine.screenWidth - engine.sideBarWidth, engine.screenHeight - engine.bottomBarHeight},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE);
-
-        DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+        int textureX = (engine.viewport.texture.width - engine.viewportWidth) / 2.0f + engine.mousePos.x - engine.sideBarWidth;
+        int textureY = (engine.viewport.texture.height - engine.viewportHeight) / 2.0f + engine.mousePos.y;
 
         if (!isEditorOpened)
         {
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
-            DrawTextEx(engine.font, "Game Screen", (Vector2){engine.screenWidth / 2, engine.screenHeight / 2}, 50, 0, WHITE);
+            DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
             EndTextureMode();
         }
         else if (isEditorOpened)
@@ -887,19 +884,26 @@ int main()
 
             if (CheckCollisionPointRec(engine.mousePos, (Rectangle){engine.sideBarWidth, 0, engine.screenWidth - engine.sideBarWidth, engine.screenHeight - engine.bottomBarHeight}) || editor.delayFrames)
             {
-                int textureX = (engine.viewport.texture.width - engine.viewportWidth) / 2.0f + engine.mousePos.x - engine.sideBarWidth;
-                int textureY = (engine.viewport.texture.height - engine.viewportHeight) / 2.0f + engine.mousePos.y;
-
                 handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight);
             }
-            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
+            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f)); //
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
-            
+
             if (editor.newLogMessage)
             {
                 AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
             }
         }
+
+        DrawTexturePro(
+            engine.viewport.texture,
+            (Rectangle){(engine.viewport.texture.width - engine.viewportWidth) / 2.0f, (engine.viewport.texture.height - engine.viewportHeight) / 2.0f, engine.viewportWidth, -engine.viewportHeight},
+            (Rectangle){engine.sideBarWidth, 0, engine.screenWidth - engine.sideBarWidth, engine.screenHeight - engine.bottomBarHeight},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
+
+        DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
         DrawFPS(10, 10);
 

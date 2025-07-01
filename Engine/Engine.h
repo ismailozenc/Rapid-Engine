@@ -107,4 +107,5 @@ typedef struct EngineContext
     bool isViewportFocused;
     Sound save;
     bool isSoundOn;
+    int fps;
 } EngineContext;

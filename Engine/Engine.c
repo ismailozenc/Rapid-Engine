@@ -8,8 +8,6 @@
 #include "ProjectManager.h"
 #include "Engine.h"
 
-char openedFileName[32] = "Game";
-
 Logs InitLogs()
 {
     Logs logs;
@@ -103,9 +101,15 @@ void FreeEngineContext(EngineContext *engine)
         engine->logs.entries = NULL;
     }
 
+    UnloadDirectoryFiles(engine->files);
+
     UnloadRenderTexture(engine->viewport);
     UnloadRenderTexture(engine->UI);
     UnloadTexture(engine->resizeButton);
+
+    UnloadFont(engine->font);
+
+    UnloadSound(engine->save);
 }
 
 void AddUIElement(EngineContext *engine, UIElement element)
@@ -209,7 +213,7 @@ int GetFileType(const char *fileName)
     return -1;
 }
 
-void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph)
+void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor)
 {
     if (engine->hoveredUIElementIndex != -1)
     {
@@ -319,8 +323,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                         char *buff = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
                         strcpy(buff, engine->uiElements[engine->hoveredUIElementIndex].text.string);
                         buff[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
-                        strcpy(openedFileName, buff);
-                        free(buff);
+                        OpenNewCGFile(editor, graph, buff);
                         engine->isEditorOpened = true;
                     }
                     else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != 0)
@@ -374,7 +377,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
     }
 }
 
-void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath)
+void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath, EditorContext *editor)
 {
     engine->uiElementCount = 0;
 
@@ -633,7 +636,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .layer = 1,
                          });
 
-    DrawUIElements(engine, CGFilePath, graph);
+    DrawUIElements(engine, CGFilePath, graph, editor);
 
     // special symbols and textures
     DrawRectangleLinesEx((Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()}, 4.0f, WHITE);
@@ -728,7 +731,7 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
     return false;
 }
 
-void contextChangePerFrame(EngineContext *engine)
+void ContextChangePerFrame(EngineContext *engine)
 {
     engine->mousePos = GetMousePosition();
     engine->isViewportFocused = CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->sideBarWidth, 0, engine->screenWidth - engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight});
@@ -771,7 +774,7 @@ int main()
 
     while (!WindowShouldClose())
     {
-        contextChangePerFrame(&engine);
+        ContextChangePerFrame(&engine);
 
         if (HandleUICollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph))
         {
@@ -779,23 +782,25 @@ int main()
             {
                 engine.cursor = MOUSE_CURSOR_POINTING_HAND;
             }
-            BuildUITexture(&engine, &graph, editor.CGFilePath);
-            SetTargetFPS(140);
+            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor);
+            engine.fps = 140;
             engine.delayFrames = true;
         }
         else if (engine.delayFrames)
         {
-            BuildUITexture(&engine, &graph, editor.CGFilePath);
+            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor);
             engine.cursor = MOUSE_CURSOR_ARROW;
-            SetTargetFPS(60);
+            engine.fps = 60;
             engine.delayFrames = false;
         }
 
         if (engine.isViewportFocused)
         {
-            // engine.cursor = editor.cursor; //should be viewport.cursor
+            engine.cursor = editor.cursor; //should be viewport.cursor
+            engine.fps = editor.fps;
         }
         SetMouseCursor(engine.cursor);
+        SetTargetFPS(engine.fps);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -812,11 +817,6 @@ int main()
         }
         else
         {
-            if (strcmp(openedFileName, editor.fileName) != 0)
-            {
-                OpenNewCGFile(&editor, &graph, openedFileName);
-            }
-
             if (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0)
             {
                 handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
@@ -851,16 +851,10 @@ int main()
 
     free(projectPath);
 
-    UnloadDirectoryFiles(engine.files);
-
-    UnloadFont(editor.font);
-    UnloadFont(engine.font);
-
     FreeEngineContext(&engine);
     FreeEditorContext(&editor);
     FreeGraphContext(&graph);
 
-    UnloadSound(engine.save);
     CloseAudioDevice();
 
     return 0;

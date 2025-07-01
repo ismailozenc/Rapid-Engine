@@ -58,6 +58,8 @@ void FreeEditorContext(EditorContext *editor)
 
     if (editor->fileName)
         free(editor->fileName);
+
+    UnloadFont(editor->font);
 }
 
 void AddToEngineLog(EditorContext *editor, char *message, int level)
@@ -405,7 +407,7 @@ void HandleDragging(EditorContext *editor, GraphContext *graph)
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && editor->draggingNodeIndex == -1)
     {
-        SetTargetFPS(140);
+        editor->fps = 140;
         for (int i = 0; i < graph->nodeCount; i++)
         {
             if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
@@ -436,7 +438,7 @@ void HandleDragging(EditorContext *editor, GraphContext *graph)
     }
     else if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
     {
-        SetTargetFPS(60);
+        editor->fps = 60;
         editor->draggingNodeIndex = -1;
         editor->isDraggingScreen = false;
     }

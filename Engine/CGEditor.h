@@ -54,6 +54,8 @@ typedef struct
 
     int cursor;
 
+    int fps;
+
     // float zoom;
 } EditorContext;
 

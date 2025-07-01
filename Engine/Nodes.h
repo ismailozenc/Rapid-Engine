@@ -61,20 +61,20 @@ typedef struct GraphContext
 
 GraphContext InitGraphContext();
 
-void FreeGraphContext(GraphContext *ctx);
+void FreeGraphContext(GraphContext *graph);
 
-int SaveGraphToFile(const char *filename, GraphContext *ctx);
+int SaveGraphToFile(const char *filename, GraphContext *graph);
 
-bool LoadGraphFromFile(const char *filename, GraphContext *ctx);
+bool LoadGraphFromFile(const char *filename, GraphContext *graph);
 
-Pin CreatePin(GraphContext *ctx, int nodeID, bool isInput, PinType type, int index, Vector2 pos);
+Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int index, Vector2 pos);
 
-Node CreateNode(GraphContext *ctx, NodeType type, Vector2 pos);
+Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos);
 
-void CreateLink(GraphContext *ctx, Pin Pin1, Pin Pin2);
+void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2);
 
-void DeleteNode(GraphContext *ctx, int nodeID);
+void DeleteNode(GraphContext *graph, int nodeID);
 
-void RemoveConnection(GraphContext *ctx, int fromPinID, int toPinID);
+void RemoveConnection(GraphContext *graph, int fromPinID, int toPinID);
 
 #endif

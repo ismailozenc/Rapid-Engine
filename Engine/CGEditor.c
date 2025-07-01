@@ -11,57 +11,53 @@ void AddToEngineLog(EditorContext *editor, char *message, int level);
 
 EditorContext InitEditorContext()
 {
-    EditorContext EC = {0};
+    EditorContext editor = {0};
 
-    EC.editorOpen = false;
+    editor.CGFilePath = malloc(MAX_PATH_LENGTH);
+    editor.CGFilePath[0] = '\0';
 
-    EC.CGFilePath = malloc(MAX_PATH_LENGTH);
-    EC.CGFilePath[0] = '\0';
+    editor.fileName = malloc(MAX_PATH_LENGTH);
+    editor.fileName[0] = '\0';
 
-    EC.fileName = malloc(MAX_PATH_LENGTH);
-    EC.fileName[0] = '\0';
+    editor.lastClickedPin = INVALID_PIN;
 
-    EC.lastClickedPin = INVALID_PIN;
+    editor.scrollIndexNodeMenu = 0;
+    editor.hoveredItem = -1;
 
-    EC.scrollIndex = 0;
-    EC.hoveredItem = -1;
+    editor.mousePos = (Vector2){0, 0};
 
-    EC.mousePos = (Vector2){0, 0};
+    editor.screenWidth = GetScreenWidth();
+    editor.screenHeight = GetScreenHeight();
 
-    EC.screenWidth = GetScreenWidth();
-    EC.screenHeight = GetScreenHeight();
+    editor.draggingNodeIndex = -1;
+    editor.isDraggingScreen = false;
 
-    EC.draggingNodeIndex = -1;
-    EC.dragOffset = (Vector2){0};
-    EC.isDraggingScreen = false;
+    editor.delayFrames = true;
 
-    EC.delayFrames = true;
-
-    EC.menuOpen = false;
-    EC.submenuOpen = false;
+    editor.menuOpen = false;
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
-    EC.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
-    if (EC.font.texture.id == 0)
+    editor.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+    if (editor.font.texture.id == 0)
     {
-        AddToEngineLog(&EC, "Couldn't load font", 1);
+        AddToEngineLog(&editor, "Couldn't load font", 1);
     }
 
-    EC.newLogMessage = false;
+    editor.newLogMessage = false;
 
-    EC.cameraOffset = (Vector2){0, 0};
+    editor.cameraOffset = (Vector2){0, 0};
 
-    return EC;
+    return editor;
 }
 
-void FreeEditorContext(EditorContext *EC)
+void FreeEditorContext(EditorContext *editor)
 {
-    if (EC->CGFilePath)
-        free(EC->CGFilePath);
+    if (editor->CGFilePath)
+        free(editor->CGFilePath);
 
-    if (EC->fileName)
-        free(EC->fileName);
+    if (editor->fileName)
+        free(editor->fileName);
 }
 
 void AddToEngineLog(EditorContext *editor, char *message, int level)
@@ -71,7 +67,7 @@ void AddToEngineLog(EditorContext *editor, char *message, int level)
     editor->newLogMessage = true;
 }
 
-void SetProjectPaths(EditorContext *EC, const char *projectName)
+void SetProjectPaths(EditorContext *editor, const char *projectName)
 {
     char cwd[MAX_PATH_LENGTH];
 
@@ -91,7 +87,7 @@ void SetProjectPaths(EditorContext *EC, const char *projectName)
 
     cwd[len - 7] = '\0';
 
-    snprintf(EC->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
+    snprintf(editor->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
 }
 
 void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName)
@@ -109,21 +105,21 @@ void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileN
     strcpy(editor->fileName, openedFileName);
 }
 
-void DrawBackgroundGrid(EditorContext *EC, int gridSpacing)
+void DrawBackgroundGrid(EditorContext *editor, int gridSpacing)
 {
 
-    if (EC->isDraggingScreen)
+    if (editor->isDraggingScreen)
     {
         Vector2 delta = GetMouseDelta();
-        EC->cameraOffset = Vector2Subtract(EC->cameraOffset, delta);
+        editor->cameraOffset = Vector2Subtract(editor->cameraOffset, delta);
     }
 
-    Vector2 offset = EC->cameraOffset;
+    Vector2 offset = editor->cameraOffset;
 
     int startX = -((int)offset.x % gridSpacing) - gridSpacing;
     int startY = -((int)offset.y % gridSpacing) - gridSpacing;
 
-    for (int y = startY; y < EC->screenHeight + gridSpacing; y += gridSpacing)
+    for (int y = startY; y < editor->screenHeight + gridSpacing; y += gridSpacing)
     {
         int row = (y + (int)offset.y) / gridSpacing;
 
@@ -167,7 +163,7 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     }
 }
 
-void DrawNodes(EditorContext *EC, GraphContext *graph)
+void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
     {
@@ -195,7 +191,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         }
         else
         {
-            AddToEngineLog(EC, "Error drawing connection", 1);
+            AddToEngineLog(editor, "Error drawing connection", 1);
         }
     }
 
@@ -205,14 +201,14 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
     {
         DrawRectangleRoundedLines((Rectangle){graph->nodes[i].position.x - 1, graph->nodes[i].position.y - 1, getNodeInfoByType(graph->nodes[i].type, "width") + 2, getNodeInfoByType(graph->nodes[i].type, "height") + 2}, 0.2f, 8, WHITE);
         DrawRectangleRounded((Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
-        DrawTextEx(EC->font, NodeTypeToString(graph->nodes[i].type), (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
-        if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
+        DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type), (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
+        if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             hoveredNodeIndex = i;
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
             {
                 DeleteNode(graph, graph->nodes[i].id);
-                EC->menuOpen = false;
+                editor->menuOpen = false;
                 return;
             }
         }
@@ -248,7 +244,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         if (graph->pins[i].type == PIN_FLOW)
         {
             DrawTriangle((Vector2){nodePos.x + xOffset, nodePos.y + yOffset - 8}, (Vector2){nodePos.x + xOffset, nodePos.y + yOffset + 8}, (Vector2){nodePos.x + xOffset + 15, nodePos.y + yOffset}, WHITE);
-            if (CheckCollisionPointRec(EC->mousePos, (Rectangle){nodePos.x + xOffset, nodePos.y + yOffset - 8, 15, 16}))
+            if (CheckCollisionPointRec(editor->mousePos, (Rectangle){nodePos.x + xOffset, nodePos.y + yOffset - 8, 15, 16}))
             {
                 DrawTriangle((Vector2){nodePos.x + xOffset - 2, nodePos.y + yOffset - 10}, (Vector2){nodePos.x + xOffset - 2, nodePos.y + yOffset + 10}, (Vector2){nodePos.x + xOffset + 17, nodePos.y + yOffset}, WHITE);
                 hoveredPinIndex = i;
@@ -257,7 +253,7 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
-            if (CheckCollisionPointCircle(EC->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 5))
+            if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 5))
             {
                 DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 7, WHITE);
                 hoveredPinIndex = i;
@@ -267,41 +263,41 @@ void DrawNodes(EditorContext *EC, GraphContext *graph)
 
     if (hoveredPinIndex != -1 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        if (EC->lastClickedPin.id == -1)
+        if (editor->lastClickedPin.id == -1)
         {
-            EC->lastClickedPin = graph->pins[hoveredPinIndex];
+            editor->lastClickedPin = graph->pins[hoveredPinIndex];
         }
         else
         {
-            CreateLink(graph, EC->lastClickedPin, graph->pins[hoveredPinIndex]);
-            EC->lastClickedPin = INVALID_PIN;
+            CreateLink(graph, editor->lastClickedPin, graph->pins[hoveredPinIndex]);
+            editor->lastClickedPin = INVALID_PIN;
         }
     }
 
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
     {
         DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, "width") + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, "height") + 2}, 0.2f, 8, (Color){255, 255, 255, 30});
-        EC->delayFrames = true;
+        editor->delayFrames = true;
     }
 
-    if (EC->lastClickedPin.id != -1)
+    if (editor->lastClickedPin.id != -1)
     {
-        if (EC->lastClickedPin.isInput)
+        if (editor->lastClickedPin.isInput)
         {
-            DrawCurvedWire(EC->mousePos, EC->lastClickedPin.position, 2.0f, YELLOW);
+            DrawCurvedWire(editor->mousePos, editor->lastClickedPin.position, 2.0f, YELLOW);
         }
         else
         {
-            DrawCurvedWire(EC->lastClickedPin.position, EC->mousePos, 2.0f, YELLOW);
+            DrawCurvedWire(editor->lastClickedPin.position, editor->mousePos, 2.0f, YELLOW);
         }
     }
 }
 
-bool CheckNodeCollisions(EditorContext *EC, GraphContext *graph)
+bool CheckNodeCollisions(EditorContext *editor, GraphContext *graph)
 {
     for (int i = 0; i < graph->nodeCount; i++)
     {
-        if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
+        if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             return true;
         }
@@ -310,7 +306,7 @@ bool CheckNodeCollisions(EditorContext *EC, GraphContext *graph)
     return false;
 }
 
-const char *DrawNodeMenu(EditorContext *EC)
+const char *DrawNodeMenu(EditorContext *editor)
 {
     Color MenuColor = {50, 50, 50, 255};
     Color ScrollIndicatorColor = {150, 150, 150, 255};
@@ -334,137 +330,136 @@ const char *DrawNodeMenu(EditorContext *EC)
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 
-    if (GetMouseWheelMove() < 0 && EC->scrollIndex < menuItemCount - 5)
-        EC->scrollIndex++;
-    if (GetMouseWheelMove() > 0 && EC->scrollIndex > 0)
-        EC->scrollIndex--;
+    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < menuItemCount - 5)
+        editor->scrollIndexNodeMenu++;
+    if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0)
+        editor->scrollIndexNodeMenu--;
 
-    EC->menuPosition.x = EC->rightClickPos.x;
-    EC->menuPosition.y = EC->rightClickPos.y;
+    editor->menuPosition.x = editor->rightClickPos.x;
+    editor->menuPosition.y = editor->rightClickPos.y;
 
-    if (EC->menuPosition.x + MENU_WIDTH > EC->screenWidth)
+    if (editor->menuPosition.x + MENU_WIDTH > editor->screenWidth)
     {
-        EC->menuPosition.x -= MENU_WIDTH;
+        editor->menuPosition.x -= MENU_WIDTH;
     }
 
-    DrawRectangleRounded((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2f, 8, MenuColor);
-    DrawRectangleRoundedLinesEx((Rectangle){EC->menuPosition.x, EC->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2, 8, MENU_BORDER_THICKNESS, BorderColor);
+    DrawRectangleRounded((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2f, 8, MenuColor);
+    DrawRectangleRoundedLinesEx((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2, 8, MENU_BORDER_THICKNESS, BorderColor);
 
     for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
     {
-        int itemIndex = i + EC->scrollIndex;
+        int itemIndex = i + editor->scrollIndexNodeMenu;
         if (itemIndex >= menuItemCount)
             break;
 
-        Rectangle itemRect = {EC->menuPosition.x, EC->menuPosition.y + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
-        if (CheckCollisionPointRec(EC->mousePos, itemRect))
+        Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
+        if (CheckCollisionPointRec(editor->mousePos, itemRect))
         {
             DrawRectangleRec(itemRect, HighlightColor);
-            EC->hoveredItem = itemIndex;
-            EC->submenuOpen = true;
-            EC->submenuPosition.x = (EC->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > EC->screenWidth) ? (EC->menuPosition.x - SUBMENU_WIDTH) : (EC->menuPosition.x + MENU_WIDTH);
-            EC->submenuPosition.y = itemRect.y;
+            editor->hoveredItem = itemIndex;
+            editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth) ? (editor->menuPosition.x - SUBMENU_WIDTH) : (editor->menuPosition.x + MENU_WIDTH);
+            editor->submenuPosition.y = itemRect.y;
         }
-        DrawText(menuItems[itemIndex], EC->menuPosition.x + 10, EC->menuPosition.y + i * MENU_ITEM_HEIGHT + 10, 25, WHITE);
+        DrawText(menuItems[itemIndex], editor->menuPosition.x + 10, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 10, 25, WHITE);
     }
 
     // Scrollbar
     float scrollBarHeight = (menuHeight / (menuItemCount * 2)) * (int)MENU_VISIBLE_ITEMS;
-    float scrollBarY = EC->menuPosition.y + 20 + (EC->scrollIndex * (menuHeight / menuItemCount));
-    DrawRectangle(EC->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
+    float scrollBarY = editor->menuPosition.y + 20 + (editor->scrollIndexNodeMenu * (menuHeight / menuItemCount));
+    DrawRectangle(editor->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        EC->menuOpen = false;
+        editor->menuOpen = false;
     }
 
-    if (EC->submenuOpen && EC->hoveredItem >= 0 && EC->hoveredItem < menuItemCount)
+    if (editor->hoveredItem >= 0 && editor->hoveredItem < menuItemCount)
     {
-        int subCount = subMenuCounts[EC->hoveredItem];
+        int subCount = subMenuCounts[editor->hoveredItem];
         float submenuHeight = subCount * MENU_ITEM_HEIGHT;
-        DrawRectangle(EC->submenuPosition.x, EC->submenuPosition.y, SUBMENU_WIDTH, submenuHeight, MenuColor);
-        DrawRectangleLinesEx((Rectangle){EC->submenuPosition.x, EC->submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, MENU_BORDER_THICKNESS, BorderColor);
+        DrawRectangle(editor->submenuPosition.x, editor->submenuPosition.y, SUBMENU_WIDTH, submenuHeight, MenuColor);
+        DrawRectangleLinesEx((Rectangle){editor->submenuPosition.x, editor->submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, MENU_BORDER_THICKNESS, BorderColor);
         for (int j = 0; j < subCount; j++)
         {
-            Rectangle subItemRect = {EC->submenuPosition.x, EC->submenuPosition.y + j * MENU_ITEM_HEIGHT, SUBMENU_WIDTH, MENU_ITEM_HEIGHT};
-            if (CheckCollisionPointRec(EC->mousePos, subItemRect))
+            Rectangle subItemRect = {editor->submenuPosition.x, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT, SUBMENU_WIDTH, MENU_ITEM_HEIGHT};
+            if (CheckCollisionPointRec(editor->mousePos, subItemRect))
             {
                 DrawRectangleRec(subItemRect, HighlightColor);
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 {
-                    EC->delayFrames = true;
+                    editor->delayFrames = true;
                     // Handle click event for submenu item
-                    return subMenuItems[EC->hoveredItem][j];
+                    return subMenuItems[editor->hoveredItem][j];
                 }
             }
-            DrawText(subMenuItems[EC->hoveredItem][j], EC->submenuPosition.x + 10, EC->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10, 25, WHITE);
+            DrawText(subMenuItems[editor->hoveredItem][j], editor->submenuPosition.x + 10, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10, 25, WHITE);
         }
     }
 
     return "NULL";
 }
 
-void HandleDragging(EditorContext *EC, GraphContext *graph)
+void HandleDragging(EditorContext *editor, GraphContext *graph)
 {
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex == -1)
+    static Vector2 dragOffset;
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && editor->draggingNodeIndex == -1)
     {
         SetTargetFPS(140);
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            if (CheckCollisionPointRec(EC->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
+            if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
             {
-                EC->draggingNodeIndex = i;
-                EC->dragOffset = (Vector2){EC->mousePos.x - graph->nodes[i].position.x, EC->mousePos.y - graph->nodes[i].position.y};
+                editor->draggingNodeIndex = i;
+                dragOffset = (Vector2){editor->mousePos.x - graph->nodes[i].position.x, editor->mousePos.y - graph->nodes[i].position.y};
                 return;
             }
         }
 
-        EC->isDraggingScreen = true;
-        EC->prevMousePos = EC->mousePos;
-        EC->mousePosAtStartOfDrag = EC->mousePos;
+        editor->isDraggingScreen = true;
         return;
     }
-    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->draggingNodeIndex != -1)
+    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && editor->draggingNodeIndex != -1)
     {
-        graph->nodes[EC->draggingNodeIndex].position.x = EC->mousePos.x - EC->dragOffset.x;
-        graph->nodes[EC->draggingNodeIndex].position.y = EC->mousePos.y - EC->dragOffset.y;
-        DrawRectangleRounded((Rectangle){graph->nodes[EC->draggingNodeIndex].position.x, graph->nodes[EC->draggingNodeIndex].position.y, getNodeInfoByType(graph->nodes[EC->draggingNodeIndex].type, "width"), getNodeInfoByType(graph->nodes[EC->draggingNodeIndex].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
+        graph->nodes[editor->draggingNodeIndex].position.x = editor->mousePos.x - dragOffset.x;
+        graph->nodes[editor->draggingNodeIndex].position.y = editor->mousePos.y - dragOffset.y;
+        DrawRectangleRounded((Rectangle){graph->nodes[editor->draggingNodeIndex].position.x, graph->nodes[editor->draggingNodeIndex].position.y, getNodeInfoByType(graph->nodes[editor->draggingNodeIndex].type, "width"), getNodeInfoByType(graph->nodes[editor->draggingNodeIndex].type, "height")}, 0.2f, 8, CLITERAL(Color){255, 255, 255, 50});
     }
-    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && EC->isDraggingScreen)
+    else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && editor->isDraggingScreen)
     {
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            graph->nodes[i].position.x = graph->nodes[i].position.x + EC->mousePos.x - EC->prevMousePos.x;
-            graph->nodes[i].position.y = graph->nodes[i].position.y + EC->mousePos.y - EC->prevMousePos.y;
+            Vector2 delta = GetMouseDelta();
+            graph->nodes[i].position.x += delta.x;
+            graph->nodes[i].position.y += delta.y;
         }
-        EC->prevMousePos = EC->mousePos;
     }
     else if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
     {
         SetTargetFPS(60);
-        EC->draggingNodeIndex = -1;
-        EC->isDraggingScreen = false;
+        editor->draggingNodeIndex = -1;
+        editor->isDraggingScreen = false;
     }
 }
 
-int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view)
+int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D view)
 {
     BeginTextureMode(view);
     ClearBackground((Color){40, 42, 54, 255});
 
-    HandleDragging(EC, graph);
+    HandleDragging(editor, graph);
 
-    DrawBackgroundGrid(EC, 40);
+    DrawBackgroundGrid(editor, 40);
 
-    DrawNodes(EC, graph);
+    DrawNodes(editor, graph);
 
-    if (EC->menuOpen)
+    if (editor->menuOpen)
     {
         char createdNode[MAX_TYPE_LENGTH];
-        strcpy(createdNode, DrawNodeMenu(EC));
+        strcpy(createdNode, DrawNodeMenu(editor));
         if (strcmp(createdNode, "NULL") != 0)
         {
-            CreateNode(graph, StringToNodeType(createdNode), EC->rightClickPos);
+            CreateNode(graph, StringToNodeType(createdNode), editor->rightClickPos);
         }
     }
 
@@ -473,37 +468,41 @@ int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view
     return 0;
 }
 
-bool CheckAllCollisions(EditorContext *EC, GraphContext *graph)
+bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
 {
     if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
     {
-        EC->menuOpen = true;
-        EC->rightClickPos = EC->mousePos;
-        EC->scrollIndex = 0;
-        EC->delayFrames = true;
+        editor->menuOpen = true;
+        editor->rightClickPos = editor->mousePos;
+        editor->scrollIndexNodeMenu = 0;
+        editor->delayFrames = true;
     }
 
-    return CheckNodeCollisions(EC, graph) || EC->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || EC->lastClickedPin.id != -1 || EC->menuOpen;
+    return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen;
 }
 
-void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight)
+void handleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight, bool draggingDisabled)
 {
-    EC->newLogMessage = false;
+    editor->newLogMessage = false;
+    editor->cursor = MOUSE_CURSOR_ARROW;
 
-    EC->screenWidth = screenWidth;
-    EC->screenHeight = screenHeight;
-    EC->mousePos = mousePos;
+    editor->screenWidth = screenWidth;
+    editor->screenHeight = screenHeight;
+    editor->mousePos = mousePos;
 
-    if (CheckAllCollisions(EC, graph))
-    {
-        DrawFullTexture(EC, graph, *viewport);
-        EC->delayFrames = true;
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    if(draggingDisabled){
+        return;
     }
-    else if (EC->delayFrames == true)
+
+    if (CheckAllCollisions(editor, graph))
     {
-        DrawFullTexture(EC, graph, *viewport);
-        EC->delayFrames = false;
-        SetMouseCursor(MOUSE_CURSOR_ARROW);
+        DrawFullTexture(editor, graph, *viewport);
+        editor->delayFrames = true;
+        editor->cursor = MOUSE_CURSOR_POINTING_HAND;
+    }
+    else if (editor->delayFrames == true)
+    {
+        DrawFullTexture(editor, graph, *viewport);
+        editor->delayFrames = false;
     }
 }

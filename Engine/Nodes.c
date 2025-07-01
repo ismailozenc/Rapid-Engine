@@ -26,59 +26,55 @@ const char *OutputsByNodeTypes[][5] = {
 
 GraphContext InitGraphContext()
 {
-    GraphContext ctx;
+    GraphContext graph;
 
-    ctx.nodes = NULL;
-    ctx.nodeCount = 0;
-    ctx.nextNodeID = 1;
+    graph.nodes = NULL;
+    graph.nodeCount = 0;
+    graph.nextNodeID = 1;
 
-    ctx.pins = NULL;
-    ctx.pinCount = 0;
-    ctx.nextPinID = 1;
+    graph.pins = NULL;
+    graph.pinCount = 0;
+    graph.nextPinID = 1;
 
-    ctx.links = NULL;
-    ctx.linkCount = 0;
-    ctx.nextLinkID = 1;
+    graph.links = NULL;
+    graph.linkCount = 0;
+    graph.nextLinkID = 1;
 
-    return ctx;
+    return graph;
 }
 
-void FreeGraphContext(GraphContext *ctx)
+void FreeGraphContext(GraphContext *graph)
 {
-    if (!ctx)
+    if (!graph)
         return;
 
-    // Free pins array
-    if (ctx->pins)
+    if (graph->pins)
     {
-        free(ctx->pins);
-        ctx->pins = NULL;
+        free(graph->pins);
+        graph->pins = NULL;
     }
 
-    // Free links array
-    if (ctx->links)
+    if (graph->links)
     {
-        free(ctx->links);
-        ctx->links = NULL;
+        free(graph->links);
+        graph->links = NULL;
     }
 
-    // Free nodes array
-    if (ctx->nodes)
+    if (graph->nodes)
     {
-        free(ctx->nodes);
-        ctx->nodes = NULL;
+        free(graph->nodes);
+        graph->nodes = NULL;
     }
 
-    // Reset counters
-    ctx->nodeCount = 0;
-    ctx->nextNodeID = 0;
-    ctx->pinCount = 0;
-    ctx->nextPinID = 0;
-    ctx->linkCount = 0;
-    ctx->nextLinkID = 0;
+    graph->nodeCount = 0;
+    graph->nextNodeID = 0;
+    graph->pinCount = 0;
+    graph->nextPinID = 0;
+    graph->linkCount = 0;
+    graph->nextLinkID = 0;
 }
 
-int SaveGraphToFile(const char *filename, GraphContext *ctx)
+int SaveGraphToFile(const char *filename, GraphContext *graph)
 {
     FILE *file = fopen(filename, "wb");
     if (!file)
@@ -87,25 +83,25 @@ int SaveGraphToFile(const char *filename, GraphContext *ctx)
         return 1;
     }
 
-    fwrite(&ctx->nextNodeID, sizeof(int), 1, file);
-    fwrite(&ctx->nextPinID, sizeof(int), 1, file);
-    fwrite(&ctx->nextLinkID, sizeof(int), 1, file);
+    fwrite(&graph->nextNodeID, sizeof(int), 1, file);
+    fwrite(&graph->nextPinID, sizeof(int), 1, file);
+    fwrite(&graph->nextLinkID, sizeof(int), 1, file);
 
-    fwrite(&ctx->nodeCount, sizeof(int), 1, file);
-    fwrite(ctx->nodes, sizeof(Node), ctx->nodeCount, file);
+    fwrite(&graph->nodeCount, sizeof(int), 1, file);
+    fwrite(graph->nodes, sizeof(Node), graph->nodeCount, file);
 
-    fwrite(&ctx->pinCount, sizeof(int), 1, file);
-    fwrite(ctx->pins, sizeof(Pin), ctx->pinCount, file);
+    fwrite(&graph->pinCount, sizeof(int), 1, file);
+    fwrite(graph->pins, sizeof(Pin), graph->pinCount, file);
 
-    fwrite(&ctx->linkCount, sizeof(int), 1, file);
-    fwrite(ctx->links, sizeof(Link), ctx->linkCount, file);
+    fwrite(&graph->linkCount, sizeof(int), 1, file);
+    fwrite(graph->links, sizeof(Link), graph->linkCount, file);
 
     fclose(file);
 
     return 0;
 }
 
-bool LoadGraphFromFile(const char *filename, GraphContext *ctx)
+bool LoadGraphFromFile(const char *filename, GraphContext *graph)
 {
     FILE *file = fopen(filename, "rb");
     if (!file)
@@ -113,31 +109,31 @@ bool LoadGraphFromFile(const char *filename, GraphContext *ctx)
         return false;
     }
 
-    fread(&ctx->nextNodeID, sizeof(int), 1, file);
-    fread(&ctx->nextPinID, sizeof(int), 1, file);
-    fread(&ctx->nextLinkID, sizeof(int), 1, file);
+    fread(&graph->nextNodeID, sizeof(int), 1, file);
+    fread(&graph->nextPinID, sizeof(int), 1, file);
+    fread(&graph->nextLinkID, sizeof(int), 1, file);
 
-    fread(&ctx->nodeCount, sizeof(int), 1, file);
-    ctx->nodes = malloc(sizeof(Node) * ctx->nodeCount);
-    fread(ctx->nodes, sizeof(Node), ctx->nodeCount, file);
+    fread(&graph->nodeCount, sizeof(int), 1, file);
+    graph->nodes = malloc(sizeof(Node) * graph->nodeCount);
+    fread(graph->nodes, sizeof(Node), graph->nodeCount, file);
 
-    fread(&ctx->pinCount, sizeof(int), 1, file);
-    ctx->pins = malloc(sizeof(Pin) * ctx->pinCount);
-    fread(ctx->pins, sizeof(Pin), ctx->pinCount, file);
+    fread(&graph->pinCount, sizeof(int), 1, file);
+    graph->pins = malloc(sizeof(Pin) * graph->pinCount);
+    fread(graph->pins, sizeof(Pin), graph->pinCount, file);
 
-    fread(&ctx->linkCount, sizeof(int), 1, file);
-    ctx->links = malloc(sizeof(Link) * ctx->linkCount);
-    fread(ctx->links, sizeof(Link), ctx->linkCount, file);
+    fread(&graph->linkCount, sizeof(int), 1, file);
+    graph->links = malloc(sizeof(Link) * graph->linkCount);
+    fread(graph->links, sizeof(Link), graph->linkCount, file);
 
     fclose(file);
 
     return true;
 }
 
-Pin CreatePin(GraphContext *ctx, int nodeID, bool isInput, PinType type, int index, Vector2 pos)
+Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int index, Vector2 pos)
 {
     Pin pin = {0};
-    pin.id = ctx->nextPinID++;
+    pin.id = graph->nextPinID++;
     pin.nodeID = nodeID;
     pin.isInput = isInput;
     pin.type = type;
@@ -146,10 +142,10 @@ Pin CreatePin(GraphContext *ctx, int nodeID, bool isInput, PinType type, int ind
     return pin;
 }
 
-Node CreateNode(GraphContext *ctx, NodeType type, Vector2 pos)
+Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
 {
     Node node = {0};
-    node.id = ctx->nextNodeID++;
+    node.id = graph->nextNodeID++;
     node.type = type;
     node.position = pos;
 
@@ -167,47 +163,44 @@ Node CreateNode(GraphContext *ctx, NodeType type, Vector2 pos)
         return node;
     }
 
-    // Preallocate room for all pins at once
-    int newPinCapacity = ctx->pinCount + inputCount + outputCount;
-    Pin *newPins = realloc(ctx->pins, sizeof(Pin) * newPinCapacity);
+    int newPinCapacity = graph->pinCount + inputCount + outputCount;
+    Pin *newPins = realloc(graph->pins, sizeof(Pin) * newPinCapacity);
     if (!newPins)
     {
         TraceLog(LOG_ERROR, "CreateNode: Failed to realloc pins array");
         return node;
     }
-    ctx->pins = newPins;
+    graph->pins = newPins;
 
-    // Create input pins
     for (int i = 0; i < inputCount; i++)
     {
-        Pin pin = CreatePin(ctx, node.id, true, getInputsByType(type)[i], i, (Vector2){0, 0});
-        ctx->pins[ctx->pinCount] = pin;
+        Pin pin = CreatePin(graph, node.id, true, getInputsByType(type)[i], i, (Vector2){0, 0});
+        graph->pins[graph->pinCount] = pin;
         node.inputPins[node.inputCount++] = pin.id;
-        ctx->pinCount++;
+        graph->pinCount++;
     }
 
-    // Create output pins
     for (int i = 0; i < outputCount; i++)
     {
-        Pin pin = CreatePin(ctx, node.id, false, getOutputsByType(type)[i], i, (Vector2){0, 0});
-        ctx->pins[ctx->pinCount] = pin;
+        Pin pin = CreatePin(graph, node.id, false, getOutputsByType(type)[i], i, (Vector2){0, 0});
+        graph->pins[graph->pinCount] = pin;
         node.outputPins[node.outputCount++] = pin.id;
-        ctx->pinCount++;
+        graph->pinCount++;
     }
 
-    Node *newNodes = realloc(ctx->nodes, sizeof(Node) * (ctx->nodeCount + 1));
+    Node *newNodes = realloc(graph->nodes, sizeof(Node) * (graph->nodeCount + 1));
     if (!newNodes)
     {
         TraceLog(LOG_ERROR, "CreateNode: Failed to realloc nodes");
         return node;
     }
-    ctx->nodes = newNodes;
-    ctx->nodes[ctx->nodeCount++] = node;
+    graph->nodes = newNodes;
+    graph->nodes[graph->nodeCount++] = node;
 
     return node;
 }
 
-void CreateLink(GraphContext *ctx, Pin Pin1, Pin Pin2)
+void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2)
 {
     if(Pin1.isInput == Pin2.isInput){return;}
     else if((Pin1.type == PIN_FLOW && Pin2.type != PIN_FLOW) || (Pin1.type != PIN_FLOW && Pin2.type == PIN_FLOW)){return;}
@@ -223,83 +216,79 @@ void CreateLink(GraphContext *ctx, Pin Pin1, Pin Pin2)
         link.outputPinID = Pin1.id;
     }
 
-    ctx->links = realloc(ctx->links, sizeof(Link) * (ctx->linkCount + 1));
-    ctx->links[ctx->linkCount++] = link;
+    graph->links = realloc(graph->links, sizeof(Link) * (graph->linkCount + 1));
+    graph->links[graph->linkCount++] = link;
 
     return;
 }
 
-void DeleteNode(GraphContext *ctx, int nodeID)
+void DeleteNode(GraphContext *graph, int nodeID)
 {
-    if (ctx->nodeCount == 0) return;
+    if (graph->nodeCount == 0) return;
 
-    // 1. Find node
     int nodeIndex = -1;
-    for (int i = 0; i < ctx->nodeCount; i++) {
-        if (ctx->nodes[i].id == nodeID) {
+    for (int i = 0; i < graph->nodeCount; i++) {
+        if (graph->nodes[i].id == nodeID) {
             nodeIndex = i;
             break;
         }
     }
     if (nodeIndex == -1) return;
 
-    // 2. Remove node
-    ctx->nodes[nodeIndex] = ctx->nodes[ctx->nodeCount - 1];
-    ctx->nodeCount--;
+    graph->nodes[nodeIndex] = graph->nodes[graph->nodeCount - 1];
+    graph->nodeCount--;
 
-    if (ctx->nodeCount == 0) {
-        free(ctx->nodes);
-        ctx->nodes = NULL;
+    if (graph->nodeCount == 0) {
+        free(graph->nodes);
+        graph->nodes = NULL;
     } else {
-        Node *resized = realloc(ctx->nodes, ctx->nodeCount * sizeof(Node));
-        if (resized) ctx->nodes = resized;
+        Node *resized = realloc(graph->nodes, graph->nodeCount * sizeof(Node));
+        if (resized) graph->nodes = resized;
     }
 
-    // 3. Track pins to delete
-    int *pinsToDelete = malloc(ctx->pinCount * sizeof(int));
+    int *pinsToDelete = malloc(graph->pinCount * sizeof(int));
     int pinsToDeleteCount = 0;
 
-    for (int i = 0; i < ctx->pinCount;) {
-        if (ctx->pins[i].nodeID == nodeID) {
-            pinsToDelete[pinsToDeleteCount++] = ctx->pins[i].id;
-            ctx->pins[i] = ctx->pins[ctx->pinCount - 1];
-            ctx->pinCount--;
+    for (int i = 0; i < graph->pinCount;) {
+        if (graph->pins[i].nodeID == nodeID) {
+            pinsToDelete[pinsToDeleteCount++] = graph->pins[i].id;
+            graph->pins[i] = graph->pins[graph->pinCount - 1];
+            graph->pinCount--;
 
-            if (ctx->pinCount == 0) {
-                free(ctx->pins);
-                ctx->pins = NULL;
+            if (graph->pinCount == 0) {
+                free(graph->pins);
+                graph->pins = NULL;
                 break;
             } else {
-                Pin *resized = realloc(ctx->pins, ctx->pinCount * sizeof(Pin));
-                if (resized) ctx->pins = resized;
+                Pin *resized = realloc(graph->pins, graph->pinCount * sizeof(Pin));
+                if (resized) graph->pins = resized;
             }
         } else {
             i++;
         }
     }
 
-    // 4. Delete links connected to those pins
-    for (int i = 0; i < ctx->linkCount;) {
+    for (int i = 0; i < graph->linkCount;) {
         bool remove = false;
         for (int j = 0; j < pinsToDeleteCount; j++) {
-            if (ctx->links[i].inputPinID == pinsToDelete[j] ||
-                ctx->links[i].outputPinID == pinsToDelete[j]) {
+            if (graph->links[i].inputPinID == pinsToDelete[j] ||
+                graph->links[i].outputPinID == pinsToDelete[j]) {
                 remove = true;
                 break;
             }
         }
 
         if (remove) {
-            ctx->links[i] = ctx->links[ctx->linkCount - 1];
-            ctx->linkCount--;
+            graph->links[i] = graph->links[graph->linkCount - 1];
+            graph->linkCount--;
 
-            if (ctx->linkCount == 0) {
-                free(ctx->links);
-                ctx->links = NULL;
+            if (graph->linkCount == 0) {
+                free(graph->links);
+                graph->links = NULL;
                 break;
             } else {
-                Link *resized = realloc(ctx->links, ctx->linkCount * sizeof(Link));
-                if (resized) ctx->links = resized;
+                Link *resized = realloc(graph->links, graph->linkCount * sizeof(Link));
+                if (resized) graph->links = resized;
             }
         } else {
             i++;
@@ -309,17 +298,16 @@ void DeleteNode(GraphContext *ctx, int nodeID)
     free(pinsToDelete);
 }
 
-void RemoveConnection(GraphContext *ctx, int fromPinID, int toPinID)
+void RemoveConnection(GraphContext *graph, int fromPinID, int toPinID)
 {
-    for (int i = 0; i < ctx->linkCount; i++)
+    for (int i = 0; i < graph->linkCount; i++)
     {
-        if (ctx->links[i].outputPinID == fromPinID && ctx->links[i].inputPinID == toPinID)
+        if (graph->links[i].outputPinID == fromPinID && graph->links[i].inputPinID == toPinID)
         {
-            // Swap with last link and shrink
-            ctx->links[i] = ctx->links[ctx->linkCount - 1];
-            ctx->linkCount--;
-            ctx->links = realloc(ctx->links, sizeof(Link) * ctx->linkCount);
-            return; // Assuming only one connection between those pins
+            graph->links[i] = graph->links[graph->linkCount - 1];
+            graph->linkCount--;
+            graph->links = realloc(graph->links, sizeof(Link) * graph->linkCount);
+            return;
         }
     }
 }

@@ -6,49 +6,9 @@
 #include "shell_execute.h"
 #include "CGEditor.h"
 #include "ProjectManager.h"
-
-#define MAX_UI_ELEMENTS 100
-
-const double doubleClickThreshold = 0.3;
+#include "Engine.h"
 
 char openedFileName[32] = "Game";
-bool isEditorOpened = false;
-
-typedef enum
-{
-    NO_COLLISION_ACTION,
-    SAVE_CG,
-    RUN_GAME,
-    BACK_FILEPATH,
-    REFRESH_FILES,
-    CLOSE_WINDOW,
-    MINIMIZE_WINDOW,
-    RESIZE_BOTTOM_BAR,
-    RESIZE_SIDE_BAR,
-    RESIZE_SIDE_BAR_MIDDLE,
-    OPEN_FILE
-} UIElementCollisionType;
-
-typedef enum
-{
-    UIRectangle,
-    UICircle,
-    UILine,
-    UIText
-} UIElementShape;
-
-typedef struct LogEntry
-{
-    char message[256];
-    int level; // 0 = Info, 1 = Warning, 2 = Error
-} LogEntry;
-
-typedef struct Logs
-{
-    LogEntry *entries;
-    int count;
-    int capacity;
-} Logs;
 
 Logs InitLogs()
 {
@@ -58,71 +18,6 @@ Logs InitLogs()
     logs.entries = malloc(sizeof(LogEntry) * logs.capacity);
     return logs;
 }
-
-typedef struct UIElement
-{
-    char name[256];
-    UIElementShape shape;
-    UIElementCollisionType type;
-    union
-    {
-        struct
-        {
-            Vector2 pos;
-            Vector2 recSize;
-            float roundness;
-            int roundSegments;
-            Color hoverColor;
-        } rect;
-
-        struct
-        {
-            Vector2 center;
-            int radius;
-        } circle;
-
-        struct
-        {
-            Vector2 startPos;
-            Vector2 engPos;
-            int thickness;
-        } line;
-    };
-    Color color;
-    int layer;
-    struct
-    {
-        char string[256];
-        Vector2 textPos;
-        int textSize;
-        int textSpacing;
-        Color textColor;
-    } text;
-} UIElement;
-
-typedef struct EngineContext
-{
-    int screenWidth, screenHeight, bottomBarHeight, sideBarWidth, sideBarMiddleY;
-    int prevScreenWidth;
-    int prevScreenHeight;
-    int viewportWidth;
-    int viewportHeight;
-    Vector2 mousePos;
-    RenderTexture2D viewport, UI;
-    Texture2D resizeButton;
-    char *projectPath;
-    char *currentPath;
-    Font font;
-    Logs logs;
-    bool delayFrames;
-    FilePathList files;
-    int draggingResizeButtonID;
-    bool hasResizedBar;
-    int cursor;
-    UIElement uiElements[MAX_UI_ELEMENTS]; // temporary hardcoded size
-    int uiElementCount;
-    int hoveredUIElementIndex;
-} EngineContext;
 
 void AddToLog(EngineContext *engine, const char *newLine, int level);
 
@@ -184,6 +79,12 @@ EngineContext InitEngineContext(char *projectPath)
     engine.files = LoadDirectoryFilesEx(projectPath, NULL, false);
 
     engine.hoveredUIElementIndex = -1;
+
+    engine.isEditorOpened = false;
+
+    engine.save = LoadSound("save.wav");
+
+    engine.isSoundOn = true;
 
     return engine;
 }
@@ -312,8 +213,6 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
 {
     if (engine->hoveredUIElementIndex != -1)
     {
-        engine->cursor = MOUSE_CURSOR_POINTING_HAND;
-
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
         {
             DrawRectangleRounded((Rectangle){engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments, engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor);
@@ -326,6 +225,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
         case SAVE_CG:
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
+                if(engine->isSoundOn){PlaySound(engine->save);}
                 if (SaveGraphToFile(CGFilePath, graph) == 0)
                     AddToLog(engine, "Saved successfully!", 0);
                 else
@@ -336,6 +236,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             engine->cursor = MOUSE_CURSOR_NOT_ALLOWED;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
+                engine->isEditorOpened = false;
                 AddToLog(engine, "Interpreter not ready", 2);
             }
             break;
@@ -357,6 +258,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             }
             break;
         case CLOSE_WINDOW:
+            engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 CloseWindow();
@@ -364,25 +266,29 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             }
             break;
         case MINIMIZE_WINDOW:
+            engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 MinimizeWindow();
             }
             break;
         case RESIZE_BOTTOM_BAR:
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+            engine->isViewportFocused = false;
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 1;
             }
             break;
         case RESIZE_SIDE_BAR:
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+            engine->isViewportFocused = false;
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 2;
             }
             break;
         case RESIZE_SIDE_BAR_MIDDLE:
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+            engine->isViewportFocused = false;
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 3;
             }
@@ -415,7 +321,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                         buff[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
                         strcpy(openedFileName, buff);
                         free(buff);
-                        isEditorOpened = true;
+                        engine->isEditorOpened = true;
                     }
                     else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != 0)
                     {
@@ -751,13 +657,14 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
 {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
     {
+        if(engine->isSoundOn){PlaySound(engine->save);}
         if (SaveGraphToFile(CGFilePath, graph) == 0)
         {
             AddToLog(engine, "Saved successfully!", 0);
         }
         else
         {
-            AddToLog(engine, "ERROR SAVING CHANGES!", 2);
+            AddToLog(engine, "ERROR SAVING CHANGES!", 1);
         }
     }
 
@@ -766,8 +673,9 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
         {
             engine->draggingResizeButtonID = 0;
-            engine->hasResizedBar = true;
         }
+
+        engine->hasResizedBar = true;
 
         switch (engine->draggingResizeButtonID)
         {
@@ -798,11 +706,6 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         }
     }
 
-    if (GetKeyPressed() != 0 || IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-    {
-        return true;
-    }
-
     for (int i = 0; i < engine->uiElementCount; i++)
     {
         if (engine->uiElements[i].layer != 0)
@@ -828,6 +731,7 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
 void contextChangePerFrame(EngineContext *engine)
 {
     engine->mousePos = GetMousePosition();
+    engine->isViewportFocused = CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->sideBarWidth, 0, engine->screenWidth - engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight});
 
     if (engine->prevScreenWidth != engine->screenWidth || engine->prevScreenHeight != engine->screenHeight || engine->hasResizedBar)
     {
@@ -855,6 +759,8 @@ int main()
 
     MaximizeWindow();
 
+    InitAudioDevice();
+
     EngineContext engine = InitEngineContext(projectPath);
     EditorContext editor = InitEditorContext();
     GraphContext graph = InitGraphContext();
@@ -869,8 +775,11 @@ int main()
 
         if (HandleUICollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph))
         {
+            if (engine.cursor == MOUSE_CURSOR_ARROW)
+            {
+                engine.cursor = MOUSE_CURSOR_POINTING_HAND;
+            }
             BuildUITexture(&engine, &graph, editor.CGFilePath);
-            SetMouseCursor(engine.cursor);
             SetTargetFPS(140);
             engine.delayFrames = true;
         }
@@ -878,10 +787,15 @@ int main()
         {
             BuildUITexture(&engine, &graph, editor.CGFilePath);
             engine.cursor = MOUSE_CURSOR_ARROW;
-            SetMouseCursor(engine.cursor);
             SetTargetFPS(60);
             engine.delayFrames = false;
         }
+
+        if (engine.isViewportFocused)
+        {
+            // engine.cursor = editor.cursor; //should be viewport.cursor
+        }
+        SetMouseCursor(engine.cursor);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -889,26 +803,24 @@ int main()
         int textureX = (engine.viewport.texture.width - engine.viewportWidth) / 2.0f + engine.mousePos.x - engine.sideBarWidth;
         int textureY = (engine.viewport.texture.height - engine.viewportHeight) / 2.0f + engine.mousePos.y;
 
-        if (!isEditorOpened)
+        if (!engine.isEditorOpened)
         {
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
             DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
             EndTextureMode();
         }
-        else if (isEditorOpened)
+        else
         {
             if (strcmp(openedFileName, editor.fileName) != 0)
             {
                 OpenNewCGFile(&editor, &graph, openedFileName);
             }
 
-            if (CheckCollisionPointRec(engine.mousePos, (Rectangle){engine.sideBarWidth, 0, engine.screenWidth - engine.sideBarWidth, engine.screenHeight - engine.bottomBarHeight}) || editor.delayFrames)
+            if (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0)
             {
-                handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight);
+                handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
             }
-            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f)); //
-            DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
 
             if (editor.newLogMessage)
             {
@@ -926,6 +838,12 @@ int main()
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
+        if (engine.isEditorOpened)
+        {
+            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
+            DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
+        }
+
         DrawFPS(10, 10);
 
         EndDrawing();
@@ -941,6 +859,9 @@ int main()
     FreeEngineContext(&engine);
     FreeEditorContext(&editor);
     FreeGraphContext(&graph);
+
+    UnloadSound(engine.save);
+    CloseAudioDevice();
 
     return 0;
 }

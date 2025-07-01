@@ -22,8 +22,6 @@
 
 typedef struct
 {
-    bool editorOpen;
-
     char *CGFilePath;
     char *fileName;
 
@@ -33,19 +31,15 @@ typedef struct
     bool delayFrames;
 
     Vector2 mousePos;
-    Vector2 prevMousePos;
-    Vector2 mousePosAtStartOfDrag;
     Vector2 rightClickPos;
 
     bool isDraggingScreen;
     int draggingNodeIndex;
-    Vector2 dragOffset;
 
     bool menuOpen;
-    bool submenuOpen;
     Vector2 menuPosition;
     Vector2 submenuPosition;
-    int scrollIndex;
+    int scrollIndexNodeMenu;
     int hoveredItem;
 
     Pin lastClickedPin;
@@ -58,35 +52,37 @@ typedef struct
 
     Vector2 cameraOffset;
 
+    int cursor;
+
     // float zoom;
 } EditorContext;
 
 EditorContext InitEditorContext(void);
 
-void FreeEditorContext(EditorContext *EC);
+void FreeEditorContext(EditorContext *editor);
 
 void AddToEngineLog(EditorContext *editor, char *message, int level);
 
-void SetProjectPaths(EditorContext *EC, const char *projectName);
+void SetProjectPaths(EditorContext *editor, const char *projectName);
 
 void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName);
 
-void DrawBackgroundGrid(EditorContext *EC, int gridSpacing);
+void DrawBackgroundGrid(EditorContext *editor, int gridSpacing);
 
 void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color color);
 
-void DrawNodes(EditorContext *EC, GraphContext *graph);
+void DrawNodes(EditorContext *editor, GraphContext *graph);
 
-bool CheckNodeCollisions(EditorContext *EC, GraphContext *graph);
+bool CheckNodeCollisions(EditorContext *editor, GraphContext *graph);
 
-const char *DrawNodeMenu(EditorContext *EC);
+const char *DrawNodeMenu(EditorContext *editor);
 
-void HandleDragging(EditorContext *EC, GraphContext *graph);
+void HandleDragging(EditorContext *editor, GraphContext *graph);
 
-int DrawFullTexture(EditorContext *EC, GraphContext *graph, RenderTexture2D view);
+int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D view);
 
-bool CheckAllCollisions(EditorContext *EC, GraphContext *graph);
+bool CheckAllCollisions(EditorContext *editor, GraphContext *graph);
 
-void handleEditor(EditorContext *EC, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight);
+void handleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight, bool draggingDisabled);
 
 #endif

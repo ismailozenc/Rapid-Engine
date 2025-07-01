@@ -8,6 +8,7 @@
         "direct.h": "c",
         "math.h": "c",
         "shell_execute.h": "c",
-        "projectmanager.h": "c"
+        "projectmanager.h": "c",
+        "cgeditor.h": "c"
     }
 }

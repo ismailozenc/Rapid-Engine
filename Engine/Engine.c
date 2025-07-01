@@ -278,6 +278,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
         case RESIZE_BOTTOM_BAR:
             engine->isViewportFocused = false;
+            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 1;
@@ -285,6 +286,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
         case RESIZE_SIDE_BAR:
             engine->isViewportFocused = false;
+            engine->cursor = MOUSE_CURSOR_RESIZE_EW;
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 2;
@@ -292,6 +294,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
         case RESIZE_SIDE_BAR_MIDDLE:
             engine->isViewportFocused = false;
+            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 3;
@@ -690,7 +693,6 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
             {
                 engine->bottomBarHeight = 5;
             }
-            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
             break;
         case 2:
             engine->sideBarWidth += GetMouseDelta().x;
@@ -698,11 +700,9 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
             {
                 engine->sideBarWidth = 5;
             }
-            engine->cursor = MOUSE_CURSOR_RESIZE_EW;
             break;
         case 3:
             engine->sideBarMiddleY += GetMouseDelta().y;
-            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
             break;
         default:
             break;

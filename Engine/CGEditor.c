@@ -315,20 +315,17 @@ const char *DrawNodeMenu(EditorContext *editor)
     Color BorderColor = {200, 200, 200, 255};
     Color HighlightColor = {80, 80, 80, 255};
 
-    const char *menuItems[] = {"Variable", "Option 2", "Option 3", "Option 4", "Option 5", "Option 6", "Option 7", "Option 8", "Option 9", "Option 10"};
-    const char *subMenuItems[][4] = {
-        {"num", "string"},
-        {"ex", "Sub 2-2", "Sub 2-3"},
-        {"Sub 3-1", "Sub 3-2"},
-        {"Sub 4-1"},
-        {"Sub 5-1", "Sub 5-2"},
-        {"Sub 6-1", "Sub 6-2", "Sub 6-3", "Sub 6-4"},
-        {"Sub 7-1"},
-        {"Sub 8-1", "Sub 8-2"},
-        {"Sub 9-1", "Sub 9-2", "Sub 9-3"},
-        {"Sub 10-1"}};
+    const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Logical", "Debug", "More"};
+    const char *subMenuItems[][5] = {
+        {"num", "string", "sprite", "Get var", "Set var"},
+        {"Start", "Loop", "On Button", "Create custom", "Call custom"},
+        {"Spawn", "Destroy", "Move To", "Change"},
+        {"Branch", "Loop"},
+        {"Comparison", "Gate", "Arithmetic"},
+        {"Print", "Draw Line"},
+        {"ex", "Literal"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {2, 3, 2, 1, 2, 4, 1, 2, 3, 1};
+    int subMenuCounts[] = {5, 5, 4, 2, 3, 2, 2};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 

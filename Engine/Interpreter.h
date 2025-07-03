@@ -4,6 +4,12 @@
 #include "raylib.h"
 #include "Nodes.h"
 
+typedef struct {
+    bool newLogMessage;
+    char logMessage[128];
+    int logMessageLevel;
+} InterpreterContext;
+
 typedef enum {
     VAL_NULL,
     VAL_NUMBER,
@@ -24,10 +30,8 @@ typedef struct {
     };
 } Value;
 
-void InterpretCG(GraphContext *graph){
-    for(int i = 0; i < graph->nodeCount; i++){
-        if(graph->nodes[i].type == NODE_BEGIN){
+InterpreterContext InitInterpreterContext();
 
-        }
-    }
-}
+void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level);
+
+void HandleGameScreen(InterpreterContext *interpreter, GraphContext *graph);

@@ -7,6 +7,7 @@
 #include "CGEditor.h"
 #include "ProjectManager.h"
 #include "Engine.h"
+#include "Interpreter.h"
 
 Logs InitLogs()
 {
@@ -767,6 +768,7 @@ int main()
     EngineContext engine = InitEngineContext(projectPath);
     EditorContext editor = InitEditorContext();
     GraphContext graph = InitGraphContext();
+    InterpreterContext interpreter = InitInterpreterContext();
 
     AddToLog(&engine, "All resources loaded", 0);
 
@@ -814,12 +816,18 @@ int main()
             ClearBackground(BLACK);
             DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
             EndTextureMode();
+            HandleGameScreen(&interpreter, &graph);
+
+            if (interpreter.newLogMessage)
+            {
+                AddToLog(&engine, interpreter.logMessage, interpreter.logMessageLevel);
+            }
         }
         else
         {
             if (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0)
             {
-                handleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
+                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
             }
 
             if (editor.newLogMessage)

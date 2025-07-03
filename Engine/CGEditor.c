@@ -318,14 +318,14 @@ const char *DrawNodeMenu(EditorContext *editor)
     const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Logical", "Debug", "More"};
     const char *subMenuItems[][5] = {
         {"num", "string", "sprite", "Get var", "Set var"},
-        {"Start", "Loop", "On Button", "Create custom", "Call custom"},
-        {"Spawn", "Destroy", "Move To", "Change"},
+        {"Start", "On Button", "Create custom", "Call custom"},
+        {"Spawn", "Destroy", "Move To"},
         {"Branch", "Loop"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
         {"ex", "Literal"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {5, 5, 4, 2, 3, 2, 2};
+    int subMenuCounts[] = {5, 4, 3, 2, 3, 2, 2};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 
@@ -480,7 +480,7 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
     return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen;
 }
 
-void handleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight, bool draggingDisabled)
+void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight, bool draggingDisabled)
 {
     editor->newLogMessage = false;
     editor->cursor = MOUSE_CURSOR_ARROW;

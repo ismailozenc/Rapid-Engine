@@ -108,4 +108,5 @@ typedef struct EngineContext
     Sound save;
     bool isSoundOn;
     int fps;
+    bool isGameRunning;
 } EngineContext;

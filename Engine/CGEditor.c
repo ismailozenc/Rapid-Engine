@@ -203,6 +203,9 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     {
         DrawRectangleRoundedLines((Rectangle){graph->nodes[i].position.x - 1, graph->nodes[i].position.y - 1, getNodeInfoByType(graph->nodes[i].type, "width") + 2, getNodeInfoByType(graph->nodes[i].type, "height") + 2}, 0.2f, 8, WHITE);
         DrawRectangleRounded((Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
+        char str[32];
+        sprintf(str, "%d", graph->nodes[i].id);
+        DrawText(str, graph->nodes[i].position.x + 150, graph->nodes[i].position.y + 3, 30, RED);
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type), (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
         if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
@@ -318,14 +321,14 @@ const char *DrawNodeMenu(EditorContext *editor)
     const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Logical", "Debug", "More"};
     const char *subMenuItems[][5] = {
         {"num", "string", "sprite", "Get var", "Set var"},
-        {"Start", "On Button", "Create custom", "Call custom"},
+        {"Start", "On Loop", "On Button", "Create custom", "Call custom"},
         {"Spawn", "Destroy", "Move To"},
         {"Branch", "Loop"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
         {"ex", "Literal"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {5, 4, 3, 2, 3, 2, 2};
+    int subMenuCounts[] = {5, 5, 3, 2, 3, 2, 2};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 

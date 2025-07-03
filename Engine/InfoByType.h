@@ -13,8 +13,9 @@ typedef enum
     NODE_SPRITE,
     NODE_GET_VAR,
     NODE_SET_VAR,
-    NODE_START,
-    NODE_ON_BUTTON,
+    NODE_EVENT_START,
+    NODE_EVENT_LOOP,
+    NODE_EVENT_ON_BUTTON,
     NODE_CREATE_CUSTOM_EVENT,
     NODE_CALL_CUSTOM_EVENT,
     NODE_SPAWN_SPRITE,
@@ -61,8 +62,9 @@ static InfoByType NodeInfoByType[] = {
     {NODE_SPRITE, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
     {NODE_GET_VAR, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
     {NODE_SET_VAR, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
-    {NODE_START, 0, 1, 150, 120, {0}, {PIN_FLOW}},
-    {NODE_ON_BUTTON, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
+    {NODE_EVENT_START, 0, 1, 150, 120, {0}, {PIN_FLOW}},
+    {NODE_EVENT_LOOP, 0, 1, 150, 120, {0}, {PIN_FLOW}},
+    {NODE_EVENT_ON_BUTTON, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
     {NODE_CREATE_CUSTOM_EVENT, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
     {NODE_CALL_CUSTOM_EVENT, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
     {NODE_SPAWN_SPRITE, 3, 3, 240, 200, {PIN_FLOW}, {PIN_FLOW}},
@@ -128,8 +130,9 @@ static inline const char* NodeTypeToString(NodeType type) {
         case NODE_SPRITE: return "sprite";
         case NODE_GET_VAR: return "Get var";
         case NODE_SET_VAR: return "Set var";
-        case NODE_START: return "Start";
-        case NODE_ON_BUTTON: return "On Button";
+        case NODE_EVENT_START: return "Start";
+        case NODE_EVENT_LOOP: return "On Loop";
+        case NODE_EVENT_ON_BUTTON: return "On Button";
         case NODE_CREATE_CUSTOM_EVENT: return "Create custom";
         case NODE_CALL_CUSTOM_EVENT: return "Call custom";
         case NODE_SPAWN_SPRITE: return "Spawn";
@@ -154,8 +157,9 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH]) {
     if (strcmp(strType, "sprite") == 0) return NODE_SPRITE;
     if (strcmp(strType, "Get var") == 0) return NODE_GET_VAR;
     if (strcmp(strType, "Set var") == 0) return NODE_SET_VAR;
-    if (strcmp(strType, "Start") == 0) return NODE_START;
-    if (strcmp(strType, "On Button") == 0) return NODE_ON_BUTTON;
+    if (strcmp(strType, "Start") == 0) return NODE_EVENT_START;
+    if (strcmp(strType, "On Loop") == 0) return NODE_EVENT_LOOP;
+    if (strcmp(strType, "On Button") == 0) return NODE_EVENT_ON_BUTTON;
     if (strcmp(strType, "Create custom") == 0) return NODE_CREATE_CUSTOM_EVENT;
     if (strcmp(strType, "Call custom") == 0) return NODE_CALL_CUSTOM_EVENT;
     if (strcmp(strType, "Spawn") == 0) return NODE_SPAWN_SPRITE;

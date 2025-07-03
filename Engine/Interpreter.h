@@ -34,4 +34,6 @@ InterpreterContext InitInterpreterContext();
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level);
 
-void HandleGameScreen(InterpreterContext *interpreter, GraphContext *graph);
+void InterpretStringOfNodes(int eventNodeIndex, InterpreterContext *interpreter, GraphContext *graph);
+
+bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *graph);

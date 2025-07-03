@@ -80,6 +80,7 @@ EngineContext InitEngineContext(char *projectPath)
     engine.hoveredUIElementIndex = -1;
 
     engine.isEditorOpened = false;
+    engine.isGameRunning = false;
 
     engine.save = LoadSound("save.wav");
 
@@ -230,7 +231,10 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
         case SAVE_CG:
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
-                if(engine->isSoundOn){PlaySound(engine->save);}
+                if (engine->isSoundOn)
+                {
+                    PlaySound(engine->save);
+                }
                 if (SaveGraphToFile(CGFilePath, graph) == 0)
                     AddToLog(engine, "Saved successfully!", 0);
                 else
@@ -242,6 +246,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 engine->isEditorOpened = false;
+                engine->isGameRunning = true;
                 AddToLog(engine, "Interpreter not ready", 2);
             }
             break;
@@ -664,7 +669,10 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
 {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
     {
-        if(engine->isSoundOn){PlaySound(engine->save);}
+        if (engine->isSoundOn)
+        {
+            PlaySound(engine->save);
+        }
         if (SaveGraphToFile(CGFilePath, graph) == 0)
         {
             AddToLog(engine, "Saved successfully!", 0);
@@ -798,7 +806,7 @@ int main()
 
         if (engine.isViewportFocused)
         {
-            engine.cursor = editor.cursor; //should be viewport.cursor
+            engine.cursor = editor.cursor; // should be viewport.cursor
             engine.fps = editor.fps;
         }
         SetMouseCursor(engine.cursor);
@@ -812,15 +820,21 @@ int main()
 
         if (!engine.isEditorOpened)
         {
-            BeginTextureMode(engine.viewport);
-            ClearBackground(BLACK);
-            DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
-            EndTextureMode();
-            HandleGameScreen(&interpreter, &graph);
-
-            if (interpreter.newLogMessage)
+            if (engine.isGameRunning)
             {
-                AddToLog(&engine, interpreter.logMessage, interpreter.logMessageLevel);
+                engine.isGameRunning = HandleGameScreen(&interpreter, &graph);
+
+                if (interpreter.newLogMessage)
+                {
+                    AddToLog(&engine, interpreter.logMessage, interpreter.logMessageLevel);
+                }
+            }
+            else
+            {
+                BeginTextureMode(engine.viewport);
+                ClearBackground(BLACK);
+                DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
+                EndTextureMode();
             }
         }
         else

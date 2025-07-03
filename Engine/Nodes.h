@@ -31,11 +31,9 @@ typedef struct Pin
     int id;
     PinType type;
     int nodeID;
-    int posInNode; //
+    int posInNode;
     bool isInput;
     Vector2 position;
-
-    int valueIndex;
 } Pin;
 
 typedef struct Link

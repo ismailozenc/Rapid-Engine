@@ -820,6 +820,9 @@ int main()
 
         if (!engine.isEditorOpened)
         {
+            BeginTextureMode(engine.viewport);
+            ClearBackground(BLACK);
+
             if (engine.isGameRunning)
             {
                 engine.isGameRunning = HandleGameScreen(&interpreter, &graph);
@@ -831,11 +834,9 @@ int main()
             }
             else
             {
-                BeginTextureMode(engine.viewport);
-                ClearBackground(BLACK);
                 DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
-                EndTextureMode();
             }
+            EndTextureMode();
         }
         else
         {

@@ -4,19 +4,47 @@
 #include "raylib.h"
 #include "Nodes.h"
 
-typedef struct {
-    bool newLogMessage;
-    char logMessage[128];
-    int logMessageLevel;
-} InterpreterContext;
+#define MAX_LINKS_PER_PIN 8
+
+typedef struct RuntimePin
+{
+    int id;
+    PinType type;
+    int nodeIndex;
+    bool isInput;
+    int valueIndex;
+
+    struct RuntimePin *linkedPins[MAX_LINKS_PER_PIN];
+    int linkCount;
+} RuntimePin;
+
+typedef struct RuntimeNode
+{
+    int index;
+    NodeType type;
+
+    RuntimePin *inputPins[MAX_NODE_PINS];
+    int inputCount;
+
+    RuntimePin *outputPins[MAX_NODE_PINS];
+    int outputCount;
+} RuntimeNode;
+
+typedef struct RuntimeGraphContext
+{
+    RuntimeNode *nodes;
+    int nodeCount;
+
+    RuntimePin *pins;
+    int pinCount;
+} RuntimeGraphContext;
 
 typedef enum {
     VAL_NULL,
     VAL_NUMBER,
     VAL_STRING,
     VAL_BOOL,
-    VAL_VECTOR2,
-    // add more types as needed
+    VAL_VECTOR2
 } ValueType;
 
 typedef struct {
@@ -26,14 +54,28 @@ typedef struct {
         bool boolean;
         char *string;
         Vector2 vector;
-        // Add more fields as needed
     };
 } Value;
 
+typedef struct {
+    Value values[100];
+    int valueCount;
+
+    int loopNodeIndex;
+
+    bool isFirstFrame;
+
+    bool newLogMessage;
+    char logMessage[128];
+    int logMessageLevel;
+} InterpreterContext;
+
 InterpreterContext InitInterpreterContext();
+
+RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph);
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level);
 
-void InterpretStringOfNodes(int eventNodeIndex, InterpreterContext *interpreter, GraphContext *graph);
+void InterpretStringOfNodes(int eventNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph);
 
 bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *graph);

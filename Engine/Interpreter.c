@@ -155,6 +155,12 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     switch (graph->nodes[currNodeIndex].type)
     {
+    case NODE_UNKNOWN:
+    {
+        AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "Unknown node"}, 2);
+        break;
+    }
+
     case NODE_NUM:
     {
         interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
@@ -166,6 +172,99 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         interpreter->valueCount++;
         break;
     }
+
+    case NODE_STRING:
+    {
+        interpreter->values[interpreter->valueCount].type = VAL_STRING;
+        interpreter->values[interpreter->valueCount].string = "NULL";
+
+        RuntimePin *outPin = graph->nodes[currNodeIndex].outputPins[1];
+        outPin->valueIndex = interpreter->valueCount;
+
+        interpreter->valueCount++;
+        break;
+    }
+
+    case NODE_SPRITE:
+    {
+        break;
+    }
+
+    case NODE_GET_VAR:
+    {
+        break;
+    }
+
+    case NODE_SET_VAR:
+    {
+        break;
+    }
+
+    case NODE_EVENT_START:
+    {
+        break;
+    }
+
+    case NODE_EVENT_LOOP:
+    {
+        break;
+    }
+
+    case NODE_EVENT_ON_BUTTON:
+    {
+        break;
+    }
+
+    case NODE_CREATE_CUSTOM_EVENT:
+    {
+        break;
+    }
+
+    case NODE_CALL_CUSTOM_EVENT:
+    {
+        break;
+    }
+
+    case NODE_SPAWN_SPRITE:
+    {
+        break;
+    }
+
+    case NODE_DESTROY_SPRITE:
+    {
+        break;
+    }
+
+    case NODE_MOVE_TO_SPRITE:
+    {
+        break;
+    }
+
+    case NODE_BRANCH:
+    {
+        break;
+    }
+
+    case NODE_LOOP:
+    {
+        break;
+    }
+
+    case NODE_COMPARISON:
+    {
+        break;
+    }
+
+    case NODE_GATE:
+    {
+        break;
+    }
+
+    case NODE_ARITHMETIC:
+    {
+        break;
+    }
+
     case NODE_PRINT:
     {
         RuntimePin *input = graph->nodes[currNodeIndex].inputPins[1];
@@ -184,6 +283,22 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
                 AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "Invalid value index"}, 2);
             }
         }
+        break;
+    }
+
+    case NODE_DRAW_LINE:
+    {
+        break;
+    }
+
+    case NODE_EX:
+    {
+        break;
+    }
+
+    case NODE_LITERAL:
+    {
+        break;
     }
     }
 
@@ -213,10 +328,22 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
                     interpreter->loopNodeIndex = i;
                 }
                 break;
-            }
         }
 
         interpreter->isFirstFrame = false;
+    }
+
+    for(int i = 0; i < graph.nodeCount; i++){
+        printf("\n%d\n", graph.nodes[i].type);
+        switch (graph.nodes[i].type){
+            case NODE_EVENT_ON_BUTTON:
+                if(IsKeyPressed(KEY_K)){
+                    InterpretStringOfNodes(i, interpreter, &graph);
+                    printf("a\n\n");
+                }
+                break;
+            }
+        }
     }
 
     if (interpreter->loopNodeIndex == -1)

@@ -762,6 +762,7 @@ int main()
 {
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
+    SetTraceLogLevel(LOG_WARNING);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
 

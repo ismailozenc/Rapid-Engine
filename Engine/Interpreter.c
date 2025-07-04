@@ -140,36 +140,57 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph)
 
 void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph)
 {
-    int currNodeIndex = graph->nodes[lastNodeIndex].outputPins[0]->linkedPins[0]->nodeIndex;
+    if (lastNodeIndex < 0 || lastNodeIndex >= graph->nodeCount)
+        return;
 
-    AddToLogFromInterpreter(interpreter, (Value){VAL_NUMBER, .number = currNodeIndex}, 1);
+    RuntimeNode *node = &graph->nodes[lastNodeIndex];
+    if (node->outputCount == 0)
+        return;
+    RuntimePin *outPin = node->outputPins[0];
+    if (outPin->linkCount == 0)
+        return;
+    int currNodeIndex = outPin->linkedPins[0]->nodeIndex;
+    if (currNodeIndex < 0 || currNodeIndex >= graph->nodeCount)
+        return;
 
     switch (graph->nodes[currNodeIndex].type)
     {
     case NODE_NUM:
-        /*if (setvalue)
-        {
-            interpreter->valueCount++;
-            break;
-        }
+    {
         interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
-        interpreter->values[interpreter->valueCount].number = 5;
-        graph->pins[FindPinIndexByID(graph->nodes[currNodeIndex].outputPins[1], graph)].valueIndex = interpreter->valueCount;
+        interpreter->values[interpreter->valueCount].number = 0;
+
+        RuntimePin *outPin = graph->nodes[currNodeIndex].outputPins[1];
+        outPin->valueIndex = interpreter->valueCount;
+
         interpreter->valueCount++;
-        setvalue = true;*/
-        break;
-    case NODE_PRINT:
-        //int pinID = graph->nodes[currNodeIndex].inputPins[1];
-        //int pinindex = GetPinIndexByID(pinID, graph); //
-        //AddToLogFromInterpreter(interpreter, interpreter->values[graph->pins[pinindex].valueIndex], 0);
         break;
     }
-
-    /*if (graph->pins[GetPinIndexByID(GetPinLinks(graph->pins[GetPinIndexByID(graph->nodes[currNodeIndex].outputPins[0], graph)].id, graph)[0].inputPinID, graph)].nodeID != -1)
+    case NODE_PRINT:
     {
-        // InterpretStringOfNodes(currNodeIndex, interpreter, graph);
-        AddToLogFromInterpreter(interpreter, (Value){VAL_NUMBER, .number = lastNodeIndex}, 1);
-    }*/
+        RuntimePin *input = graph->nodes[currNodeIndex].inputPins[1];
+
+        if (input->linkCount > 0)
+        {
+            RuntimePin *linkedOutput = input->linkedPins[0];
+            int index = linkedOutput->valueIndex;
+
+            if (index >= 0 && index < interpreter->valueCount)
+            {
+                AddToLogFromInterpreter(interpreter, interpreter->values[index], 0);
+            }
+            else
+            {
+                AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "Invalid value index"}, 2);
+            }
+        }
+    }
+    }
+
+    if (currNodeIndex != lastNodeIndex)
+    {
+        InterpretStringOfNodes(currNodeIndex, interpreter, graph);
+    }
 }
 
 bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGraph)
@@ -198,11 +219,15 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
         interpreter->isFirstFrame = false;
     }
 
-    /*if (interpreter->loopNodeIndex == -1)
+    if (interpreter->loopNodeIndex == -1)
     {
         AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "No loop node found"}, 2);
         return false;
-    }*/
+    }
+    else
+    {
+        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, &graph);
+    }
 
     return true;
 }

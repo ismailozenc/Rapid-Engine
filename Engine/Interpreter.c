@@ -163,25 +163,26 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_NUM:
     {
+        /*sprintf(interpreter->values[interpreter->valueCount].name, "Value %d", interpreter->valueCount);
         interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
         interpreter->values[interpreter->valueCount].number = 0;
 
         RuntimePin *outPin = graph->nodes[currNodeIndex].outputPins[1];
         outPin->valueIndex = interpreter->valueCount;
 
-        interpreter->valueCount++;
+        interpreter->valueCount++;*/
         break;
     }
 
     case NODE_STRING:
     {
-        interpreter->values[interpreter->valueCount].type = VAL_STRING;
+        /*interpreter->values[interpreter->valueCount].type = VAL_STRING;
         interpreter->values[interpreter->valueCount].string = "NULL";
 
         RuntimePin *outPin = graph->nodes[currNodeIndex].outputPins[1];
         outPin->valueIndex = interpreter->valueCount;
 
-        interpreter->valueCount++;
+        interpreter->valueCount++;*/
         break;
     }
 

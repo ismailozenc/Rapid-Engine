@@ -165,6 +165,21 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     }
 }
 
+void DrawTopRoundedRect(int x, int y, int width, int height, int radius, Color color)
+{
+    // Middle rectangle
+    DrawRectangle(x, y + radius, width, height - radius, color);
+
+    // Top rectangle (excluding rounded corners)
+    DrawRectangle(x + radius, y, width - 2 * radius, radius, color);
+
+    // Top left corner
+    DrawCircleSector((Vector2){x + radius, y + radius}, radius, 180, 270, 16, color);
+
+    // Top right corner
+    DrawCircleSector((Vector2){x + width - radius, y + radius}, radius, 270, 360, 16, color);
+}
+
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
@@ -201,12 +216,48 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
-        DrawRectangleRoundedLines((Rectangle){graph->nodes[i].position.x - 1, graph->nodes[i].position.y - 1, getNodeInfoByType(graph->nodes[i].type, "width") + 2, getNodeInfoByType(graph->nodes[i].type, "height") + 2}, 0.2f, 8, WHITE);
-        DrawRectangleRounded((Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}, 0.2f, 8, (Color){0, 0, 0, 120});
-        char str[32];
-        sprintf(str, "%d", i);
-        DrawText(str, graph->nodes[i].position.x + 150, graph->nodes[i].position.y + 3, 30, RED);
-        DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type), (Vector2){graph->nodes[i].position.x + 10, graph->nodes[i].position.y + 3}, 30, 2, WHITE);
+        float x = graph->nodes[i].position.x;
+        float y = graph->nodes[i].position.y;
+        float width = getNodeInfoByType(graph->nodes[i].type, "width");
+        float height = getNodeInfoByType(graph->nodes[i].type, "height");
+        float roundness = 0.2f;
+        float segments = 8;
+        Color nodeColor = getNodeColorByType(graph->nodes[i].type);
+
+        float fullRadius = roundness * fminf(width, height) / 2.0f;
+
+        // Background (semi-transparent)
+        DrawRectangleRounded(
+            (Rectangle){x, y, width, height},
+            roundness, segments, (Color){0, 0, 0, 120});
+
+        // Header middle rectangle (flat sides)
+        DrawRectangleRec(
+            (Rectangle){x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius},
+            nodeColor);
+
+        DrawRectangleRec(
+            (Rectangle){x - 2, y + fullRadius - 2, width + 4, 35 - fullRadius},
+            nodeColor);
+
+        // Top-left rounded corner
+        DrawCircleSector(
+            (Vector2){x + fullRadius - 2, y + fullRadius - 2},
+            fullRadius, 180, 270, segments, nodeColor);
+
+        // Top-right rounded corner
+        DrawCircleSector(
+            (Vector2){x + width - fullRadius + 2, y + fullRadius - 2},
+            fullRadius, 270, 360, segments, nodeColor);
+
+        // Outline
+        DrawRectangleRoundedLines(
+            (Rectangle){x - 1, y - 1, width + 2, height + 2},
+            roundness, segments, WHITE);
+
+        // Header text
+        DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
+                   (Vector2){x + 10, y + 3}, 30, 2, WHITE);
         if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             hoveredNodeIndex = i;
@@ -249,7 +300,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         if (graph->pins[i].type == PIN_FLOW)
         {
             DrawTriangle((Vector2){nodePos.x + xOffset, nodePos.y + yOffset - 8}, (Vector2){nodePos.x + xOffset, nodePos.y + yOffset + 8}, (Vector2){nodePos.x + xOffset + 15, nodePos.y + yOffset}, WHITE);
-            if (CheckCollisionPointRec(editor->mousePos, (Rectangle){nodePos.x + xOffset, nodePos.y + yOffset - 8, 15, 16}))
+            if (CheckCollisionPointRec(editor->mousePos, (Rectangle){nodePos.x + xOffset - 5, nodePos.y + yOffset - 15, 25, 31}))
             {
                 DrawTriangle((Vector2){nodePos.x + xOffset - 2, nodePos.y + yOffset - 10}, (Vector2){nodePos.x + xOffset - 2, nodePos.y + yOffset + 10}, (Vector2){nodePos.x + xOffset + 17, nodePos.y + yOffset}, WHITE);
                 hoveredPinIndex = i;
@@ -258,7 +309,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
-            if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 5))
+            if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 12))
             {
                 DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 7, WHITE);
                 hoveredPinIndex = i;
@@ -492,7 +543,8 @@ void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *v
     editor->screenHeight = screenHeight;
     editor->mousePos = mousePos;
 
-    if(draggingDisabled){
+    if (draggingDisabled)
+    {
         return;
     }
 

@@ -48,6 +48,7 @@ typedef enum {
 } ValueType;
 
 typedef struct {
+    char name[128];
     ValueType type;
     union {
         float number;

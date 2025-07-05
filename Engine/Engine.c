@@ -250,7 +250,6 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                 engine->isEditorOpened = false;
                 engine->isGameRunning = true;
                 interpreter->isFirstFrame = true;
-                AddToLog(engine, "Game launched", 0);
             }
             break;
         case BACK_FILEPATH:
@@ -462,13 +461,22 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
         char cutMessage[256];
         for (int i = engine->logs.count - 1; i >= 0 && logY > engine->sideBarMiddleY + 50; i--)
         {
+            if (engine->sideBarHalfSnap)
+            {
+                strncpy(cutMessage, engine->logs.entries[i].message + 9, 255);
+                cutMessage[255] = '\0';
+            }
+            else
+            {
+                strncpy(cutMessage, engine->logs.entries[i].message, 255);
+            }
             int j;
-            for (j = 0; j < strlen(engine->logs.entries[i].message); j++)
+            for (j = 0; j < strlen(cutMessage); j++)
             {
                 char temp[256];
-                strncpy(temp, engine->logs.entries[i].message, j);
+                strncpy(temp, cutMessage, j);
                 temp[j] = '\0';
-                if (MeasureTextEx(engine->font, temp, 20, 2).x < engine->sideBarWidth - 35)
+                if (MeasureTextEx(engine->font, temp, 20, 2).x < engine->sideBarWidth - 25)
                 {
                     continue;
                 }
@@ -477,19 +485,27 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                     break;
                 }
             }
-            strncpy(cutMessage, engine->logs.entries[i].message, j);
             cutMessage[j] = '\0';
             AddUIElement(engine, (UIElement){
                                      .name = "LogText",
                                      .shape = UIText,
                                      .type = NO_COLLISION_ACTION,
-                                     .text = {.textPos = {20, logY}, .textSize = 20, .textSpacing = 2, .textColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW
+                                     .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW
                                                                                                                                                                                                         : RED},
                                      .layer = 0});
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
             logY -= 25;
         }
+
+        /*AddUIElement(engine, (UIElement){
+                                 .name = "LogTimeLine",
+                                 .shape = UILine,
+                                 .type = NO_COLLISION_ACTION,
+                                 .line = {.startPos = {MeasureTextEx(engine->font, "00:00:00 ", 20, 2).x + 8, engine->screenHeight - engine->bottomBarHeight}, .engPos = {MeasureTextEx(engine->font, "00:00:00 ", 20, 2).x + 8, engine->sideBarMiddleY}, .thickness = 1},
+                                 .color = GRAY,
+                                 .layer = 0,
+                             });*/
 
         int varsY = 40;
         for (int i = 0; i < interpreter->valueCount; i++)
@@ -534,7 +550,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                     continue;
 
                 wasCut = true;
-                j--; // use the last fitting length
+                j--;
                 break;
             }
 
@@ -747,7 +763,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
     EndTextureMode();
 }
 
-bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph)
+bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor)
 {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
     {
@@ -763,6 +779,17 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         {
             AddToLog(engine, "ERROR SAVING CHANGES!", 1);
         }
+    }
+    else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_R))
+    {
+        engine->isEditorOpened = false;
+        engine->isGameRunning = true;
+        interpreter->isFirstFrame = true;
+    }
+    else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_E))
+    {
+        engine->isEditorOpened = true;
+        editor->delayFrames = true;
     }
 
     if (engine->draggingResizeButtonID != 0)
@@ -786,18 +813,17 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
             engine->bottomBarHeight -= GetMouseDelta().y;
             break;
         case 2:
-            float delta = GetMouseDelta().x;
-engine->sideBarWidth += delta;
+            engine->sideBarWidth += GetMouseDelta().x;
 
-// Snap to 80 if close and shrinking
-if (engine->sideBarWidth < 100 && delta < 0) {
-    engine->sideBarWidth = 80;
-    engine->sideBarHalfSnap = true;
-}
-// Unsnap if expanding past threshold
-else if (engine->sideBarWidth > 110) {
-    engine->sideBarHalfSnap = false;
-}
+            if (engine->sideBarWidth < 160 && GetMouseDelta().x < 0)
+            {
+                engine->sideBarWidth = 80;
+                engine->sideBarHalfSnap = true;
+            }
+            else if (engine->sideBarWidth > 110)
+            {
+                engine->sideBarHalfSnap = false;
+            }
             break;
         case 3:
             engine->sideBarMiddleY += GetMouseDelta().y;
@@ -876,7 +902,7 @@ int main()
     {
         ContextChangePerFrame(&engine);
 
-        if (HandleUICollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph))
+        if (HandleUICollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph, &interpreter, &editor))
         {
             if (engine.cursor == MOUSE_CURSOR_ARROW)
             {
@@ -913,7 +939,7 @@ int main()
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            if (engine.isGameRunning)
+            if (engine.isGameRunning && editor.CGFilePath[0] != '\0')
             {
                 engine.isGameRunning = HandleGameScreen(&interpreter, &graph);
 
@@ -930,7 +956,7 @@ int main()
         }
         else
         {
-            if (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0)
+            if (editor.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0))
             {
                 HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
             }
@@ -951,7 +977,7 @@ int main()
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
-        if (engine.isEditorOpened)
+        if (editor.CGFilePath[0] != '\0' && engine.isEditorOpened)
         {
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));

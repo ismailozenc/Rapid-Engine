@@ -148,6 +148,7 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     node.id = graph->nextNodeID++;
     node.type = type;
     node.position = pos;
+    sprintf(node.name, "Value %d", graph->nodeCount);
 
     if (type == NODE_UNKNOWN)
     {

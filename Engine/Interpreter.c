@@ -45,7 +45,7 @@ int GetPinIndexByID(int id, GraphContext *graph)
     return -1;
 }
 
-RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph)
+RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter)
 {
     RuntimeGraphContext runtime = {0};
 
@@ -135,6 +135,28 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph)
             outputPin->linkedPins[outputPin->linkCount++] = inputPin;
     }
 
+    for(int i = 0; i < graph->nodeCount; i++){
+        switch(graph->nodes[i].type){
+            case NODE_NUM:
+                interpreter->values[interpreter->valueCount].number = 0;
+                interpreter->values[interpreter->valueCount].name = graph->nodes[i].name;
+                interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
+                runtime.nodes[i].outputPins[1]->valueIndex = interpreter->valueCount;
+                interpreter->valueCount++;
+                break;
+            case NODE_STRING:
+                interpreter->values[interpreter->valueCount].string = "null";
+                interpreter->values[interpreter->valueCount].name = graph->nodes[i].name;
+                interpreter->values[interpreter->valueCount].type = VAL_STRING;
+                runtime.nodes[i].outputPins[1]->valueIndex = interpreter->valueCount;
+                interpreter->valueCount++;
+                break;
+            case NODE_SPRITE:
+                break;
+            //casenodecolor
+        }
+    }
+
     return runtime;
 }
 
@@ -157,7 +179,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
     case NODE_UNKNOWN:
     {
-        AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "Unknown node"}, 2);
+        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Unknown node"}, 2);
         break;
     }
 
@@ -281,7 +303,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             }
             else
             {
-                AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "Invalid value index"}, 2);
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Invalid value index"}, 2);
             }
         }
         break;
@@ -311,11 +333,13 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
 bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGraph)
 {
+    interpreter->newLogMessage = false;
+
     static RuntimeGraphContext graph;
 
     if (interpreter->isFirstFrame)
     {
-        graph = ConvertToRuntimeGraph(initialGraph);
+        graph = ConvertToRuntimeGraph(initialGraph, interpreter);
         for (int i = 0; i < graph.nodeCount; i++)
         {
             switch (graph.nodes[i].type)
@@ -335,13 +359,12 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
     }
 
     for(int i = 0; i < graph.nodeCount; i++){
-        printf("\n%d\n", graph.nodes[i].type);
         switch (graph.nodes[i].type){
             case NODE_EVENT_ON_BUTTON:
-                if(IsKeyPressed(KEY_K)){
+                /*if(IsKeyPressed(KEY_K)){
                     InterpretStringOfNodes(i, interpreter, &graph);
                     printf("a\n\n");
-                }
+                }*/
                 break;
             }
         }
@@ -349,7 +372,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
 
     if (interpreter->loopNodeIndex == -1)
     {
-        AddToLogFromInterpreter(interpreter, (Value){VAL_STRING, .string = "No loop node found"}, 2);
+        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "No loop node found"}, 2);
         return false;
     }
     else

@@ -44,11 +44,12 @@ typedef enum {
     VAL_NUMBER,
     VAL_STRING,
     VAL_BOOL,
-    VAL_VECTOR2
+    VAL_VECTOR2,
+    VAL_SPRITE
 } ValueType;
 
 typedef struct {
-    char name[128];
+    char *name;
     ValueType type;
     union {
         float number;
@@ -73,7 +74,7 @@ typedef struct {
 
 InterpreterContext InitInterpreterContext();
 
-RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph);
+RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter);
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level);
 

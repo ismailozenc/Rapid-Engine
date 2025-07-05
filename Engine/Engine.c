@@ -247,7 +247,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             {
                 engine->isEditorOpened = false;
                 engine->isGameRunning = true;
-                AddToLog(engine, "Interpreter not ready", 2);
+                AddToLog(engine, "Game launched", 0);
             }
             break;
         case BACK_FILEPATH:
@@ -386,7 +386,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
     }
 }
 
-void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath, EditorContext *editor)
+void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath, EditorContext *editor, InterpreterContext *interpreter)
 {
     engine->uiElementCount = 0;
 
@@ -451,9 +451,9 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                  .text = {.string = "Run", .textPos = {engine->sideBarWidth - 60, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                              });
 
-        int y = engine->screenHeight - engine->bottomBarHeight - 30;
+        int logY = engine->screenHeight - engine->bottomBarHeight - 30;
         char cutMessage[256];
-        for (int i = engine->logs.count - 1; i >= 0 && y > engine->sideBarMiddleY + 50; i--)
+        for (int i = engine->logs.count - 1; i >= 0 && logY > engine->sideBarMiddleY + 50; i--)
         {
             int j;
             for (j = 0; j < strlen(engine->logs.entries[i].message); j++)
@@ -476,12 +476,29 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .name = "LogText",
                                      .shape = UIText,
                                      .type = NO_COLLISION_ACTION,
-                                     .text = {.textPos = {20, y}, .textSize = 20, .textSpacing = 2, .textColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW
-                                                                                                                                                                                                     : RED},
+                                     .text = {.textPos = {20, logY}, .textSize = 20, .textSpacing = 2, .textColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW
+                                                                                                                                                                                                        : RED},
                                      .layer = 0});
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
-            y -= 25;
+            logY -= 25;
+        }
+
+        int varsY = 40;
+        for (int i = 0; i < interpreter->valueCount; i++)
+        {
+            AddUIElement(engine, (UIElement){
+                             .name = "Variable",
+                             .shape = UICircle,
+                             .type = NO_COLLISION_ACTION,
+                             .circle = {.center = (Vector2){engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
+                             .color = RED,
+                             .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
+                             .layer = 0,
+                         });
+            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, interpreter->values[i].name, 127);
+            engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
+            varsY += 35;
         }
     }
 
@@ -793,13 +810,13 @@ int main()
             {
                 engine.cursor = MOUSE_CURSOR_POINTING_HAND;
             }
-            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor);
+            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor, &interpreter);
             engine.fps = 140;
             engine.delayFrames = true;
         }
         else if (engine.delayFrames)
         {
-            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor);
+            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor, &interpreter);
             engine.cursor = MOUSE_CURSOR_ARROW;
             engine.fps = 60;
             engine.delayFrames = false;

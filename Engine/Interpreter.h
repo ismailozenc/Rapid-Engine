@@ -45,8 +45,19 @@ typedef enum {
     VAL_STRING,
     VAL_BOOL,
     VAL_VECTOR2,
+    VAL_COLOR,
     VAL_SPRITE
 } ValueType;
+
+typedef struct {
+    Texture2D texture;
+    Vector2 position;
+    int width;
+    int height;
+    float rotation;
+    bool visible;
+    int layer;
+}Sprite;
 
 typedef struct {
     char *name;
@@ -56,6 +67,8 @@ typedef struct {
         bool boolean;
         char *string;
         Vector2 vector;
+        Color color;
+        Sprite sprite;
     };
 } Value;
 

@@ -339,6 +339,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
 
     if (interpreter->isFirstFrame)
     {
+        interpreter->valueCount = 0;
         graph = ConvertToRuntimeGraph(initialGraph, interpreter);
         for (int i = 0; i < graph.nodeCount; i++)
         {

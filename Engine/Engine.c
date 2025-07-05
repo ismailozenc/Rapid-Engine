@@ -215,7 +215,7 @@ int GetFileType(const char *fileName)
     return -1;
 }
 
-void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor)
+void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter)
 {
     if (engine->hoveredUIElementIndex != -1)
     {
@@ -242,11 +242,11 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             }
             break;
         case RUN_GAME:
-            engine->cursor = MOUSE_CURSOR_NOT_ALLOWED;
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 engine->isEditorOpened = false;
                 engine->isGameRunning = true;
+                interpreter->isFirstFrame = true;
                 AddToLog(engine, "Game launched", 0);
             }
             break;
@@ -662,7 +662,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .layer = 1,
                          });
 
-    DrawUIElements(engine, CGFilePath, graph, editor);
+    DrawUIElements(engine, CGFilePath, graph, editor, interpreter);
 
     // special symbols and textures
     DrawRectangleLinesEx((Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()}, 4.0f, WHITE);

@@ -165,21 +165,6 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     }
 }
 
-void DrawTopRoundedRect(int x, int y, int width, int height, int radius, Color color)
-{
-    // Middle rectangle
-    DrawRectangle(x, y + radius, width, height - radius, color);
-
-    // Top rectangle (excluding rounded corners)
-    DrawRectangle(x + radius, y, width - 2 * radius, radius, color);
-
-    // Top left corner
-    DrawCircleSector((Vector2){x + radius, y + radius}, radius, 180, 270, 16, color);
-
-    // Top right corner
-    DrawCircleSector((Vector2){x + width - radius, y + radius}, radius, 270, 360, 16, color);
-}
-
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
@@ -191,6 +176,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     {
         Vector2 inputPinPosition = (Vector2){-1};
         Vector2 outputPinPosition = (Vector2){-1};
+        bool isFlowConnection = false;
         for (int j = 0; j < graph->pinCount; j++)
         {
             if (graph->links[i].inputPinID == graph->pins[j].id)
@@ -200,11 +186,12 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             else if (graph->links[i].outputPinID == graph->pins[j].id)
             {
                 outputPinPosition = graph->pins[j].position;
+                isFlowConnection = (graph->pins[j].type == PIN_FLOW);
             }
         }
         if (inputPinPosition.x != -1 && outputPinPosition.x != -1)
         {
-            DrawCurvedWire(outputPinPosition, inputPinPosition, 2.0f, (Color){180, 100, 200, 255});
+            DrawCurvedWire(outputPinPosition, inputPinPosition, 2.0f, isFlowConnection ? (Color){180, 100, 200, 255} : (Color){0, 255, 255, 255});
         }
         else
         {

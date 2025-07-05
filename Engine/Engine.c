@@ -86,6 +86,9 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.isSoundOn = true;
 
+    engine.sideBarHalfSnap = false;
+    engine.sideBarFullSnap = false;
+
     return engine;
 }
 
@@ -431,14 +434,18 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                  .layer = 0,
                              });
 
+        Vector2 saveButtonPos = {
+            engine->sideBarHalfSnap ? engine->sideBarWidth - 70 : engine->sideBarWidth - 145,
+            engine->sideBarHalfSnap ? engine->sideBarMiddleY + 60 : engine->sideBarMiddleY + 15};
+
         AddUIElement(engine, (UIElement){
                                  .name = "SaveButton",
                                  .shape = UIRectangle,
                                  .type = SAVE_CG,
-                                 .rect = {.pos = {engine->sideBarWidth - 140, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                 .rect = {.pos = saveButtonPos, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){255, 255, 255, 50},
                                  .layer = 1,
-                                 .text = {.string = "Save", .textPos = {engine->sideBarWidth - 135, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 .text = {.string = "Save", .textPos = {saveButtonPos.x + 5, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                              });
 
         AddUIElement(engine, (UIElement){
@@ -488,15 +495,73 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
         for (int i = 0; i < interpreter->valueCount; i++)
         {
             AddUIElement(engine, (UIElement){
-                             .name = "Variable",
-                             .shape = UICircle,
-                             .type = NO_COLLISION_ACTION,
-                             .circle = {.center = (Vector2){engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
-                             .color = RED,
-                             .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
-                             .layer = 0,
-                         });
-            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, interpreter->values[i].name, 127);
+                                     .name = "Variable Background",
+                                     .shape = UIRectangle,
+                                     .type = NO_COLLISION_ACTION,
+                                     .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .color = (Color){59, 59, 59, 255},
+                                     .layer = 0,
+                                 });
+
+            Color varColor;
+            switch (interpreter->values[i].type)
+            {
+            case VAL_NUMBER:
+            case VAL_STRING:
+            case VAL_BOOL:
+            case VAL_COLOR:
+                varColor = (Color){145, 0, 0, 255};
+                break;
+            case VAL_SPRITE:
+                varColor = (Color){3, 161, 252, 255};
+                break;
+            default:
+                varColor = LIGHTGRAY;
+            }
+
+            char cutMessage[256] = {0};
+            float dotsWidth = MeasureTextEx(engine->font, "...", 24, 2).x;
+            int j;
+            bool wasCut = false;
+            for (j = 1; j <= strlen(interpreter->values[i].name); j++)
+            {
+                char temp[256];
+                strncpy(temp, interpreter->values[i].name, j);
+                temp[j] = '\0';
+
+                float textWidth = MeasureTextEx(engine->font, temp, 24, 2).x;
+                if (textWidth + dotsWidth < engine->sideBarWidth - 80)
+                    continue;
+
+                wasCut = true;
+                j--; // use the last fitting length
+                break;
+            }
+
+            strncpy(cutMessage, interpreter->values[i].name, j);
+            cutMessage[j] = '\0';
+
+            bool textHidden = false;
+
+            if (wasCut && j < 252)
+                strcat(cutMessage, "...");
+            if (wasCut && j == 0)
+            {
+                cutMessage[0] = '\0';
+                textHidden = true;
+            }
+
+            AddUIElement(engine, (UIElement){
+                                     .name = "Variable",
+                                     .shape = UICircle,
+                                     .type = NO_COLLISION_ACTION,
+                                     .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
+                                     .color = varColor,
+                                     .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
+                                     .layer = 0,
+                                 });
+
+            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
             varsY += 35;
         }
@@ -714,18 +779,25 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         case 0:
             break;
         case 1:
-            engine->bottomBarHeight -= GetMouseDelta().y;
             if (engine->bottomBarHeight < 50 && GetMouseDelta().y > 0)
             {
                 engine->bottomBarHeight = 5;
             }
+            engine->bottomBarHeight -= GetMouseDelta().y;
             break;
         case 2:
-            engine->sideBarWidth += GetMouseDelta().x;
-            if (engine->sideBarWidth < 50 && GetMouseDelta().x < 0)
-            {
-                engine->sideBarWidth = 5;
-            }
+            float delta = GetMouseDelta().x;
+engine->sideBarWidth += delta;
+
+// Snap to 80 if close and shrinking
+if (engine->sideBarWidth < 100 && delta < 0) {
+    engine->sideBarWidth = 80;
+    engine->sideBarHalfSnap = true;
+}
+// Unsnap if expanding past threshold
+else if (engine->sideBarWidth > 110) {
+    engine->sideBarHalfSnap = false;
+}
             break;
         case 3:
             engine->sideBarMiddleY += GetMouseDelta().y;
@@ -885,7 +957,7 @@ int main()
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
 
-        DrawFPS(10, 10);
+        DrawFPS(engine.screenWidth / 2, 10);
 
         EndDrawing();
     }

@@ -109,4 +109,6 @@ typedef struct EngineContext
     bool isSoundOn;
     int fps;
     bool isGameRunning;
+    bool sideBarHalfSnap;
+    bool sideBarFullSnap;
 } EngineContext;

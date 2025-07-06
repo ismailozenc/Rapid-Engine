@@ -185,14 +185,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_NUM:
     {
-        /*sprintf(interpreter->values[interpreter->valueCount].name, "Value %d", interpreter->valueCount);
-        interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
-        interpreter->values[interpreter->valueCount].number = 0;
-
-        RuntimePin *outPin = graph->nodes[currNodeIndex].outputPins[1];
-        outPin->valueIndex = interpreter->valueCount;
-
-        interpreter->valueCount++;*/
+        graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[2]->linkedPins[0]->valueIndex;
         break;
     }
 

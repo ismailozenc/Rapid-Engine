@@ -354,6 +354,17 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             }
 
             break;
+
+            case SHOW_VAR_INFO:
+                AddUIElement(engine, (UIElement){
+                                     .name = "VarTooltip",
+                                     .shape = UIRectangle,
+                                     .type = VAR_TOOLTIP,
+                                     .rect = {.pos = {engine->sideBarWidth, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {100, 100}, .roundness = 0.4f, .roundSegments = 8},
+                                     .color = DARKGRAY,
+                                     .layer = 1,
+                                     .text = {.textPos = {engine->sideBarWidth + 5, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 5}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
+                sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s: %.2f", interpreter->values[0].name, 5); //
         }
     }
 
@@ -513,13 +524,14 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             AddUIElement(engine, (UIElement){
                                      .name = "Variable Background",
                                      .shape = UIRectangle,
-                                     .type = NO_COLLISION_ACTION,
+                                     .type = SHOW_VAR_INFO,
                                      .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){59, 59, 59, 255},
-                                     .layer = 0,
+                                     .layer = 1,
                                  });
 
             Color varColor;
+            sprintf(cutMessage, "%s", interpreter->values[i].name);
             switch (interpreter->values[i].type)
             {
             case VAL_NUMBER:
@@ -534,15 +546,13 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             default:
                 varColor = LIGHTGRAY;
             }
-
-            char cutMessage[256] = {0};
             float dotsWidth = MeasureTextEx(engine->font, "...", 24, 2).x;
             int j;
             bool wasCut = false;
-            for (j = 1; j <= strlen(interpreter->values[i].name); j++)
+            for (j = 1; j <= strlen(cutMessage); j++)
             {
                 char temp[256];
-                strncpy(temp, interpreter->values[i].name, j);
+                strncpy(temp, cutMessage, j);
                 temp[j] = '\0';
 
                 float textWidth = MeasureTextEx(engine->font, temp, 24, 2).x;
@@ -554,7 +564,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                 break;
             }
 
-            strncpy(cutMessage, interpreter->values[i].name, j);
+            strncpy(cutMessage, cutMessage, j);
             cutMessage[j] = '\0';
 
             bool textHidden = false;
@@ -579,7 +589,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
-            varsY += 35;
+            varsY += 40;
         }
     }
 

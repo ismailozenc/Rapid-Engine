@@ -16,7 +16,9 @@ typedef enum
     RESIZE_BOTTOM_BAR,
     RESIZE_SIDE_BAR,
     RESIZE_SIDE_BAR_MIDDLE,
-    OPEN_FILE
+    OPEN_FILE,
+    SHOW_VAR_INFO,
+    VAR_TOOLTIP
 } UIElementCollisionType;
 
 typedef enum

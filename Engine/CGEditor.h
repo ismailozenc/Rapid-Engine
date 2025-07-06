@@ -11,20 +11,10 @@
 #define MENU_BORDER_THICKNESS 3
 #define SUBMENU_WIDTH 200
 
-#define MAX_PATH_LENGTH 1024
 #define MAX_TYPE_LENGTH 16
-
-#ifdef _WIN32
-#define PATH_SEPARATOR '\\'
-#else
-#define PATH_SEPARATOR '/'
-#endif
 
 typedef struct
 {
-    char *CGFilePath;
-    char *fileName;
-
     int screenWidth;
     int screenHeight;
 
@@ -64,8 +54,6 @@ EditorContext InitEditorContext(void);
 void FreeEditorContext(EditorContext *editor);
 
 void AddToEngineLog(EditorContext *editor, char *message, int level);
-
-void SetProjectPaths(EditorContext *editor, const char *projectName);
 
 void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName);
 

@@ -69,9 +69,11 @@ EngineContext InitEngineContext(char *projectPath)
     }
     else
     {
-        engine.projectPath = projectPath;
         engine.currentPath = projectPath;
     }
+
+    engine.CGFilePath = malloc(MAX_PATH_LENGTH);
+    engine.CGFilePath[0] = '\0';
 
     engine.cursor = MOUSE_CURSOR_POINTING_HAND;
 
@@ -94,11 +96,14 @@ EngineContext InitEngineContext(char *projectPath)
 
 void FreeEngineContext(EngineContext *engine)
 {
-    if (engine->projectPath)
+    if (engine->currentPath)
     {
-        free(engine->projectPath);
-        engine->projectPath = NULL;
+        free(engine->currentPath);
+        engine->currentPath = NULL;
     }
+
+    if (engine->CGFilePath)
+        free(engine->CGFilePath);
 
     if (engine->logs.entries)
     {
@@ -218,7 +223,30 @@ int GetFileType(const char *fileName)
     return -1;
 }
 
-void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter)
+void SetProjectPaths(EngineContext *engine, const char *projectName)
+{
+    char cwd[MAX_PATH_LENGTH];
+
+    if (!getcwd(cwd, sizeof(cwd)))
+    {
+        perror("Failed to get current working directory");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t len = strlen(cwd);
+
+    if (len <= 7)
+    {
+        fprintf(stderr, "Current directory path too short to truncate 7 chars\n");
+        exit(EXIT_FAILURE);
+    }
+
+    cwd[len - 7] = '\0';
+
+    snprintf(engine->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
+}
+
+void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
     if (engine->hoveredUIElementIndex != -1)
     {
@@ -250,6 +278,21 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                 engine->isEditorOpened = false;
                 engine->isGameRunning = true;
                 interpreter->isFirstFrame = true;
+            }
+            break;
+        case BUILD_GRAPH:
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
+                engine->delayFrames = true;
+                if (runtimeGraph != NULL)
+                {
+                    AddToLog(engine, "Build Successfull", 0);
+                }
+                else
+                {
+                    AddToLog(engine, "Build failed", 0);
+                }
             }
             break;
         case BACK_FILEPATH:
@@ -331,10 +374,20 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                 {
                     if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == 2)
                     {
-                        char *buff = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
-                        strcpy(buff, engine->uiElements[engine->hoveredUIElementIndex].text.string);
-                        buff[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
-                        OpenNewCGFile(editor, graph, buff);
+                        char *openedFileName = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
+                        strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        openedFileName[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
+
+                        FreeEditorContext(editor);
+                        FreeGraphContext(graph);
+
+                        *editor = InitEditorContext();
+                        *graph = InitGraphContext();
+
+                        SetProjectPaths(engine, openedFileName);
+
+                        LoadGraphFromFile(engine->CGFilePath, graph);
+
                         engine->isEditorOpened = true;
                     }
                     else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != 0)
@@ -355,8 +408,8 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
 
             break;
 
-            case SHOW_VAR_INFO:
-                AddUIElement(engine, (UIElement){
+        case SHOW_VAR_INFO:
+            AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
                                      .type = VAR_TOOLTIP,
@@ -364,7 +417,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                                      .color = DARKGRAY,
                                      .layer = 1,
                                      .text = {.textPos = {engine->sideBarWidth + 5, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 5}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-                sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s: %.2f", interpreter->values[0].name, 5); //
+            sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s: %.2f", interpreter->values[0].name, 5); //
         }
     }
 
@@ -399,7 +452,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
     }
 }
 
-void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath, EditorContext *editor, InterpreterContext *interpreter)
+void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
     engine->uiElementCount = 0;
 
@@ -458,15 +511,30 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                  .text = {.string = "Save", .textPos = {saveButtonPos.x + 5, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                              });
 
-        AddUIElement(engine, (UIElement){
-                                 .name = "RunButton",
-                                 .shape = UIRectangle,
-                                 .type = RUN_GAME,
-                                 .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                 .color = (Color){255, 255, 255, 50},
-                                 .layer = 1,
-                                 .text = {.string = "Run", .textPos = {engine->sideBarWidth - 60, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
-                             });
+        if (engine->isEditorOpened)
+        {
+            AddUIElement(engine, (UIElement){
+                                     .name = "BuildButton",
+                                     .shape = UIRectangle,
+                                     .type = BUILD_GRAPH,
+                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .color = (Color){255, 255, 255, 50},
+                                     .layer = 1,
+                                     .text = {.string = "Build", .textPos = {engine->sideBarWidth - 65, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 });
+        }
+        else
+        {
+            AddUIElement(engine, (UIElement){
+                                     .name = "RunButton",
+                                     .shape = UIRectangle,
+                                     .type = RUN_GAME,
+                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .color = (Color){255, 255, 255, 50},
+                                     .layer = 1,
+                                     .text = {.string = "Run", .textPos = {engine->sideBarWidth - 60, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 });
+        }
 
         int logY = engine->screenHeight - engine->bottomBarHeight - 30;
         char cutMessage[256];
@@ -753,7 +821,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .layer = 1,
                          });
 
-    DrawUIElements(engine, CGFilePath, graph, editor, interpreter);
+    DrawUIElements(engine, CGFilePath, graph, editor, interpreter, runtimeGraph);
 
     // special symbols and textures
     DrawRectangleLinesEx((Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()}, 4.0f, WHITE);
@@ -773,7 +841,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
     EndTextureMode();
 }
 
-bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor)
+bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
 {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
     {
@@ -800,6 +868,19 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
     {
         engine->isEditorOpened = true;
         editor->delayFrames = true;
+    }
+    else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_B))
+    {
+        *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
+        engine->delayFrames = true;
+        if (runtimeGraph != NULL)
+        {
+            AddToLog(engine, "Build Successfull", 0);
+        }
+        else
+        {
+            AddToLog(engine, "Build failed", 0);
+        }
     }
 
     if (engine->draggingResizeButtonID != 0)
@@ -883,6 +964,19 @@ void ContextChangePerFrame(EngineContext *engine)
     }
 }
 
+bool ProjectCGFileExists(EngineContext *engine)
+{
+    for (int i = 0; i < engine->files.count; i++)
+    {
+        if (strcmp(engine->CGFilePath, engine->files.paths[i]) == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int main()
 {
 
@@ -890,8 +984,9 @@ int main()
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
-
-    char *projectPath = PrepareProjectPath(/*handleProjectManager()*/ "Tetris"); // temporary hardcode
+    char fileName[32];
+    strcpy(fileName, /*handleProjectManager()*/ "Tetris"); // temporary hardcode
+    char *projectPath = PrepareProjectPath(fileName);
 
     SetTargetFPS(60);
 
@@ -903,28 +998,33 @@ int main()
     EditorContext editor = InitEditorContext();
     GraphContext graph = InitGraphContext();
     InterpreterContext interpreter = InitInterpreterContext();
+    RuntimeGraphContext runtimeGraph = {0};
 
     AddToLog(&engine, "All resources loaded", 0);
 
     AddToLog(&engine, "Welcome!", 0);
 
+    SetProjectPaths(&engine, "Tetris.cg");
+
+    ProjectCGFileExists(&engine);
+
     while (!WindowShouldClose())
     {
         ContextChangePerFrame(&engine);
 
-        if (HandleUICollisions(&engine, engine.files.count, projectPath, editor.CGFilePath, &graph, &interpreter, &editor))
+        if (HandleUICollisions(&engine, engine.files.count, projectPath, engine.CGFilePath, &graph, &interpreter, &editor, &runtimeGraph))
         {
             if (engine.cursor == MOUSE_CURSOR_ARROW)
             {
                 engine.cursor = MOUSE_CURSOR_POINTING_HAND;
             }
-            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor, &interpreter);
+            BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
             engine.fps = 140;
             engine.delayFrames = true;
         }
         else if (engine.delayFrames)
         {
-            BuildUITexture(&engine, &graph, editor.CGFilePath, &editor, &interpreter);
+            BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
             engine.cursor = MOUSE_CURSOR_ARROW;
             engine.fps = 60;
             engine.delayFrames = false;
@@ -938,20 +1038,32 @@ int main()
         SetMouseCursor(engine.cursor);
         SetTargetFPS(engine.fps);
 
-        BeginDrawing();
-        ClearBackground(BLACK);
-
         int textureX = (engine.viewport.texture.width - engine.viewportWidth) / 2.0f + engine.mousePos.x - engine.sideBarWidth;
         int textureY = (engine.viewport.texture.height - engine.viewportHeight) / 2.0f + engine.mousePos.y;
 
-        if (!engine.isEditorOpened)
+        BeginDrawing();
+        ClearBackground(BLACK);
+
+        if (engine.isEditorOpened)
+        {
+            if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0))
+            {
+                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
+            }
+
+            if (editor.newLogMessage)
+            {
+                AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
+            }
+        }
+        else
         {
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            if (engine.isGameRunning && editor.CGFilePath[0] != '\0')
+            if (engine.isGameRunning && engine.CGFilePath[0] != '\0')
             {
-                engine.isGameRunning = HandleGameScreen(&interpreter, &graph);
+                engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph);
 
                 if (interpreter.newLogMessage)
                 {
@@ -964,18 +1076,6 @@ int main()
             }
             EndTextureMode();
         }
-        else
-        {
-            if (editor.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0))
-            {
-                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
-            }
-
-            if (editor.newLogMessage)
-            {
-                AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
-            }
-        }
 
         DrawTexturePro(
             engine.viewport.texture,
@@ -987,7 +1087,7 @@ int main()
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
-        if (editor.CGFilePath[0] != '\0' && engine.isEditorOpened)
+        if (engine.CGFilePath[0] != '\0' && engine.isEditorOpened)
         {
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));

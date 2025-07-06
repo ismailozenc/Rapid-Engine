@@ -2,6 +2,14 @@
 
 #define MAX_UI_ELEMENTS 100
 
+#define MAX_PATH_LENGTH 1024
+
+#ifdef _WIN32
+#define PATH_SEPARATOR '\\'
+#else
+#define PATH_SEPARATOR '/'
+#endif
+
 const double doubleClickThreshold = 0.3;
 
 typedef enum
@@ -9,6 +17,7 @@ typedef enum
     NO_COLLISION_ACTION,
     SAVE_CG,
     RUN_GAME,
+    BUILD_GRAPH,
     BACK_FILEPATH,
     REFRESH_FILES,
     CLOSE_WINDOW,
@@ -93,8 +102,8 @@ typedef struct EngineContext
     Vector2 mousePos;
     RenderTexture2D viewport, UI;
     Texture2D resizeButton;
-    char *projectPath;
     char *currentPath;
+    char *CGFilePath;
     Font font;
     Logs logs;
     bool delayFrames;

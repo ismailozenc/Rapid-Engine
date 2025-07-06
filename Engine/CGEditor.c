@@ -13,12 +13,6 @@ EditorContext InitEditorContext()
 {
     EditorContext editor = {0};
 
-    editor.CGFilePath = malloc(MAX_PATH_LENGTH);
-    editor.CGFilePath[0] = '\0';
-
-    editor.fileName = malloc(MAX_PATH_LENGTH);
-    editor.fileName[0] = '\0';
-
     editor.lastClickedPin = INVALID_PIN;
 
     editor.scrollIndexNodeMenu = 0;
@@ -53,12 +47,6 @@ EditorContext InitEditorContext()
 
 void FreeEditorContext(EditorContext *editor)
 {
-    if (editor->CGFilePath)
-        free(editor->CGFilePath);
-
-    if (editor->fileName)
-        free(editor->fileName);
-
     UnloadFont(editor->font);
 }
 
@@ -67,44 +55,6 @@ void AddToEngineLog(EditorContext *editor, char *message, int level)
     strncpy(editor->logMessage, message, 128 * sizeof(char));
     editor->logMessageLevel = level;
     editor->newLogMessage = true;
-}
-
-void SetProjectPaths(EditorContext *editor, const char *projectName)
-{
-    char cwd[MAX_PATH_LENGTH];
-
-    if (!getcwd(cwd, sizeof(cwd)))
-    {
-        perror("Failed to get current working directory");
-        exit(EXIT_FAILURE);
-    }
-
-    size_t len = strlen(cwd);
-
-    if (len <= 7)
-    {
-        fprintf(stderr, "Current directory path too short to truncate 7 chars\n");
-        exit(EXIT_FAILURE);
-    }
-
-    cwd[len - 7] = '\0';
-
-    snprintf(editor->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
-}
-
-void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName)
-{
-    FreeEditorContext(editor);
-    FreeGraphContext(graph);
-
-    *editor = InitEditorContext();
-    *graph = InitGraphContext();
-
-    SetProjectPaths(editor, openedFileName);
-
-    LoadGraphFromFile(editor->CGFilePath, graph);
-
-    strcpy(editor->fileName, openedFileName);
 }
 
 void DrawBackgroundGrid(EditorContext *editor, int gridSpacing)

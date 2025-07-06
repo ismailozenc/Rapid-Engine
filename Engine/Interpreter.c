@@ -135,6 +135,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             outputPin->linkedPins[outputPin->linkCount++] = inputPin;
     }
 
+    interpreter->valueCount = 0;
+
     for(int i = 0; i < graph->nodeCount; i++){
         switch(graph->nodes[i].type){
             case NODE_NUM:
@@ -324,22 +326,18 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     }
 }
 
-bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGraph)
+bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph)
 {
     interpreter->newLogMessage = false;
 
-    static RuntimeGraphContext graph;
-
     if (interpreter->isFirstFrame)
     {
-        interpreter->valueCount = 0;
-        graph = ConvertToRuntimeGraph(initialGraph, interpreter);
-        for (int i = 0; i < graph.nodeCount; i++)
+        for (int i = 0; i < graph->nodeCount; i++)
         {
-            switch (graph.nodes[i].type)
+            switch (graph->nodes[i].type)
             {
             case NODE_EVENT_START:
-                InterpretStringOfNodes(i, interpreter, &graph);
+                InterpretStringOfNodes(i, interpreter, graph);
                 break;
             case NODE_EVENT_LOOP:
                 if (interpreter->loopNodeIndex == -1)
@@ -352,8 +350,8 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
         interpreter->isFirstFrame = false;
     }
 
-    for(int i = 0; i < graph.nodeCount; i++){
-        switch (graph.nodes[i].type){
+    for(int i = 0; i < graph->nodeCount; i++){
+        switch (graph->nodes[i].type){
             case NODE_EVENT_ON_BUTTON:
                 /*if(IsKeyPressed(KEY_K)){
                     InterpretStringOfNodes(i, interpreter, &graph);
@@ -371,7 +369,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *initialGrap
     }
     else
     {
-        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, &graph);
+        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
     }
 
     return true;

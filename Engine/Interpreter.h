@@ -93,4 +93,4 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
 
 void InterpretStringOfNodes(int eventNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph);
 
-bool HandleGameScreen(InterpreterContext *interpreter, GraphContext *graph);
+bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph);

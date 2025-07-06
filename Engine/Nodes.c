@@ -212,6 +212,7 @@ void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2)
 {
     if (Pin1.isInput == Pin2.isInput) return;
     if ((Pin1.type == PIN_FLOW && Pin2.type != PIN_FLOW) || (Pin1.type != PIN_FLOW && Pin2.type == PIN_FLOW)) return;
+    if (Pin1.nodeID == Pin2.nodeID) return;
 
     Link link = {0};
 
@@ -327,16 +328,18 @@ void DeleteNode(GraphContext *graph, int nodeID)
     free(pinsToDelete);
 }
 
-void RemoveConnection(GraphContext *graph, int fromPinID, int toPinID)
+void RemoveConnections(GraphContext *graph, int pinID)
 {
-    for (int i = 0; i < graph->linkCount; i++)
+    for (int i = 0; i < graph->linkCount; )
     {
-        if (graph->links[i].outputPinID == fromPinID && graph->links[i].inputPinID == toPinID)
+        if (graph->links[i].outputPinID == pinID || graph->links[i].inputPinID == pinID)
         {
             graph->links[i] = graph->links[graph->linkCount - 1];
             graph->linkCount--;
-            graph->links = realloc(graph->links, sizeof(Link) * graph->linkCount);
-            return;
+            continue;
         }
+        i++;
     }
+
+    graph->links = realloc(graph->links, sizeof(Link) * graph->linkCount);
 }

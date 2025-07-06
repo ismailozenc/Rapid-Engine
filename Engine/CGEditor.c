@@ -150,6 +150,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     }
 
     int hoveredNodeIndex = -1;
+    int nodeToDelete = -1;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -200,9 +201,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             hoveredNodeIndex = i;
             if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
             {
-                DeleteNode(graph, graph->nodes[i].id);
-                editor->menuOpen = false;
-                return;
+                nodeToDelete = graph->nodes[i].id;
             }
         }
     }
@@ -256,6 +255,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
     if (hoveredPinIndex != -1 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
+        editor->draggingNodeIndex = -1;
         if (editor->lastClickedPin.id == -1)
         {
             editor->lastClickedPin = graph->pins[hoveredPinIndex];
@@ -265,6 +265,13 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             CreateLink(graph, editor->lastClickedPin, graph->pins[hoveredPinIndex]);
             editor->lastClickedPin = INVALID_PIN;
         }
+    }
+    else if(hoveredPinIndex == -1 && (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))){
+        editor->lastClickedPin = INVALID_PIN;
+    }
+    else if(hoveredPinIndex != -1 && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
+        RemoveConnections(graph, graph->pins[hoveredPinIndex].id);
+        editor->menuOpen = false;
     }
 
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
@@ -283,6 +290,12 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         {
             DrawCurvedWire(editor->lastClickedPin.position, editor->mousePos, 2.0f, YELLOW);
         }
+    }
+
+    if(nodeToDelete != -1 && hoveredPinIndex == -1){
+        DeleteNode(graph, nodeToDelete);
+        editor->menuOpen = false;
+        return;
     }
 }
 

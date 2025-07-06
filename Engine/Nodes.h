@@ -76,6 +76,6 @@ void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2);
 
 void DeleteNode(GraphContext *graph, int nodeID);
 
-void RemoveConnection(GraphContext *graph, int fromPinID, int toPinID);
+void RemoveConnections(GraphContext *graph, int pinID);
 
 #endif

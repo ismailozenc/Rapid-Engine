@@ -187,19 +187,17 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_NUM:
     {
-        graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[2]->linkedPins[0]->valueIndex;
+        if(graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0){
+            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex;
+        }
         break;
     }
 
     case NODE_STRING:
     {
-        /*interpreter->values[interpreter->valueCount].type = VAL_STRING;
-        interpreter->values[interpreter->valueCount].string = "NULL";
-
-        RuntimePin *outPin = graph->nodes[currNodeIndex].outputPins[1];
-        outPin->valueIndex = interpreter->valueCount;
-
-        interpreter->valueCount++;*/
+        if(graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0){
+            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex;
+        }
         break;
     }
 

@@ -27,6 +27,7 @@ EditorContext InitEditorContext()
     editor.isDraggingScreen = false;
 
     editor.delayFrames = true;
+    editor.isFirstFrame = true;
 
     editor.menuOpen = false;
     Vector2 menuPosition = {0, 0};
@@ -57,44 +58,43 @@ void AddToEngineLog(EditorContext *editor, char *message, int level)
     editor->newLogMessage = true;
 }
 
-void DrawBackgroundGrid(EditorContext *editor, int gridSpacing)
+void DrawBackgroundGrid(EditorContext *editor, int gridSpacing, RenderTexture2D dot)
 {
-
     if (editor->isDraggingScreen)
     {
-        Vector2 delta = GetMouseDelta();
-        editor->cameraOffset = Vector2Subtract(editor->cameraOffset, delta);
-        float maxOffsetX = 2000;
-        float maxOffsetY = 2000;
-
-        editor->cameraOffset.x = Clamp(editor->cameraOffset.x, -maxOffsetX, maxOffsetX);
-        editor->cameraOffset.y = Clamp(editor->cameraOffset.y, -maxOffsetY, maxOffsetY);
+        Vector2 delta = Vector2Scale(GetMouseDelta(), 1.0f / editor->zoom);
+        editor->cameraOffset = Vector2Subtract(editor->cameraOffset, Vector2Scale(delta, 1.0f / editor->zoom));
     }
+    gridSpacing /= editor->zoom;
+
+    const float maxOffset = 100000.0f;
+    editor->cameraOffset.x = Clamp(editor->cameraOffset.x, -maxOffset, maxOffset);
+    editor->cameraOffset.y = Clamp(editor->cameraOffset.y, -maxOffset, maxOffset);
 
     Vector2 offset = editor->cameraOffset;
 
-    int startX = -((int)offset.x % gridSpacing) - gridSpacing;
-    int startY = -((int)offset.y % gridSpacing) - gridSpacing;
+    float worldLeft = offset.x;
+    float worldTop = offset.y;
+    float worldRight = offset.x + editor->screenWidth / editor->zoom;
+    float worldBottom = offset.y + editor->screenHeight / editor->zoom;
 
-    int endX = 2000;
-    int endY = 2000;
+    int startX = ((int)worldLeft / gridSpacing) * gridSpacing - gridSpacing;
+    int startY = ((int)worldTop / gridSpacing) * gridSpacing - gridSpacing;
+    int endX = ((int)worldRight / gridSpacing) * gridSpacing + gridSpacing;
+    int endY = ((int)worldBottom / gridSpacing) * gridSpacing + gridSpacing;
 
-    for (int y = startY; y < endY + gridSpacing; y += gridSpacing)
+    for (int y = startY; y <= endY; y += gridSpacing)
     {
-        int row = (y + (int)offset.y) / gridSpacing;
-
-        for (int x = startX; x < endX + gridSpacing; x += gridSpacing)
+        int row = y / gridSpacing;
+        for (int x = startX; x <= endX; x += gridSpacing)
         {
-            float drawX = (float)(x + (row % 2) * (gridSpacing / 2));
-            float drawY = (float)(y);
+            float drawX = x + (row % 2) * (gridSpacing / 2);
+            float drawY = (float)y;
 
             float screenX = (drawX - offset.x) * editor->zoom;
             float screenY = (drawY - offset.y) * editor->zoom;
 
-            DrawRectangleRounded(
-                (Rectangle){screenX, screenY, 15 * editor->zoom, 15 * editor->zoom},
-                1.0f, 8,
-                (Color){128, 128, 128, 10});
+            DrawTextureRec(dot.texture, (Rectangle){0, 0, (float)dot.texture.width, (float)-dot.texture.height}, (Vector2){screenX, screenY}, (Color){255, 255, 255, 10});
         }
     }
 }
@@ -152,7 +152,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         if (inputPinPosition.x != -1 && outputPinPosition.x != -1)
         {
-            DrawCurvedWire(outputPinPosition, inputPinPosition, 2.0f, isFlowConnection ? (Color){180, 100, 200, 255} : (Color){0, 255, 255, 255});
+            DrawCurvedWire(outputPinPosition, inputPinPosition, 2.0f + 2.0f / editor->zoom, isFlowConnection ? (Color){180, 100, 200, 255} : (Color){0, 255, 255, 255});
         }
         else
         {
@@ -304,11 +304,11 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     {
         if (editor->lastClickedPin.isInput)
         {
-            DrawCurvedWire(editor->mousePos, editor->lastClickedPin.position, 2.0f, YELLOW);
+            DrawCurvedWire(editor->mousePos, editor->lastClickedPin.position, 2.0f + 2.0f / editor->zoom, YELLOW);
         }
         else
         {
-            DrawCurvedWire(editor->lastClickedPin.position, editor->mousePos, 2.0f, YELLOW);
+            DrawCurvedWire(editor->lastClickedPin.position, editor->mousePos, 2.0f + 2.0f / editor->zoom, YELLOW);
         }
     }
 
@@ -453,7 +453,7 @@ void HandleDragging(EditorContext *editor, GraphContext *graph)
     {
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            Vector2 delta = GetMouseDelta();
+            Vector2 delta = Vector2Scale(GetMouseDelta(), 1.0f / editor->zoom);
             graph->nodes[i].position.x += delta.x;
             graph->nodes[i].position.y += delta.y;
         }
@@ -466,14 +466,14 @@ void HandleDragging(EditorContext *editor, GraphContext *graph)
     }
 }
 
-int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D view)
+int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D view, RenderTexture2D dot)
 {
     BeginTextureMode(view);
     ClearBackground((Color){40, 42, 54, 255});
 
     HandleDragging(editor, graph);
 
-    DrawBackgroundGrid(editor, 40);
+    DrawBackgroundGrid(editor, 40, dot);
 
     DrawNodes(editor, graph);
 
@@ -505,14 +505,28 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
     return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen;
 }
 
-void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, int screenWidth, int screenHeight, bool draggingDisabled)
+void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled)
 {
     editor->newLogMessage = false;
     editor->cursor = MOUSE_CURSOR_ARROW;
 
-    editor->screenWidth = screenWidth;
-    editor->screenHeight = screenHeight;
+    editor->screenWidth = viewport->texture.width;
+    editor->screenHeight = viewport->texture.height;
     editor->mousePos = mousePos;
+
+    static RenderTexture2D dot;
+
+    if (editor->isFirstFrame)
+    {
+        dot = LoadRenderTexture(15, 15);
+        SetTextureFilter(dot.texture, TEXTURE_FILTER_BILINEAR);
+        BeginTextureMode(dot);
+        ClearBackground(BLANK);
+        DrawRectangleRounded((Rectangle){0, 0, 15, 15}, 1.0f, 8, (Color){128, 128, 128, 255});
+        EndTextureMode();
+
+        editor->isFirstFrame = false;
+    }
 
     if (draggingDisabled)
     {
@@ -521,13 +535,13 @@ void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *v
 
     if (CheckAllCollisions(editor, graph))
     {
-        DrawFullTexture(editor, graph, *viewport);
+        DrawFullTexture(editor, graph, *viewport, dot);
         editor->delayFrames = true;
         editor->cursor = MOUSE_CURSOR_POINTING_HAND;
     }
     else if (editor->delayFrames == true)
     {
-        DrawFullTexture(editor, graph, *viewport);
+        DrawFullTexture(editor, graph, *viewport, dot);
         editor->delayFrames = false;
     }
 }

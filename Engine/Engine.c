@@ -43,7 +43,7 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.mousePos = GetMousePosition();
 
-    engine.viewport = LoadRenderTexture(2000, 2000);
+    engine.viewport = LoadRenderTexture(3000, 3000);
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.resizeButton = LoadTexture("resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
@@ -1040,10 +1040,19 @@ int main()
         SetMouseCursor(engine.cursor);
         SetTargetFPS(engine.fps);
 
+        if (GetMouseWheelMove() != 0 && engine.isViewportFocused)
+        {
+            editor.delayFrames = true;
 
-        engine.editorZoom += GetMouseWheelMove() * 0.1f;
-        if (engine.editorZoom < 0.1f)
-            engine.editorZoom = 0.1f;
+            float wheel = GetMouseWheelMove();
+            float zoom = engine.editorZoom;
+
+            if (wheel > 0 && zoom < 1.5f)
+                engine.editorZoom = zoom + 0.5f;
+
+            if (wheel < 0 && zoom > 0.5f)
+                engine.editorZoom = zoom - 0.5f;
+        }
         editor.zoom = engine.editorZoom;
 
         float srcW = engine.viewportWidth / engine.editorZoom;
@@ -1059,7 +1068,7 @@ int main()
         {
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0))
             {
-                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.viewportWidth, engine.viewportHeight, engine.draggingResizeButtonID != 0);
+                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.draggingResizeButtonID != 0);
             }
 
             if (editor.newLogMessage)

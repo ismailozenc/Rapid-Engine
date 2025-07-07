@@ -33,6 +33,12 @@ EditorContext InitEditorContext()
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
+    editor.labelClicked = -1;
+    editor.nodeTextBox = (TextBox){0};
+    editor.nodeTextBox.bounds = (Rectangle){0, 0, 200, 30}; // dummy init
+    editor.nodeTextBox.length = 0;
+    editor.nodeTextBox.text[0] = '\0';
+
     editor.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
     if (editor.font.texture.id == 0)
     {
@@ -126,6 +132,80 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     }
 }
 
+bool CheckCollisionRoundedTopRect(Rectangle rect, float radius, Vector2 point)
+{
+    Rectangle body = {
+        rect.x,
+        rect.y + radius,
+        rect.width,
+        rect.height - radius};
+
+    if (CheckCollisionPointRec(point, body))
+        return true;
+
+    Vector2 topLeft = {rect.x + radius, rect.y + radius};
+    if (CheckCollisionPointCircle(point, topLeft, radius))
+        return true;
+
+    Vector2 topRight = {rect.x + rect.width - radius, rect.y + radius};
+    if (CheckCollisionPointCircle(point, topRight, radius))
+        return true;
+
+    Rectangle topMid = {
+        rect.x + radius,
+        rect.y,
+        rect.width - 2 * radius,
+        radius};
+    return CheckCollisionPointRec(point, topMid);
+}
+
+void DrawArcOutline(Vector2 center, float radius, float startAngle, float endAngle, int segments, float thickness, Color color)
+{
+    float step = (endAngle - startAngle) / segments;
+    Vector2 prev = {
+        center.x + cosf(DEG2RAD * startAngle) * radius,
+        center.y + sinf(DEG2RAD * startAngle) * radius};
+
+    for (int i = 1; i <= segments; i++)
+    {
+        float angle = startAngle + step * i;
+        Vector2 next = {
+            center.x + cosf(DEG2RAD * angle) * radius,
+            center.y + sinf(DEG2RAD * angle) * radius};
+        DrawLineEx(prev, next, thickness, color);
+        prev = next;
+    }
+}
+
+void DrawRoundedTopRectOutline(Rectangle rect, float radius, float thickness, Color color)
+{
+    float half = thickness * 0.5f;
+    float r = radius - half;
+
+    DrawLineEx((Vector2){rect.x + r, rect.y}, (Vector2){rect.x + rect.width - r, rect.y}, thickness, color);
+
+    DrawArcOutline((Vector2){rect.x + r, rect.y + r}, r, 180, 270, 16, thickness, color);
+    DrawArcOutline((Vector2){rect.x + rect.width - r, rect.y + r}, r, 270, 360, 16, thickness, color);
+
+    DrawLineEx(
+        (Vector2){rect.x, rect.y + r},
+        (Vector2){rect.x, rect.y + rect.height}, thickness, color);
+    DrawLineEx(
+        (Vector2){rect.x + rect.width, rect.y + r},
+        (Vector2){rect.x + rect.width, rect.y + rect.height}, thickness, color);
+
+    DrawLineEx(
+        (Vector2){rect.x, rect.y + rect.height},
+        (Vector2){rect.x + rect.width, rect.y + rect.height}, thickness, color);
+}
+
+void DrawTextBox(TextBox *box)
+{
+    DrawRectangleRounded(box->bounds, 0.2f, 8, box->editing ? GRAY : DARKGRAY);
+    DrawRectangleLinesEx(box->bounds, 2, WHITE);
+    DrawText(box->text, box->bounds.x + 4, box->bounds.y + 6, 20, WHITE);
+}
+
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
@@ -199,8 +279,48 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             (Rectangle){x - 1, y - 1, width + 2, height + 2},
             roundness, segments, 2.0f / editor->zoom, WHITE);
 
+        if (CheckCollisionRoundedTopRect((Rectangle){x - 1, y, width + 1, 35}, fullRadius, editor->mousePos) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && getIsEditableByType(graph->nodes[i].type))
+        {
+            editor->labelClicked = i;
+        }
+        if (editor->labelClicked == i)
+        {
+            DrawRoundedTopRectOutline((Rectangle){x - 2, y - 2, width + 5, 37}, fullRadius, 3.0f, WHITE);
+            editor->nodeTextBox.bounds = (Rectangle){x, y - 40, width, 30};
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                editor->nodeTextBox.editing = CheckCollisionPointRec(editor->mousePos, editor->nodeTextBox.bounds);
+            }
+
+            if (editor->nodeTextBox.editing)
+            {
+                int key = GetCharPressed();
+                while (key > 0)
+                {
+                    if (editor->nodeTextBox.length < 255)
+                    {
+                        editor->nodeTextBox.text[editor->nodeTextBox.length++] = (char)key;
+                        editor->nodeTextBox.text[editor->nodeTextBox.length] = '\0';
+                    }
+                    key = GetCharPressed();
+                }
+
+                if (IsKeyPressed(KEY_BACKSPACE) && editor->nodeTextBox.length > 0)
+                {
+                    editor->nodeTextBox.text[--editor->nodeTextBox.length] = '\0';
+                }
+
+                if (IsKeyPressed(KEY_ENTER))
+                {
+                    editor->nodeTextBox.editing = false;
+                }
+            }
+            DrawTextBox(&editor->nodeTextBox);
+        }
+
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
                    (Vector2){x + 10, y + 3}, 30, 2, WHITE);
+
         if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
             hoveredNodeIndex = i;
@@ -209,6 +329,12 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 nodeToDelete = graph->nodes[i].id;
             }
         }
+    }
+
+    if (hoveredNodeIndex == -1 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(editor->mousePos, editor->nodeTextBox.bounds))
+    {
+        editor->labelClicked = -1;
+        editor->nodeTextBox.editing = false;
     }
 
     int hoveredPinIndex = -1;
@@ -502,7 +628,7 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
         editor->delayFrames = true;
     }
 
-    return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen;
+    return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->labelClicked != -1;
 }
 
 void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled)

@@ -13,6 +13,13 @@
 
 #define MAX_TYPE_LENGTH 16
 
+typedef struct {
+    Rectangle bounds;
+    bool editing;
+    char text[256];
+    int length;
+} TextBox;
+
 typedef struct
 {
     int screenWidth;
@@ -36,6 +43,9 @@ typedef struct
     Pin lastClickedPin;
 
     Font font;
+
+    int labelClicked;
+    TextBox nodeTextBox;
 
     bool newLogMessage;
     char logMessage[128];

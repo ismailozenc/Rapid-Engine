@@ -38,9 +38,15 @@ typedef enum
     PIN_FLOW,
     PIN_INT,
     PIN_FLOAT,
+    PIN_BOOL,
     PIN_STRING,
+    PIN_SPRITE,
     PIN_FIELD,
-    PIN_DROPDOWN
+    PIN_DROPDOWN,
+    PIN_COMPARISON_OPERATOR,
+    PIN_GATE,
+    PIN_ARITHMETIC,
+    PIN_COLOR
     //
 } PinType;
 
@@ -55,6 +61,8 @@ typedef struct InfoByType{
 
     Color color;
 
+    bool isEditable;
+
     PinType inputs[16];
     PinType outputs[16];
 
@@ -63,28 +71,28 @@ typedef struct InfoByType{
 }InfoByType;
 
 static InfoByType NodeInfoByType[] = {
-    {NODE_NUM, 2, 2, 120, 100, {60, 100, 159, 200}, {PIN_FLOW, PIN_INT}, {PIN_FLOW, PIN_INT}, {"", "Set var"}, {"", "Get var"}},
-    {NODE_STRING, 2, 2, 120, 100, {60, 100, 159, 200}, {PIN_FLOW, PIN_STRING}, {PIN_FLOW, PIN_STRING}, {"", "Set var"}, {"", "Get var"}},
-    {NODE_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_GET_VAR, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_SET_VAR, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, {0}, {PIN_FLOW}, {""}, {""}},
-    {NODE_EVENT_LOOP, 0, 1, 150, 120, {148, 0, 0, 200}, {0}, {PIN_FLOW}, {""}, {""}},
-    {NODE_EVENT_ON_BUTTON, 3, 3, 240, 200, {148, 0, 0, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_CREATE_CUSTOM_EVENT, 3, 3, 240, 200, {148, 0, 0, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_CALL_CUSTOM_EVENT, 3, 3, 240, 200, {148, 0, 0, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_SPAWN_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_DESTROY_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_BRANCH, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_LOOP, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_COMPARISON, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_GATE, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_ARITHMETIC, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, {PIN_FLOW, PIN_STRING}, {PIN_FLOW}, {""}, {""}},
-    {NODE_DRAW_LINE, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}, {""}, {""}},
-    {NODE_LITERAL, 3, 3, 240, 200, {60, 100, 159, 200}, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}}
+    {NODE_NUM, 2, 2, 120, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT}, {PIN_FLOW, PIN_INT}, {"", "Set value"}, {"", "Get value"}},
+    {NODE_STRING, 2, 2, 120, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW, PIN_STRING}, {"", "Set value"}, {"", "Get value"}},
+    {NODE_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
+    {NODE_GET_VAR, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW, PIN_INT}, {""}, {"", "Get value"}},
+    {NODE_SET_VAR, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT}, {PIN_FLOW}, {"", "Set value"}, {""}},
+    {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
+    {NODE_EVENT_LOOP, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
+    {NODE_EVENT_ON_BUTTON, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
+    {NODE_CREATE_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
+    {NODE_CALL_CUSTOM_EVENT, 99, 1, 240, 200, {148, 0, 0, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
+    {NODE_SPAWN_SPRITE, 1, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"", "Sprite"}, {""}},
+    {NODE_DESTROY_SPRITE, 2, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"", "Sprite"}, {""}},
+    {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
+    {NODE_BRANCH, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {""}},
+    {NODE_LOOP, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {"", "Loop body"}},
+    {NODE_COMPARISON, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT, PIN_INT, PIN_COMPARISON_OPERATOR}, {PIN_FLOW, PIN_BOOL}, {"", "Value A", "Value B", "Operator"}, {"", "Result"}},
+    {NODE_GATE, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL, PIN_BOOL, PIN_GATE}, {PIN_FLOW, PIN_BOOL}, {"", "Condition A", "Condition B", "Gate"}, {"", "Result"}},
+    {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT, PIN_INT, PIN_ARITHMETIC}, {PIN_FLOW, PIN_INT}, {"", "Number A", "Number B", "Arithmetic"}, {"", "Result"}},
+    {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW}, {"", "Print value"}, {""}},
+    {NODE_DRAW_LINE, 6, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_COLOR}, {PIN_FLOW}, {"", "Start X", "Start Y", "End X", "End Y", "Color"}, {""}},
+    {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}, {""}, {""}},
+    {NODE_LITERAL, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}}
 };
 
 static inline int getNodeInfoByType(NodeType type, char *info){
@@ -106,6 +114,14 @@ static inline int getNodeInfoByType(NodeType type, char *info){
     }
 
     return -1;
+}
+
+static inline bool getIsEditableByType(NodeType type){
+    for(int i = 0; i < typesCount; i++){
+        if(type == NodeInfoByType[i].type){
+            return NodeInfoByType[i].isEditable;
+        }
+     }
 }
 
 static inline char **getNodeInputNamesByType(NodeType type){

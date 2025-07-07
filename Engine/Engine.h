@@ -122,4 +122,5 @@ typedef struct EngineContext
     bool isGameRunning;
     bool sideBarHalfSnap;
     bool sideBarFullSnap;
+    float editorZoom;
 } EngineContext;

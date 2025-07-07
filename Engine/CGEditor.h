@@ -46,7 +46,7 @@ typedef struct
 
     int fps;
 
-    // float zoom;
+    float zoom;
 } EditorContext;
 
 EditorContext InitEditorContext(void);

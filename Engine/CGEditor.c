@@ -64,6 +64,11 @@ void DrawBackgroundGrid(EditorContext *editor, int gridSpacing)
     {
         Vector2 delta = GetMouseDelta();
         editor->cameraOffset = Vector2Subtract(editor->cameraOffset, delta);
+        float maxOffsetX = 2000;
+        float maxOffsetY = 2000;
+
+        editor->cameraOffset.x = Clamp(editor->cameraOffset.x, -maxOffsetX, maxOffsetX);
+        editor->cameraOffset.y = Clamp(editor->cameraOffset.y, -maxOffsetY, maxOffsetY);
     }
 
     Vector2 offset = editor->cameraOffset;
@@ -71,17 +76,23 @@ void DrawBackgroundGrid(EditorContext *editor, int gridSpacing)
     int startX = -((int)offset.x % gridSpacing) - gridSpacing;
     int startY = -((int)offset.y % gridSpacing) - gridSpacing;
 
-    for (int y = startY; y < editor->screenHeight + gridSpacing; y += gridSpacing)
+    int endX = 2000;
+    int endY = 2000;
+
+    for (int y = startY; y < endY + gridSpacing; y += gridSpacing)
     {
         int row = (y + (int)offset.y) / gridSpacing;
 
-        for (int x = startX; x < 2560 + gridSpacing; x += gridSpacing)
+        for (int x = startX; x < endX + gridSpacing; x += gridSpacing)
         {
             float drawX = (float)(x + (row % 2) * (gridSpacing / 2));
             float drawY = (float)(y);
 
+            float screenX = (drawX - offset.x) * editor->zoom;
+            float screenY = (drawY - offset.y) * editor->zoom;
+
             DrawRectangleRounded(
-                (Rectangle){drawX, drawY, 15, 15},
+                (Rectangle){screenX, screenY, 15 * editor->zoom, 15 * editor->zoom},
                 1.0f, 8,
                 (Color){128, 128, 128, 10});
         }
@@ -164,12 +175,10 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         float fullRadius = roundness * fminf(width, height) / 2.0f;
 
-        // Background (semi-transparent)
         DrawRectangleRounded(
             (Rectangle){x, y, width, height},
             roundness, segments, (Color){0, 0, 0, 120});
 
-        // Header middle rectangle (flat sides)
         DrawRectangleRec(
             (Rectangle){x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius},
             nodeColor);
@@ -178,22 +187,18 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             (Rectangle){x - 2, y + fullRadius - 2, width + 4, 35 - fullRadius},
             nodeColor);
 
-        // Top-left rounded corner
         DrawCircleSector(
             (Vector2){x + fullRadius - 2, y + fullRadius - 2},
             fullRadius, 180, 270, segments, nodeColor);
 
-        // Top-right rounded corner
         DrawCircleSector(
             (Vector2){x + width - fullRadius + 2, y + fullRadius - 2},
             fullRadius, 270, 360, segments, nodeColor);
 
-        // Outline
-        DrawRectangleRoundedLines(
+        DrawRectangleRoundedLinesEx(
             (Rectangle){x - 1, y - 1, width + 2, height + 2},
-            roundness, segments, WHITE);
+            roundness, segments, 2.0f / editor->zoom, WHITE);
 
-        // Header text
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
                    (Vector2){x + 10, y + 3}, 30, 2, WHITE);
         if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
@@ -242,11 +247,24 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 hoveredPinIndex = i;
             }
         }
+        else if (graph->pins[i].type == PIN_FIELD)
+        {
+        }
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
             if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 12))
             {
+                if (graph->pins[i].isInput)
+                {
+                    DrawTextEx(editor->font, getNodeInputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], (Vector2){(2 * nodePos.x + getNodeInfoByType(graph->nodes[currNodeIndex].type, "width")) / 2 - MeasureTextEx(editor->font, getNodeInputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], 18, 0).x / 2, nodePos.y + yOffset - 8}, 18, 0, WHITE);
+                    DrawLine(graph->pins[i].position.x, graph->pins[i].position.y, (2 * nodePos.x + getNodeInfoByType(graph->nodes[currNodeIndex].type, "width")) / 2 - MeasureTextEx(editor->font, getNodeInputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], 18, 0).x / 2 - 5, graph->pins[i].position.y, WHITE);
+                }
+                else
+                {
+                    DrawTextEx(editor->font, getNodeOutputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], (Vector2){(2 * nodePos.x + getNodeInfoByType(graph->nodes[currNodeIndex].type, "width")) / 2 - MeasureTextEx(editor->font, getNodeOutputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], 18, 0).x / 2, nodePos.y + yOffset - 8}, 18, 0, WHITE);
+                    DrawLine(graph->pins[i].position.x, graph->pins[i].position.y, (2 * nodePos.x + getNodeInfoByType(graph->nodes[currNodeIndex].type, "width")) / 2 + MeasureTextEx(editor->font, getNodeOutputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], 18, 0).x / 2 + 5, graph->pins[i].position.y, WHITE);
+                }
                 DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 7, WHITE);
                 hoveredPinIndex = i;
             }
@@ -266,10 +284,12 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             editor->lastClickedPin = INVALID_PIN;
         }
     }
-    else if(hoveredPinIndex == -1 && (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))){
+    else if (hoveredPinIndex == -1 && (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)))
+    {
         editor->lastClickedPin = INVALID_PIN;
     }
-    else if(hoveredPinIndex != -1 && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
+    else if (hoveredPinIndex != -1 && IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+    {
         RemoveConnections(graph, graph->pins[hoveredPinIndex].id);
         editor->menuOpen = false;
     }
@@ -292,7 +312,8 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
     }
 
-    if(nodeToDelete != -1 && hoveredPinIndex == -1){
+    if (nodeToDelete != -1 && hoveredPinIndex == -1)
+    {
         DeleteNode(graph, nodeToDelete);
         editor->menuOpen = false;
         return;

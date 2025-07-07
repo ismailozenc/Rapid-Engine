@@ -43,7 +43,7 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.mousePos = GetMousePosition();
 
-    engine.viewport = LoadRenderTexture(GetScreenWidth() - engine.sideBarWidth, GetScreenHeight() - engine.bottomBarHeight);
+    engine.viewport = LoadRenderTexture(2000, 2000);
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.resizeButton = LoadTexture("resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
@@ -90,6 +90,8 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.sideBarHalfSnap = false;
     engine.sideBarFullSnap = false;
+
+    engine.editorZoom = 1.0f;
 
     return engine;
 }
@@ -1038,8 +1040,17 @@ int main()
         SetMouseCursor(engine.cursor);
         SetTargetFPS(engine.fps);
 
-        int textureX = (engine.viewport.texture.width - engine.viewportWidth) / 2.0f + engine.mousePos.x - engine.sideBarWidth;
-        int textureY = (engine.viewport.texture.height - engine.viewportHeight) / 2.0f + engine.mousePos.y;
+
+        engine.editorZoom += GetMouseWheelMove() * 0.1f;
+        if (engine.editorZoom < 0.1f)
+            engine.editorZoom = 0.1f;
+        editor.zoom = engine.editorZoom;
+
+        float srcW = engine.viewportWidth / engine.editorZoom;
+        float srcH = engine.viewportHeight / engine.editorZoom;
+
+        int textureX = (GetMouseX() - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
+        int textureY = GetMouseY() / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -1079,8 +1090,16 @@ int main()
 
         DrawTexturePro(
             engine.viewport.texture,
-            (Rectangle){(engine.viewport.texture.width - engine.viewportWidth) / 2.0f, (engine.viewport.texture.height - engine.viewportHeight) / 2.0f, engine.viewportWidth, -engine.viewportHeight},
-            (Rectangle){engine.sideBarWidth, 0, engine.screenWidth - engine.sideBarWidth, engine.screenHeight - engine.bottomBarHeight},
+            (Rectangle){
+                (engine.viewport.texture.width - srcW) / 2.0f,
+                (engine.viewport.texture.height - srcH) / 2.0f,
+                srcW,
+                -srcH},
+            (Rectangle){
+                engine.sideBarWidth,
+                0,
+                engine.screenWidth - engine.sideBarWidth,
+                engine.screenHeight - engine.bottomBarHeight},
             (Vector2){0, 0},
             0.0f,
             WHITE);

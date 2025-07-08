@@ -375,37 +375,40 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else if (graph->pins[i].type == PIN_FIELD)
         {
-            editor->nodeTextBox.bounds = (Rectangle){graph->pins[i].position.x, graph->pins[i].position.y, 30, 30};
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            const char *options[] = {"A", "B", "C"};
+            int optionCount = 3;
+            static int selected = 0;
+            static bool dropdownOpen = false;
+
+            Rectangle dropdown = {graph->pins[i].position.x - 5, graph->pins[i].position.y, 30, 30};
+
+            DrawRectangleRec(dropdown, GRAY);
+            DrawText(options[selected], dropdown.x + 5, dropdown.y + 5, 20, BLACK);
+            DrawRectangleLinesEx(dropdown, 1, WHITE);
+
+            if (CheckCollisionPointRec(editor->mousePos, dropdown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                editor->nodeTextBox.editing = CheckCollisionPointRec(editor->mousePos, editor->nodeTextBox.bounds);
+                dropdownOpen = !dropdownOpen;
             }
 
-            if (editor->nodeTextBox.editing)
+            if (dropdownOpen)
             {
-                int key = GetCharPressed();
-                while (key > 0)
+                editor->delayFrames = true;
+
+                for (int i = 0; i < optionCount; i++)
                 {
-                    if (editor->nodeTextBox.length < 255)
+                    Rectangle option = {dropdown.x, dropdown.y + (i + 1) * 30, dropdown.width, 30};
+                    DrawRectangleRec(option, RAYWHITE);
+                    DrawText(options[i], option.x + 5, option.y + 5, 20, BLACK);
+                    DrawRectangleLinesEx(option, 1, DARKGRAY);
+
+                    if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                     {
-                        editor->nodeTextBox.text[editor->nodeTextBox.length++] = (char)key;
-                        editor->nodeTextBox.text[editor->nodeTextBox.length] = '\0';
+                        selected = i;
+                        dropdownOpen = false;
                     }
-                    key = GetCharPressed();
-                }
-
-                if (IsKeyPressed(KEY_BACKSPACE) && editor->nodeTextBox.length > 0)
-                {
-                    editor->nodeTextBox.text[--editor->nodeTextBox.length] = '\0';
-                }
-
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    editor->nodeTextBox.editing = false;
-                    //graph->nodes[i].
                 }
             }
-            DrawTextBox(&editor->nodeTextBox);
         }
         else
         {

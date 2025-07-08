@@ -375,6 +375,37 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else if (graph->pins[i].type == PIN_FIELD)
         {
+            editor->nodeTextBox.bounds = (Rectangle){graph->pins[i].position.x, graph->pins[i].position.y, 30, 30};
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                editor->nodeTextBox.editing = CheckCollisionPointRec(editor->mousePos, editor->nodeTextBox.bounds);
+            }
+
+            if (editor->nodeTextBox.editing)
+            {
+                int key = GetCharPressed();
+                while (key > 0)
+                {
+                    if (editor->nodeTextBox.length < 255)
+                    {
+                        editor->nodeTextBox.text[editor->nodeTextBox.length++] = (char)key;
+                        editor->nodeTextBox.text[editor->nodeTextBox.length] = '\0';
+                    }
+                    key = GetCharPressed();
+                }
+
+                if (IsKeyPressed(KEY_BACKSPACE) && editor->nodeTextBox.length > 0)
+                {
+                    editor->nodeTextBox.text[--editor->nodeTextBox.length] = '\0';
+                }
+
+                if (IsKeyPressed(KEY_ENTER))
+                {
+                    editor->nodeTextBox.editing = false;
+                    //graph->nodes[i].
+                }
+            }
+            DrawTextBox(&editor->nodeTextBox);
         }
         else
         {

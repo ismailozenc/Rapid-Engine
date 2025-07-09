@@ -33,11 +33,7 @@ EditorContext InitEditorContext()
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
-    editor.labelClicked = -1;
-    editor.nodeTextBox = (TextBox){0};
-    editor.nodeTextBox.bounds = (Rectangle){0, 0, 200, 30}; // dummy init
-    editor.nodeTextBox.length = 0;
-    editor.nodeTextBox.text[0] = '\0';
+    editor.dropdownOpen = -1;
 
     editor.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
     if (editor.font.texture.id == 0)
@@ -279,45 +275,6 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             (Rectangle){x - 1, y - 1, width + 2, height + 2},
             roundness, segments, 2.0f / editor->zoom, WHITE);
 
-        if (CheckCollisionRoundedTopRect((Rectangle){x - 1, y, width + 1, 35}, fullRadius, editor->mousePos) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && getIsEditableByType(graph->nodes[i].type))
-        {
-            editor->labelClicked = i;
-        }
-        if (editor->labelClicked == i)
-        {
-            DrawRoundedTopRectOutline((Rectangle){x - 2, y - 2, width + 5, 37}, fullRadius, 3.0f, WHITE);
-            editor->nodeTextBox.bounds = (Rectangle){x, y - 40, width, 30};
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                editor->nodeTextBox.editing = CheckCollisionPointRec(editor->mousePos, editor->nodeTextBox.bounds);
-            }
-
-            if (editor->nodeTextBox.editing)
-            {
-                int key = GetCharPressed();
-                while (key > 0)
-                {
-                    if (editor->nodeTextBox.length < 255)
-                    {
-                        editor->nodeTextBox.text[editor->nodeTextBox.length++] = (char)key;
-                        editor->nodeTextBox.text[editor->nodeTextBox.length] = '\0';
-                    }
-                    key = GetCharPressed();
-                }
-
-                if (IsKeyPressed(KEY_BACKSPACE) && editor->nodeTextBox.length > 0)
-                {
-                    editor->nodeTextBox.text[--editor->nodeTextBox.length] = '\0';
-                }
-
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    editor->nodeTextBox.editing = false;
-                }
-            }
-            DrawTextBox(&editor->nodeTextBox);
-        }
-
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
                    (Vector2){x + 10, y + 3}, 30, 2, WHITE);
 
@@ -329,12 +286,6 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 nodeToDelete = graph->nodes[i].id;
             }
         }
-    }
-
-    if (hoveredNodeIndex == -1 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(editor->mousePos, editor->nodeTextBox.bounds))
-    {
-        editor->labelClicked = -1;
-        editor->nodeTextBox.editing = false;
     }
 
     int hoveredPinIndex = -1;
@@ -373,39 +324,48 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 hoveredPinIndex = i;
             }
         }
-        else if (graph->pins[i].type == PIN_FIELD)
+        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE) // ||
         {
-            const char *options[] = {"A", "B", "C"};
-            int optionCount = 3;
-            static int selected = 0;
-            static bool dropdownOpen = false;
+            DropdownOptionsByPinType options = getPinDropdownOptionsByType(graph->pins[i].type);
 
-            Rectangle dropdown = {graph->pins[i].position.x - 5, graph->pins[i].position.y, 30, 30};
+            Rectangle dropdown = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, options.boxWidth, 24};
 
             DrawRectangleRec(dropdown, GRAY);
-            DrawText(options[selected], dropdown.x + 5, dropdown.y + 5, 20, BLACK);
+            DrawTextEx(editor->font, options.options[graph->pins[i].pickedOption], (Vector2){dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
             DrawRectangleLinesEx(dropdown, 1, WHITE);
 
-            if (CheckCollisionPointRec(editor->mousePos, dropdown) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            if (CheckCollisionPointRec(editor->mousePos, dropdown))
             {
-                dropdownOpen = !dropdownOpen;
+                hoveredNodeIndex = -1;
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    if (editor->dropdownOpen != i)
+                    {
+                        editor->dropdownOpen = i;
+                    }
+                    else
+                    {
+                        editor->dropdownOpen = -1;
+                    }
+                }
             }
 
-            if (dropdownOpen)
+            if (editor->dropdownOpen == i)
             {
                 editor->delayFrames = true;
+                hoveredNodeIndex = -1;
 
-                for (int i = 0; i < optionCount; i++)
+                for (int j = 0; j < options.optionsCount; j++)
                 {
-                    Rectangle option = {dropdown.x, dropdown.y + (i + 1) * 30, dropdown.width, 30};
+                    Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
                     DrawRectangleRec(option, RAYWHITE);
-                    DrawText(options[i], option.x + 5, option.y + 5, 20, BLACK);
+                    DrawTextEx(editor->font, options.options[j], (Vector2){option.x + 3, option.y + 3}, 20, 0, BLACK);
                     DrawRectangleLinesEx(option, 1, DARKGRAY);
 
                     if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                     {
-                        selected = i;
-                        dropdownOpen = false;
+                        graph->pins[i].pickedOption = j;
+                        editor->dropdownOpen = -1;
                     }
                 }
             }
@@ -662,7 +622,7 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
         editor->delayFrames = true;
     }
 
-    return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->labelClicked != -1;
+    return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->dropdownOpen != -1;
 }
 
 void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled)

@@ -4,6 +4,7 @@
 
 #define MAX_TYPE_LENGTH 16
 #define typesCount (sizeof(NodeInfoByType) / sizeof(NodeInfoByType[0]))
+#define pinTypesCount (sizeof(PinDropdownOptionsByType) / sizeof(PinDropdownOptionsByType[0])) // not named properly
 
 typedef enum
 {
@@ -50,6 +51,13 @@ typedef enum
     //
 } PinType;
 
+typedef enum
+{
+    EQUAL_TO,
+    GREATER_THAN,
+    LESS_THAN
+}Comparison;
+
 typedef struct InfoByType{
     NodeType type;
 
@@ -86,14 +94,33 @@ static InfoByType NodeInfoByType[] = {
     {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
     {NODE_BRANCH, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {""}},
     {NODE_LOOP, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {"", "Loop body"}},
-    {NODE_COMPARISON, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT, PIN_INT, PIN_COMPARISON_OPERATOR}, {PIN_FLOW, PIN_BOOL}, {"", "Value A", "Value B", "Operator"}, {"", "Result"}},
-    {NODE_GATE, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL, PIN_BOOL, PIN_FIELD}, {PIN_FLOW, PIN_BOOL}, {"", "Condition A", "Condition B", "Gate"}, {"", "Result"}},
+    {NODE_COMPARISON, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_BOOL}, {"", "Value A", "Value B", "Operator"}, {"", "Result"}},
+    {NODE_GATE, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"", "Condition A", "Condition B", "Gate"}, {"", "Result"}},
     {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT, PIN_INT, PIN_ARITHMETIC}, {PIN_FLOW, PIN_INT}, {"", "Number A", "Number B", "Arithmetic"}, {"", "Result"}},
     {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW}, {"", "Print value"}, {""}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_COLOR}, {PIN_FLOW}, {"", "Start X", "Start Y", "End X", "End Y", "Color"}, {""}},
     {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_INT, PIN_INT, PIN_INT, PIN_INT}, {PIN_FLOW, PIN_FLOW, PIN_INT, PIN_INT, PIN_INT}, {""}, {""}},
     {NODE_LITERAL, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}}
 };
+
+typedef struct DropdownOptionsByPinType{
+    PinType type;
+    int optionsCount;
+    char *options[32];
+    int boxWidth;
+}DropdownOptionsByPinType;
+
+static DropdownOptionsByPinType PinDropdownOptionsByType[] = {
+    {PIN_COMPARISON_OPERATOR, 3, {"Equal To", "Greater Than", "Less Than"}, 120}
+};
+
+static inline DropdownOptionsByPinType getPinDropdownOptionsByType(PinType type){
+    for(int i = 0; i < pinTypesCount; i++){
+        if(type == PinDropdownOptionsByType[i].type){
+            return PinDropdownOptionsByType[i];
+        }
+    }
+}
 
 static inline int getNodeInfoByType(NodeType type, char *info){
     for(int i = 0; i < typesCount; i++){

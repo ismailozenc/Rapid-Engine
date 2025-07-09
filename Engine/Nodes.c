@@ -139,6 +139,7 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     pin.type = type;
     pin.posInNode = index;
     pin.position = pos;
+    pin.pickedOption = 0;
     return pin;
 }
 

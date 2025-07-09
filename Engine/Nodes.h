@@ -35,6 +35,7 @@ typedef struct Pin
     int posInNode;
     bool isInput;
     Vector2 position;
+    int pickedOption;
 } Pin;
 
 typedef struct Link

@@ -44,8 +44,7 @@ typedef struct
 
     Font font;
 
-    int labelClicked;
-    TextBox nodeTextBox;
+    int dropdownOpen;
 
     bool newLogMessage;
     char logMessage[128];

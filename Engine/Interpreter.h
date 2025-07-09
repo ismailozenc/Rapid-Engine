@@ -13,6 +13,7 @@ typedef struct RuntimePin
     int nodeIndex;
     bool isInput;
     int valueIndex;
+    int pickedOption;
 
     struct RuntimePin *linkedPins[MAX_LINKS_PER_PIN];
     int linkCount;
@@ -44,7 +45,6 @@ typedef enum {
     VAL_NUMBER,
     VAL_STRING,
     VAL_BOOL,
-    VAL_VECTOR2,
     VAL_COLOR,
     VAL_SPRITE
 } ValueType;
@@ -73,7 +73,7 @@ typedef struct {
 } Value;
 
 typedef struct {
-    Value values[100];
+    Value *values;
     int valueCount;
 
     int loopNodeIndex;
@@ -86,6 +86,8 @@ typedef struct {
 } InterpreterContext;
 
 InterpreterContext InitInterpreterContext();
+
+void FreeInterpreterContext(InterpreterContext *interpreter);
 
 RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter);
 

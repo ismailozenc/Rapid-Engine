@@ -14,9 +14,15 @@ InterpreterContext InitInterpreterContext()
     return interpreter;
 }
 
+void FreeInterpreterContext(InterpreterContext *interpreter)
+{
+    free(interpreter->values);
+    interpreter->values = NULL;
+}
+
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
 {
-    char str[32];
+    char str[128];
 
     if (message.type == VAL_NUMBER)
     {
@@ -27,7 +33,8 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
         strcpy(str, message.string);
     }
 
-    strncpy(interpreter->logMessage, str, 128 * sizeof(char));
+    strncpy(interpreter->logMessage, str, 127);
+    interpreter->logMessage[128] = '\0';
     interpreter->logMessageLevel = level;
     interpreter->newLogMessage = true;
 }
@@ -66,6 +73,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         dst->isInput = src->isInput;
         dst->valueIndex = -1;
         dst->linkCount = 0;
+        dst->pickedOption = src->pickedOption;
     }
 
     for (int i = 0; i < graph->nodeCount; i++)
@@ -135,27 +143,66 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             outputPin->linkedPins[outputPin->linkCount++] = inputPin;
     }
 
+    int totalOutputPins = 0;
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        RuntimeNode *node = &runtime.nodes[i];
+        for (int j = 0; j < node->outputCount; j++)
+        {
+            if (node->outputPins[j]->type != PIN_FLOW)
+                totalOutputPins++;
+        }
+    }
+
+    interpreter->values = malloc(sizeof(Value) * totalOutputPins);
     interpreter->valueCount = 0;
 
-    for(int i = 0; i < graph->nodeCount; i++){
-        switch(graph->nodes[i].type){
-            case NODE_NUM:
-                interpreter->values[interpreter->valueCount].number = 0;
-                interpreter->values[interpreter->valueCount].name = graph->nodes[i].name;
-                interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
-                runtime.nodes[i].outputPins[1]->valueIndex = interpreter->valueCount;
-                interpreter->valueCount++;
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        RuntimeNode *node = &runtime.nodes[i];
+        Node *srcNode = &graph->nodes[i];
+
+        for (int j = 0; j < node->outputCount; j++)
+        {
+            RuntimePin *pin = node->outputPins[j];
+            if (pin->type == PIN_FLOW)
+                continue;
+
+            int idx = interpreter->valueCount;
+
+            switch (pin->type)
+            {
+            case PIN_FLOAT:
+                interpreter->values[idx].number = 0;
+                interpreter->values[idx].type = VAL_NUMBER;
+                interpreter->values[idx].name = srcNode->name;
                 break;
-            case NODE_STRING:
-                interpreter->values[interpreter->valueCount].string = "null";
-                interpreter->values[interpreter->valueCount].name = graph->nodes[i].name;
-                interpreter->values[interpreter->valueCount].type = VAL_STRING;
-                runtime.nodes[i].outputPins[1]->valueIndex = interpreter->valueCount;
-                interpreter->valueCount++;
+            case PIN_STRING:
+                interpreter->values[idx].string = "null";
+                interpreter->values[idx].type = VAL_STRING;
+                interpreter->values[idx].name = srcNode->name;
                 break;
-            case NODE_SPRITE:
+            case PIN_BOOL:
+                interpreter->values[idx].boolean = false;
+                interpreter->values[idx].type = VAL_BOOL;
+                interpreter->values[idx].name = srcNode->name;
                 break;
-            //casenodecolor
+            case PIN_COLOR:
+                interpreter->values[idx].color = (Color){255, 255, 255, 255};
+                interpreter->values[idx].type = VAL_COLOR;
+                interpreter->values[idx].name = srcNode->name;
+                break;
+            case PIN_SPRITE:
+                interpreter->values[idx].sprite = (Sprite){0};
+                interpreter->values[idx].type = VAL_SPRITE;
+                interpreter->values[idx].name = srcNode->name;
+                break;
+            default:
+                break;
+            }
+
+            pin->valueIndex = idx;
+            interpreter->valueCount++;
         }
     }
 
@@ -187,7 +234,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_NUM:
     {
-        if(graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0){
+        if (graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0)
+        {
             graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex;
         }
         break;
@@ -195,7 +243,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_STRING:
     {
-        if(graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0){
+        if (graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0)
+        {
             graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex;
         }
         break;
@@ -212,26 +261,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     }
 
     case NODE_SET_VAR:
-    {
-        break;
-    }
-
-    case NODE_EVENT_START:
-    {
-        break;
-    }
-
-    case NODE_EVENT_LOOP:
-    {
-        break;
-    }
-
-    case NODE_EVENT_ON_BUTTON:
-    {
-        break;
-    }
-
-    case NODE_CREATE_CUSTOM_EVENT:
     {
         break;
     }
@@ -268,6 +297,15 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_COMPARISON:
     {
+        if (graph->nodes[currNodeIndex].inputPins[1]->pickedOption == EQUAL_TO)
+        {
+            if(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number == interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number){
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = true;
+            }
+            else{
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = false;
+            }
+        }
         break;
     }
 
@@ -292,7 +330,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
             if (index >= 0 && index < interpreter->valueCount)
             {
-                AddToLogFromInterpreter(interpreter, interpreter->values[index], 0);
+                AddToLogFromInterpreter(interpreter, interpreter->values[index/*graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex*/], 0);
             }
             else
             {
@@ -343,13 +381,15 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
                     interpreter->loopNodeIndex = i;
                 }
                 break;
+            }
+
+            interpreter->isFirstFrame = false;
         }
 
-        interpreter->isFirstFrame = false;
-    }
-
-    for(int i = 0; i < graph->nodeCount; i++){
-        switch (graph->nodes[i].type){
+        for (int i = 0; i < graph->nodeCount; i++)
+        {
+            switch (graph->nodes[i].type)
+            {
             case NODE_EVENT_ON_BUTTON:
                 /*if(IsKeyPressed(KEY_K)){
                     InterpretStringOfNodes(i, interpreter, &graph);
@@ -367,7 +407,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     }
     else
     {
-        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
+        //InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
     }
 
     return true;

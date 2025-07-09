@@ -1131,6 +1131,7 @@ int main()
     FreeEngineContext(&engine);
     FreeEditorContext(&editor);
     FreeGraphContext(&graph);
+    FreeInterpreterContext(&interpreter);
 
     CloseAudioDevice();
 

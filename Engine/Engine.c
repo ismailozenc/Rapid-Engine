@@ -579,15 +579,6 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             logY -= 25;
         }
 
-        /*AddUIElement(engine, (UIElement){
-                                 .name = "LogTimeLine",
-                                 .shape = UILine,
-                                 .type = NO_COLLISION_ACTION,
-                                 .line = {.startPos = {MeasureTextEx(engine->font, "00:00:00 ", 20, 2).x + 8, engine->screenHeight - engine->bottomBarHeight}, .engPos = {MeasureTextEx(engine->font, "00:00:00 ", 20, 2).x + 8, engine->sideBarMiddleY}, .thickness = 1},
-                                 .color = GRAY,
-                                 .layer = 0,
-                             });*/
-
         int varsY = 40;
         for (int i = 0; i < interpreter->valueCount; i++)
         {
@@ -601,7 +592,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                  });
 
             Color varColor;
-            sprintf(cutMessage, "%s", interpreter->values[i].name);
+            sprintf(cutMessage, "%s %d", interpreter->values[i].name, i);
             switch (interpreter->values[i].type)
             {
             case VAL_NUMBER:

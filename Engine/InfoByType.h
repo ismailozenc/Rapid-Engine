@@ -101,7 +101,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
     {NODE_BRANCH, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {""}},
     {NODE_LOOP, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {"", "Loop body"}},
-    {NODE_COMPARISON, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_FLOAT, PIN_FLOAT}, {PIN_FLOW, PIN_BOOL}, {"", "Value A", "Value B", "Operator"}, {"", "Result"}},
+    {NODE_COMPARISON, 4, 2, 200, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_FLOAT, PIN_FLOAT}, {PIN_FLOW, PIN_BOOL}, {"", "Value A", "Value B", "Operator"}, {"", "Result"}},
     {NODE_GATE, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"", "Condition A", "Condition B", "Gate"}, {"", "Result"}},
     {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_ARITHMETIC}, {PIN_FLOW, PIN_FLOAT}, {"", "Number A", "Number B", "Arithmetic"}, {"", "Result"}},
     {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW}, {"", "Print value"}, {""}},

@@ -28,6 +28,9 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
     {
         sprintf(str, "%f", message.number);
     }
+    else if (message.type == VAL_BOOL){
+        sprintf(str, "%s", message.boolean ? "true" : "false");
+    }
     else
     {
         strcpy(str, message.string);
@@ -297,20 +300,48 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_COMPARISON:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->pickedOption == EQUAL_TO)
-        {
-            if(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number == interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number){
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = true;
-            }
-            else{
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = false;
-            }
+        switch(graph->nodes[currNodeIndex].inputPins[1]->pickedOption){
+            case EQUAL_TO:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number == interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+                break;
+            case GREATER_THAN:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number > interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+                break;
+            case LESS_THAN:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number < interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+                break;
+            default:
+                //Error
+                break;
         }
         break;
     }
 
     case NODE_GATE:
     {
+        switch(graph->nodes[currNodeIndex].inputPins[1]->pickedOption){
+            case AND:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+                break;
+            case OR:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+                break;
+            case NOT:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean;
+                break;
+            case XOR:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean != interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+                break;
+            case NAND:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
+                break;
+            case NOR:
+                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
+                break;
+            default:
+                //Error
+                break;
+        }
         break;
     }
 
@@ -321,21 +352,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_PRINT:
     {
-        RuntimePin *input = graph->nodes[currNodeIndex].inputPins[1];
-
-        if (input->linkCount > 0)
+        if (graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0)
         {
-            RuntimePin *linkedOutput = input->linkedPins[0];
-            int index = linkedOutput->valueIndex;
-
-            if (index >= 0 && index < interpreter->valueCount)
-            {
-                AddToLogFromInterpreter(interpreter, interpreter->values[index/*graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex*/], 0);
-            }
-            else
-            {
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Invalid value index"}, 2);
-            }
+            AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex], 0);
         }
         break;
     }

@@ -30,7 +30,10 @@ typedef enum
     NODE_PRINT,
     NODE_DRAW_LINE,
     NODE_EX,
-    NODE_LITERAL
+    NODE_LITERAL_NUM,
+    NODE_LITERAL_STRING,
+    NODE_LITERAL_BOOL,
+    NODE_LITERAL_COLOR
 } NodeType;
 
 typedef enum
@@ -107,7 +110,10 @@ static InfoByType NodeInfoByType[] = {
     {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW}, {"", "Print value"}, {""}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_COLOR}, {PIN_FLOW}, {"", "Start X", "Start Y", "End X", "End Y", "Color"}, {""}},
     {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT}, {PIN_FLOW, PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT}, {""}, {""}},
-    {NODE_LITERAL, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}}
+    {NODE_LITERAL_NUM, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_FLOAT}, {""}, {""}},
+    {NODE_LITERAL_STRING, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_STRING}, {""}, {""}},
+    {NODE_LITERAL_BOOL, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_BOOL}, {""}, {""}},
+    {NODE_LITERAL_COLOR, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_COLOR}, {""}, {""}}
 };
 
 typedef struct DropdownOptionsByPinType{
@@ -231,7 +237,10 @@ static inline const char* NodeTypeToString(NodeType type) {
         case NODE_PRINT: return "Print";
         case NODE_DRAW_LINE: return "Draw Line";
         case NODE_EX: return "ex";
-        case NODE_LITERAL: return "Literal";
+        case NODE_LITERAL_NUM: return "Literal num";
+        case NODE_LITERAL_STRING: return "Literal string";
+        case NODE_LITERAL_BOOL: return "Literal bool";
+        case NODE_LITERAL_COLOR: return "Literal color";
         default: return "invalid";
     }
 }
@@ -258,6 +267,9 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH]) {
     if (strcmp(strType, "Print") == 0) return NODE_PRINT;
     if (strcmp(strType, "Draw Line") == 0) return NODE_DRAW_LINE;
     if (strcmp(strType, "ex") == 0) return NODE_EX;
-    if (strcmp(strType, "Literal") == 0) return NODE_LITERAL;
+    if (strcmp(strType, "Literal num") == 0) return NODE_LITERAL_NUM;
+    if (strcmp(strType, "Literal string") == 0) return NODE_LITERAL_STRING;
+    if (strcmp(strType, "Literal bool") == 0) return NODE_LITERAL_BOOL;
+    if (strcmp(strType, "Literal color") == 0) return NODE_LITERAL_COLOR;
     return NODE_UNKNOWN;
 }

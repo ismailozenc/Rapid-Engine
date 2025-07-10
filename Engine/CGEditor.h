@@ -27,9 +27,12 @@ typedef struct
 
     bool delayFrames;
     bool isFirstFrame;
+    bool engineDelayFrames;
 
     Vector2 mousePos;
     Vector2 rightClickPos;
+
+    Texture2D gearTxt;
 
     bool isDraggingScreen;
     int draggingNodeIndex;
@@ -51,6 +54,8 @@ typedef struct
     int logMessageLevel;
 
     Vector2 cameraOffset;
+
+    int editingNodeNameIndex;
 
     int cursor;
 

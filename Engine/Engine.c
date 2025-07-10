@@ -81,7 +81,7 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.hoveredUIElementIndex = -1;
 
-    engine.isEditorOpened = false;
+    engine.isEditorOpened = true;
     engine.isGameRunning = false;
 
     engine.save = LoadSound("save.wav");
@@ -592,7 +592,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                  });
 
             Color varColor;
-            sprintf(cutMessage, "%s %d", interpreter->values[i].name, i);
+            sprintf(cutMessage, "%s", interpreter->values[i].name);
             switch (interpreter->values[i].type)
             {
             case VAL_NUMBER:
@@ -997,9 +997,11 @@ int main()
 
     AddToLog(&engine, "Welcome!", 0);
 
-    SetProjectPaths(&engine, "Tetris.cg");
+    SetProjectPaths(&engine, "Tetris");
 
     ProjectCGFileExists(&engine);
+
+    LoadGraphFromFile(engine.CGFilePath, &graph);
 
     while (!WindowShouldClose())
     {
@@ -1065,6 +1067,10 @@ int main()
             if (editor.newLogMessage)
             {
                 AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
+            }
+            if(editor.engineDelayFrames){
+                editor.engineDelayFrames = false;
+                engine.delayFrames = true;
             }
         }
         else

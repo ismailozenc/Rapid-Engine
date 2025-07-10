@@ -369,7 +369,22 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_LITERAL:
+    case NODE_LITERAL_NUM:
+    {
+        break;
+    }
+
+    case NODE_LITERAL_STRING:
+    {
+        break;
+    }
+
+    case NODE_LITERAL_BOOL:
+    {
+        break;
+    }
+
+    case NODE_LITERAL_COLOR:
     {
         break;
     }

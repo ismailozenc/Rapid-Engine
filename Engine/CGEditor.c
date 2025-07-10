@@ -28,10 +28,17 @@ EditorContext InitEditorContext()
 
     editor.delayFrames = true;
     editor.isFirstFrame = true;
+    editor.engineDelayFrames = false;
 
     editor.menuOpen = false;
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
+
+    editor.gearTxt = LoadTexture("gear.png");
+    if (editor.gearTxt.id == 0)
+    {
+        // Error
+    }
 
     editor.dropdownOpen = -1;
 
@@ -45,11 +52,15 @@ EditorContext InitEditorContext()
 
     editor.cameraOffset = (Vector2){0, 0};
 
+    editor.editingNodeNameIndex = -1;
+
     return editor;
 }
 
 void FreeEditorContext(EditorContext *editor)
 {
+    UnloadTexture(editor->gearTxt);
+
     UnloadFont(editor->font);
 }
 
@@ -202,6 +213,33 @@ void DrawTextBox(TextBox *box)
     DrawText(box->text, box->bounds.x + 4, box->bounds.y + 6, 20, WHITE);
 }
 
+void HandleTextBox(Rectangle bounds, char *text, int index)
+{
+
+    DrawRectangleRec(bounds, LIGHTGRAY);
+    DrawRectangleLinesEx(bounds, 1, DARKGRAY);
+    DrawText(text, bounds.x + 5, bounds.y + 8, 16, BLACK);
+
+    int key = GetCharPressed();
+
+    if (key > 0)
+    {
+        int len = strlen(text);
+        if (len < 127 && key >= 32 && key <= 125)
+        {
+            text[len] = (char)key;
+            text[len + 1] = '\0';
+        }
+    }
+
+    if (IsKeyPressed(KEY_BACKSPACE))
+    {
+        int len = strlen(text);
+        if (len > 0)
+            text[len - 1] = '\0';
+    }
+}
+
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
@@ -238,6 +276,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
     int hoveredNodeIndex = -1;
     int nodeToDelete = -1;
+    static Rectangle textBoxRect = {0};
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -277,6 +316,33 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
                    (Vector2){x + 10, y + 3}, 30, 2, WHITE);
+
+        if (graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_SPRITE /*|| graph->nodes[i].type == NODE_BOOL/COLOR*/)
+        {
+            Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, "width") - 18, graph->nodes[i].position.y + 5, 16, 16};
+            DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
+
+            if (CheckCollisionPointRec(editor->mousePos, gearRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                editor->editingNodeNameIndex = i;
+                textBoxRect = (Rectangle){graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, "width") + 10, graph->nodes[i].position.y, 150, 40};
+            }
+            else if (editor->editingNodeNameIndex == i)
+            {
+                DrawRectangleRec(textBoxRect, DARKGRAY);
+                HandleTextBox(textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex);
+                editor->delayFrames = true;
+
+                if (CheckCollisionPointRec(editor->mousePos, textBoxRect))
+                    editor->isDraggingScreen = false;
+
+                if (IsKeyPressed(KEY_ENTER) || (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(editor->mousePos, textBoxRect)))
+                {
+                    editor->editingNodeNameIndex = -1;
+                    editor->engineDelayFrames = true;
+                }
+            }
+        }
 
         if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, "width"), getNodeInfoByType(graph->nodes[i].type, "height")}))
         {
@@ -622,7 +688,11 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
         editor->delayFrames = true;
     }
 
-    return CheckNodeCollisions(editor, graph) || editor->draggingNodeIndex != -1 || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->dropdownOpen != -1;
+    return CheckNodeCollisions(editor, graph) || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+}
+
+bool CheckOpenMenus(EditorContext *editor){
+    return editor->draggingNodeIndex != -1 || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->dropdownOpen != -1 || editor->editingNodeNameIndex != -1;
 }
 
 void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled)
@@ -658,6 +728,10 @@ void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *v
         DrawFullTexture(editor, graph, *viewport, dot);
         editor->delayFrames = true;
         editor->cursor = MOUSE_CURSOR_POINTING_HAND;
+    }
+    else if(CheckOpenMenus(editor)){
+        DrawFullTexture(editor, graph, *viewport, dot);
+        editor->delayFrames = true;
     }
     else if (editor->delayFrames == true)
     {

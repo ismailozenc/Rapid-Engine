@@ -166,59 +166,20 @@ bool CheckCollisionRoundedTopRect(Rectangle rect, float radius, Vector2 point)
     return CheckCollisionPointRec(point, topMid);
 }
 
-void DrawArcOutline(Vector2 center, float radius, float startAngle, float endAngle, int segments, float thickness, Color color)
+void HandleTextBox(EditorContext *editor, Rectangle bounds, char *text, int index)
 {
-    float step = (endAngle - startAngle) / segments;
-    Vector2 prev = {
-        center.x + cosf(DEG2RAD * startAngle) * radius,
-        center.y + sinf(DEG2RAD * startAngle) * radius};
+    bounds.width = MeasureTextEx(editor->font, text, 16, 2).x + 25;
 
-    for (int i = 1; i <= segments; i++)
-    {
-        float angle = startAngle + step * i;
-        Vector2 next = {
-            center.x + cosf(DEG2RAD * angle) * radius,
-            center.y + sinf(DEG2RAD * angle) * radius};
-        DrawLineEx(prev, next, thickness, color);
-        prev = next;
-    }
-}
+    DrawRectangleRounded((Rectangle){bounds.x, bounds.y - 20, 56, bounds.height}, 0.4f, 4, DARKGRAY);
+    DrawTextEx(editor->font, "Name:", (Vector2){bounds.x + 4, bounds.y - 16}, 14, 2, WHITE);
 
-void DrawRoundedTopRectOutline(Rectangle rect, float radius, float thickness, Color color)
-{
-    float half = thickness * 0.5f;
-    float r = radius - half;
+    DrawRectangleRounded(bounds, 0.6f, 4, GRAY);
+    DrawRectangleRoundedLinesEx(bounds, 0.6f, 4, 2, DARKGRAY);
 
-    DrawLineEx((Vector2){rect.x + r, rect.y}, (Vector2){rect.x + rect.width - r, rect.y}, thickness, color);
-
-    DrawArcOutline((Vector2){rect.x + r, rect.y + r}, r, 180, 270, 16, thickness, color);
-    DrawArcOutline((Vector2){rect.x + rect.width - r, rect.y + r}, r, 270, 360, 16, thickness, color);
-
-    DrawLineEx(
-        (Vector2){rect.x, rect.y + r},
-        (Vector2){rect.x, rect.y + rect.height}, thickness, color);
-    DrawLineEx(
-        (Vector2){rect.x + rect.width, rect.y + r},
-        (Vector2){rect.x + rect.width, rect.y + rect.height}, thickness, color);
-
-    DrawLineEx(
-        (Vector2){rect.x, rect.y + rect.height},
-        (Vector2){rect.x + rect.width, rect.y + rect.height}, thickness, color);
-}
-
-void DrawTextBox(TextBox *box)
-{
-    DrawRectangleRounded(box->bounds, 0.2f, 8, box->editing ? GRAY : DARKGRAY);
-    DrawRectangleLinesEx(box->bounds, 2, WHITE);
-    DrawText(box->text, box->bounds.x + 4, box->bounds.y + 6, 20, WHITE);
-}
-
-void HandleTextBox(Rectangle bounds, char *text, int index)
-{
-
-    DrawRectangleRec(bounds, LIGHTGRAY);
-    DrawRectangleLinesEx(bounds, 1, DARKGRAY);
-    DrawText(text, bounds.x + 5, bounds.y + 8, 16, BLACK);
+    bool showCursor = ((int)(GetTime() * 2) % 2) == 0;
+    char buffer[130];
+    snprintf(buffer, sizeof(buffer), "%s%s", text, showCursor ? "_" : " ");
+    DrawTextEx(editor->font, buffer, (Vector2){bounds.x + 5, bounds.y + 8}, 16, 2, BLACK);
 
     int key = GetCharPressed();
 
@@ -325,12 +286,11 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             if (CheckCollisionPointRec(editor->mousePos, gearRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 editor->editingNodeNameIndex = i;
-                textBoxRect = (Rectangle){graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, "width") + 10, graph->nodes[i].position.y, 150, 40};
+                textBoxRect = (Rectangle){graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, "width") + 10, graph->nodes[i].position.y, MeasureTextEx(editor->font, graph->nodes[i].name, 16, 2).x + 25, 30};
             }
             else if (editor->editingNodeNameIndex == i)
             {
-                DrawRectangleRec(textBoxRect, DARKGRAY);
-                HandleTextBox(textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex);
+                HandleTextBox(editor, textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex);
                 editor->delayFrames = true;
 
                 if (CheckCollisionPointRec(editor->mousePos, textBoxRect))
@@ -691,7 +651,8 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
     return CheckNodeCollisions(editor, graph) || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 }
 
-bool CheckOpenMenus(EditorContext *editor){
+bool CheckOpenMenus(EditorContext *editor)
+{
     return editor->draggingNodeIndex != -1 || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->dropdownOpen != -1 || editor->editingNodeNameIndex != -1;
 }
 
@@ -729,7 +690,8 @@ void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *v
         editor->delayFrames = true;
         editor->cursor = MOUSE_CURSOR_POINTING_HAND;
     }
-    else if(CheckOpenMenus(editor)){
+    else if (CheckOpenMenus(editor))
+    {
         DrawFullTexture(editor, graph, *viewport, dot);
         editor->delayFrames = true;
     }

@@ -7,7 +7,7 @@
 #include "shell_execute.h"
 #include "raymath.h"
 
-void AddToEngineLog(EditorContext *editor, char *message, int level);
+void AddToLogFromEditor(EditorContext *editor, char *message, int level);
 
 EditorContext InitEditorContext()
 {
@@ -45,7 +45,7 @@ EditorContext InitEditorContext()
     editor.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
     if (editor.font.texture.id == 0)
     {
-        AddToEngineLog(&editor, "Couldn't load font", 1);
+        AddToLogFromEditor(&editor, "Couldn't load font", 1);
     }
 
     editor.newLogMessage = false;
@@ -53,6 +53,8 @@ EditorContext InitEditorContext()
     editor.cameraOffset = (Vector2){0, 0};
 
     editor.editingNodeNameIndex = -1;
+
+    editor.hasChanged = false;
 
     return editor;
 }
@@ -64,7 +66,7 @@ void FreeEditorContext(EditorContext *editor)
     UnloadFont(editor->font);
 }
 
-void AddToEngineLog(EditorContext *editor, char *message, int level)
+void AddToLogFromEditor(EditorContext *editor, char *message, int level)
 {
     strncpy(editor->logMessage, message, 128 * sizeof(char));
     editor->logMessageLevel = level;
@@ -139,33 +141,6 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     }
 }
 
-bool CheckCollisionRoundedTopRect(Rectangle rect, float radius, Vector2 point)
-{
-    Rectangle body = {
-        rect.x,
-        rect.y + radius,
-        rect.width,
-        rect.height - radius};
-
-    if (CheckCollisionPointRec(point, body))
-        return true;
-
-    Vector2 topLeft = {rect.x + radius, rect.y + radius};
-    if (CheckCollisionPointCircle(point, topLeft, radius))
-        return true;
-
-    Vector2 topRight = {rect.x + rect.width - radius, rect.y + radius};
-    if (CheckCollisionPointCircle(point, topRight, radius))
-        return true;
-
-    Rectangle topMid = {
-        rect.x + radius,
-        rect.y,
-        rect.width - 2 * radius,
-        radius};
-    return CheckCollisionPointRec(point, topMid);
-}
-
 void HandleTextBox(EditorContext *editor, Rectangle bounds, char *text, int index)
 {
     bounds.width = MeasureTextEx(editor->font, text, 16, 2).x + 25;
@@ -191,6 +166,7 @@ void HandleTextBox(EditorContext *editor, Rectangle bounds, char *text, int inde
             text[len] = (char)key;
             text[len + 1] = '\0';
         }
+        editor->hasChanged = true;
     }
 
     if (IsKeyPressed(KEY_BACKSPACE))
@@ -198,6 +174,7 @@ void HandleTextBox(EditorContext *editor, Rectangle bounds, char *text, int inde
         int len = strlen(text);
         if (len > 0)
             text[len - 1] = '\0';
+        editor->hasChanged = true;
     }
 }
 
@@ -231,7 +208,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else
         {
-            AddToEngineLog(editor, "Error drawing connection", 1);
+            AddToLogFromEditor(editor, "Error drawing connection", 1);
         }
     }
 
@@ -392,6 +369,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     {
                         graph->pins[i].pickedOption = j;
                         editor->dropdownOpen = -1;
+                        editor->hasChanged = true;
                     }
                 }
             }
@@ -428,6 +406,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         {
             CreateLink(graph, editor->lastClickedPin, graph->pins[hoveredPinIndex]);
             editor->lastClickedPin = INVALID_PIN;
+            editor->hasChanged = true;
         }
     }
     else if (hoveredPinIndex == -1 && (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)))
@@ -438,6 +417,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     {
         RemoveConnections(graph, graph->pins[hoveredPinIndex].id);
         editor->menuOpen = false;
+        editor->hasChanged = true;
     }
 
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
@@ -462,6 +442,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     {
         DeleteNode(graph, nodeToDelete);
         editor->menuOpen = false;
+        editor->hasChanged = true;
         return;
     }
 }
@@ -558,6 +539,7 @@ const char *DrawNodeMenu(EditorContext *editor)
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 {
                     editor->delayFrames = true;
+                    editor->hasChanged = true;
                     // Handle click event for submenu item
                     return subMenuItems[editor->hoveredItem][j];
                 }
@@ -582,6 +564,7 @@ void HandleDragging(EditorContext *editor, GraphContext *graph)
             {
                 editor->draggingNodeIndex = i;
                 dragOffset = (Vector2){editor->mousePos.x - graph->nodes[i].position.x, editor->mousePos.y - graph->nodes[i].position.y};
+                editor->hasChanged = true;
                 return;
             }
         }

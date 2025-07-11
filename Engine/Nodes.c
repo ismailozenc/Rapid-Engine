@@ -149,7 +149,26 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     node.id = graph->nextNodeID++;
     node.type = type;
     node.position = pos;
-    sprintf(node.name, "Value %d", graph->nodeCount);
+
+    switch(node.type){
+        case NODE_NUM:
+            sprintf(node.name, "Number");
+            break;
+        case NODE_STRING:
+            sprintf(node.name, "String");
+            break;
+        case NODE_BOOL:
+            sprintf(node.name, "Boolean");
+            break;
+        case NODE_COLOR:
+            sprintf(node.name, "Color");
+            break;
+        case NODE_SPRITE:
+            sprintf(node.name, "Sprite");
+            break;
+        default:
+            sprintf(node.name, "Node");
+    }
 
     if (type == NODE_UNKNOWN)
     {

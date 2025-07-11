@@ -11,6 +11,8 @@ typedef enum
     NODE_UNKNOWN = 0,
     NODE_NUM,
     NODE_STRING,
+    NODE_BOOL,
+    NODE_COLOR,
     NODE_SPRITE,
     NODE_GET_VAR,
     NODE_SET_VAR,

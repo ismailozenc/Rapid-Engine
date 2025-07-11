@@ -59,6 +59,8 @@ typedef struct
 
     int cursor;
 
+    bool hasChanged;
+
     int fps;
 
     float zoom;
@@ -68,7 +70,7 @@ EditorContext InitEditorContext(void);
 
 void FreeEditorContext(EditorContext *editor);
 
-void AddToEngineLog(EditorContext *editor, char *message, int level);
+void AddToLogFromEditor(EditorContext *editor, char *message, int level);
 
 void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName);
 

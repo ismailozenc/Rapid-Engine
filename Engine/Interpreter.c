@@ -16,8 +16,31 @@ InterpreterContext InitInterpreterContext()
 
 void FreeInterpreterContext(InterpreterContext *interpreter)
 {
+    for (int i = 0; i < interpreter->valueCount; i++)
+    {
+        free(interpreter->values[i].name);
+    }
     free(interpreter->values);
     interpreter->values = NULL;
+}
+
+char *ValueTypeToString(ValueType type){
+    switch(type){
+        case VAL_NULL:
+            return "null(Error)";
+        case VAL_NUMBER:
+            return "number";
+        case VAL_STRING:
+            return "string";
+        case VAL_BOOL:
+            return "boolean";
+        case VAL_COLOR:
+            return "color";
+        case VAL_SPRITE:
+            return "sprite";
+        default:
+            return "Error";
+    }
 }
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
@@ -28,7 +51,8 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
     {
         sprintf(str, "%f", message.number);
     }
-    else if (message.type == VAL_BOOL){
+    else if (message.type == VAL_BOOL)
+    {
         sprintf(str, "%s", message.boolean ? "true" : "false");
     }
     else
@@ -173,31 +197,44 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
             int idx = interpreter->valueCount;
 
+            bool isVariable = false;
+            if (node->type == NODE_NUM || node->type == NODE_STRING || node->type == NODE_SPRITE || node->type == NODE_BOOL || node->type == NODE_COLOR)
+            {
+                isVariable = true;
+            }
+
+            interpreter->values[idx].name = malloc(sizeof(char) * 16);
+
             switch (pin->type)
             {
             case PIN_FLOAT:
                 interpreter->values[idx].number = 0;
                 interpreter->values[idx].type = VAL_NUMBER;
+                interpreter->values[idx].isVariable = isVariable;
                 interpreter->values[idx].name = srcNode->name;
                 break;
             case PIN_STRING:
                 interpreter->values[idx].string = "null";
                 interpreter->values[idx].type = VAL_STRING;
+                interpreter->values[idx].isVariable = isVariable;
                 interpreter->values[idx].name = srcNode->name;
                 break;
             case PIN_BOOL:
                 interpreter->values[idx].boolean = false;
                 interpreter->values[idx].type = VAL_BOOL;
+                interpreter->values[idx].isVariable = isVariable;
                 interpreter->values[idx].name = srcNode->name;
                 break;
             case PIN_COLOR:
                 interpreter->values[idx].color = (Color){255, 255, 255, 255};
                 interpreter->values[idx].type = VAL_COLOR;
+                interpreter->values[idx].isVariable = isVariable;
                 interpreter->values[idx].name = srcNode->name;
                 break;
             case PIN_SPRITE:
                 interpreter->values[idx].sprite = (Sprite){0};
                 interpreter->values[idx].type = VAL_SPRITE;
+                interpreter->values[idx].isVariable = isVariable;
                 interpreter->values[idx].name = srcNode->name;
                 break;
             default:
@@ -300,47 +337,49 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_COMPARISON:
     {
-        switch(graph->nodes[currNodeIndex].inputPins[1]->pickedOption){
-            case EQUAL_TO:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number == interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-                break;
-            case GREATER_THAN:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number > interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-                break;
-            case LESS_THAN:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number < interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-                break;
-            default:
-                //Error
-                break;
+        switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
+        {
+        case EQUAL_TO:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number == interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            break;
+        case GREATER_THAN:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number > interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            break;
+        case LESS_THAN:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number < interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            break;
+        default:
+            // Error
+            break;
         }
         break;
     }
 
     case NODE_GATE:
     {
-        switch(graph->nodes[currNodeIndex].inputPins[1]->pickedOption){
-            case AND:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
-                break;
-            case OR:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
-                break;
-            case NOT:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean;
-                break;
-            case XOR:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean != interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
-                break;
-            case NAND:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
-                break;
-            case NOR:
-                interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
-                break;
-            default:
-                //Error
-                break;
+        switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
+        {
+        case AND:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+            break;
+        case OR:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+            break;
+        case NOT:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean;
+            break;
+        case XOR:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean != interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+            break;
+        case NAND:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
+            break;
+        case NOR:
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
+            break;
+        default:
+            // Error
+            break;
         }
         break;
     }
@@ -441,7 +480,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     }
     else
     {
-        //InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
+        // InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
     }
 
     return true;

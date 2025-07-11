@@ -90,6 +90,8 @@ typedef struct UIElement
         int textSpacing;
         Color textColor;
     } text;
+
+    int valueIndex;
 } UIElement;
 
 typedef struct EngineContext
@@ -123,4 +125,5 @@ typedef struct EngineContext
     bool sideBarHalfSnap;
     bool sideBarFullSnap;
     float editorZoom;
+    bool wasBuilt;
 } EngineContext;

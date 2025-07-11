@@ -62,6 +62,7 @@ typedef struct {
 typedef struct {
     char *name;
     ValueType type;
+    bool isVariable;
     union {
         float number;
         bool boolean;
@@ -86,6 +87,8 @@ typedef struct {
 } InterpreterContext;
 
 InterpreterContext InitInterpreterContext();
+
+char *ValueTypeToString(ValueType type);
 
 void FreeInterpreterContext(InterpreterContext *interpreter);
 

@@ -93,6 +93,8 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.editorZoom = 1.0f;
 
+    engine.wasBuilt = false;
+
     return engine;
 }
 
@@ -269,7 +271,10 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                     PlaySound(engine->save);
                 }
                 if (SaveGraphToFile(CGFilePath, graph) == 0)
+                {
+                    editor->hasChanged = false;
                     AddToLog(engine, "Saved successfully!", 0);
+                }
                 else
                     AddToLog(engine, "ERROR SAVING CHANGES!", 1);
             }
@@ -277,6 +282,16 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
         case RUN_GAME:
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
+                if (editor->hasChanged)
+                {
+                    AddToLog(engine, "Project not saved!", 1);
+                    break;
+                }
+                else if (!engine->wasBuilt)
+                {
+                    AddToLog(engine, "Project has not been built", 1);
+                    break;
+                }
                 engine->isEditorOpened = false;
                 engine->isGameRunning = true;
                 interpreter->isFirstFrame = true;
@@ -285,11 +300,17 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
         case BUILD_GRAPH:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
+                if (editor->hasChanged)
+                {
+                    AddToLog(engine, "Project not saved!", 1);
+                    break;
+                }
                 *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
                 engine->delayFrames = true;
                 if (runtimeGraph != NULL)
                 {
                     AddToLog(engine, "Build Successfull", 0);
+                    engine->wasBuilt = true;
                 }
                 else
                 {
@@ -358,7 +379,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", engine->uiElements[engine->hoveredUIElementIndex].text.string, GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
             Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
             AddUIElement(engine, (UIElement){
-                                     .name = "Tooltip",
+                                     .name = "FileTooltip",
                                      .shape = UIRectangle,
                                      .type = NO_COLLISION_ACTION,
                                      .rect = {.pos = {tooltipRect.x, tooltipRect.y}, .recSize = {tooltipRect.width, tooltipRect.height}, .roundness = 0, .roundSegments = 0},
@@ -411,15 +432,17 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
 
         case SHOW_VAR_INFO:
+            char temp[32];
+            sprintf(temp, "%s: %d", interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, engine->hoveredUIElementIndex);
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
                                      .type = VAR_TOOLTIP,
-                                     .rect = {.pos = {engine->sideBarWidth, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {100, 100}, .roundness = 0.4f, .roundSegments = 8},
+                                     .rect = {.pos = {engine->sideBarWidth, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {MeasureTextEx(engine->font, temp, 20, 0).x + 20, 40}, .roundness = 0.4f, .roundSegments = 8},
                                      .color = DARKGRAY,
                                      .layer = 1,
-                                     .text = {.textPos = {engine->sideBarWidth + 5, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 5}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-            sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s: %.2f", interpreter->values[0].name, 5); //
+                                     .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
+            sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
         }
     }
 
@@ -507,34 +530,42 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                  .name = "SaveButton",
                                  .shape = UIRectangle,
                                  .type = SAVE_CG,
-                                 .rect = {.pos = saveButtonPos, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                 .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){255, 255, 255, 50},
                                  .layer = 1,
-                                 .text = {.string = "Save", .textPos = {saveButtonPos.x + 5, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 .text = {.textPos = {editor->hasChanged ? saveButtonPos.x + 5 : saveButtonPos.x + 8, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                              });
-
-        if (engine->isEditorOpened)
+        if (editor->hasChanged)
         {
-            AddUIElement(engine, (UIElement){
-                                     .name = "BuildButton",
-                                     .shape = UIRectangle,
-                                     .type = BUILD_GRAPH,
-                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                     .color = (Color){255, 255, 255, 50},
-                                     .layer = 1,
-                                     .text = {.string = "Build", .textPos = {engine->sideBarWidth - 65, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
-                                 });
+            strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save*");
         }
         else
+        {
+            strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save");
+        }
+
+        if (engine->wasBuilt)
         {
             AddUIElement(engine, (UIElement){
                                      .name = "RunButton",
                                      .shape = UIRectangle,
                                      .type = RUN_GAME,
-                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {60, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){255, 255, 255, 50},
                                      .layer = 1,
-                                     .text = {.string = "Run", .textPos = {engine->sideBarWidth - 60, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                     .text = {.string = "Run", .textPos = {engine->sideBarWidth - 56, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 });
+        }
+        else
+        {
+            AddUIElement(engine, (UIElement){
+                                     .name = "BuildButton",
+                                     .shape = UIRectangle,
+                                     .type = BUILD_GRAPH,
+                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .color = (Color){255, 255, 255, 50},
+                                     .layer = 1,
+                                     .text = {.string = "Build", .textPos = {engine->sideBarWidth - 64, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                  });
         }
 
@@ -582,6 +613,9 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
         int varsY = 40;
         for (int i = 0; i < interpreter->valueCount; i++)
         {
+            if(!interpreter->values[i].isVariable){
+                continue;
+            }
             AddUIElement(engine, (UIElement){
                                      .name = "Variable Background",
                                      .shape = UIRectangle,
@@ -589,6 +623,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){59, 59, 59, 255},
                                      .layer = 1,
+                                     .valueIndex = i
                                  });
 
             Color varColor;
@@ -645,7 +680,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
                                      .color = varColor,
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
-                                     .layer = 0,
+                                     .layer = 0
                                  });
 
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
@@ -844,6 +879,7 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         }
         if (SaveGraphToFile(CGFilePath, graph) == 0)
         {
+            editor->hasChanged = false;
             AddToLog(engine, "Saved successfully!", 0);
         }
         else
@@ -853,9 +889,20 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_R))
     {
-        engine->isEditorOpened = false;
-        engine->isGameRunning = true;
-        interpreter->isFirstFrame = true;
+        if (editor->hasChanged)
+        {
+            AddToLog(engine, "Project not saved!", 1);
+        }
+        else if (!engine->wasBuilt)
+        {
+            AddToLog(engine, "Project has not been built", 1);
+        }
+        else
+        {
+            engine->isEditorOpened = false;
+            engine->isGameRunning = true;
+            interpreter->isFirstFrame = true;
+        }
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_E))
     {
@@ -864,15 +911,23 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_B))
     {
-        *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
-        engine->delayFrames = true;
-        if (runtimeGraph != NULL)
+        if (editor->hasChanged)
         {
-            AddToLog(engine, "Build Successfull", 0);
+            AddToLog(engine, "Project not saved!", 1);
         }
         else
         {
-            AddToLog(engine, "Build failed", 0);
+            *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
+            engine->delayFrames = true;
+            if (runtimeGraph != NULL)
+            {
+                AddToLog(engine, "Build Successfull", 0);
+                engine->wasBuilt = true;
+            }
+            else
+            {
+                AddToLog(engine, "Build failed", 0);
+            }
         }
     }
 
@@ -1068,9 +1123,16 @@ int main()
             {
                 AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
             }
-            if(editor.engineDelayFrames){
+            if (editor.engineDelayFrames)
+            {
                 editor.engineDelayFrames = false;
                 engine.delayFrames = true;
+            }
+            if (editor.hasChanged)
+            {
+                engine.delayFrames = true;
+                ;
+                engine.wasBuilt = false;
             }
         }
         else

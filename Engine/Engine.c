@@ -401,8 +401,8 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                         strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
                         openedFileName[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
 
-                        FreeEditorContext(editor);
-                        FreeGraphContext(graph);
+                        //FreeEditorContext(editor);
+                        //FreeGraphContext(graph);
 
                         *editor = InitEditorContext();
                         *graph = InitGraphContext();
@@ -432,8 +432,9 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
 
         case SHOW_VAR_INFO:
-            char temp[32];
-            sprintf(temp, "%s: %d", interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, engine->hoveredUIElementIndex);
+            char temp[256];
+            char *valueString = ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]);
+            sprintf(temp, "%s: %s", interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, valueString);
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
@@ -443,6 +444,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                                      .layer = 1,
                                      .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
+            free(valueString);
         }
     }
 

@@ -40,7 +40,8 @@ EditorContext InitEditorContext()
         // Error
     }
 
-    editor.dropdownOpen = -1;
+    editor.nodeDropdownFocused = -1;
+    editor.nodeFieldPinFocused = -1;
 
     editor.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
     if (editor.font.texture.id == 0)
@@ -141,7 +142,7 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     }
 }
 
-void HandleTextBox(EditorContext *editor, Rectangle bounds, char *text, int index)
+void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int index)
 {
     bounds.width = MeasureTextEx(editor->font, text, 16, 2).x + 25;
 
@@ -267,7 +268,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             }
             else if (editor->editingNodeNameIndex == i)
             {
-                HandleTextBox(editor, textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex);
+                HandleVarTextBox(editor, textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex);
                 editor->delayFrames = true;
 
                 if (CheckCollisionPointRec(editor->mousePos, textBoxRect))
@@ -342,18 +343,18 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 hoveredNodeIndex = -1;
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
-                    if (editor->dropdownOpen != i)
+                    if (editor->nodeDropdownFocused != i)
                     {
-                        editor->dropdownOpen = i;
+                        editor->nodeDropdownFocused = i;
                     }
                     else
                     {
-                        editor->dropdownOpen = -1;
+                        editor->nodeDropdownFocused = -1;
                     }
                 }
             }
 
-            if (editor->dropdownOpen == i)
+            if (editor->nodeDropdownFocused == i)
             {
                 editor->delayFrames = true;
                 hoveredNodeIndex = -1;
@@ -368,9 +369,110 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                     {
                         graph->pins[i].pickedOption = j;
-                        editor->dropdownOpen = -1;
+                        editor->nodeDropdownFocused = -1;
                         editor->hasChanged = true;
                     }
+                }
+            }
+        }
+        else if (graph->pins[i].type == PIN_FIELD_NUM)
+        {
+            Rectangle textbox = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 150, 24};
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if (CheckCollisionPointRec(editor->mousePos, textbox))
+                {
+                    editor->nodeFieldPinFocused = i;
+                }
+                else if (editor->nodeFieldPinFocused == i)
+                {
+                    editor->nodeFieldPinFocused = -1;
+                }
+            }
+
+            DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == i) ? LIGHTGRAY : GRAY);
+            DrawRectangleLinesEx(textbox, 1, WHITE);
+
+            DrawTextEx(editor->font, graph->pins[i].textFieldValue, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+
+            if (editor->nodeFieldPinFocused == i)
+            {
+                int key = GetCharPressed();
+                while (key > 0)
+                {
+                    if ((key >= 48) && (key <= 57) && strlen(graph->pins[i].textFieldValue) < 255)
+                    {
+                        int len = strlen(graph->pins[i].textFieldValue);
+                        graph->pins[i].textFieldValue[len] = (char)key;
+                        graph->pins[i].textFieldValue[len + 1] = '\0';
+                    }
+                    else if(key == 46 && !graph->pins[i].isFloat){
+                        int len = strlen(graph->pins[i].textFieldValue);
+                        graph->pins[i].textFieldValue[len] = (char)key;
+                        graph->pins[i].textFieldValue[len + 1] = '\0';
+                        graph->pins[i].isFloat = true;
+                    }
+                    key = GetCharPressed();
+                }
+
+                if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
+                {
+                    size_t len = strlen(graph->pins[i].textFieldValue);
+                    if(graph->pins[i].textFieldValue[len - 1] == 46){
+                        graph->pins[i].isFloat = false;
+                    }
+                    graph->pins[i].textFieldValue[len - 1] = '\0';
+                }
+
+                if(IsKeyPressed(KEY_ENTER)){
+                    editor->nodeFieldPinFocused = -1;
+                }
+            }
+        }
+        else if (graph->pins[i].type == PIN_FIELD_STRING)
+        {
+            Rectangle textbox = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 150, 24};
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if (CheckCollisionPointRec(editor->mousePos, textbox))
+                {
+                    editor->nodeFieldPinFocused = i;
+                }
+                else if (editor->nodeFieldPinFocused == i)
+                {
+                    editor->nodeFieldPinFocused = -1;
+                }
+            }
+
+            DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == i) ? LIGHTGRAY : GRAY);
+            DrawRectangleLinesEx(textbox, 1, WHITE);
+
+            DrawTextEx(editor->font, graph->pins[i].textFieldValue, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+
+            if (editor->nodeFieldPinFocused == i)
+            {
+                int key = GetCharPressed();
+                while (key > 0)
+                {
+                    if ((key >= 32) && (key <= 126) && strlen(graph->pins[i].textFieldValue) < 255)
+                    {
+                        int len = strlen(graph->pins[i].textFieldValue);
+                        graph->pins[i].textFieldValue[len] = (char)key;
+                        graph->pins[i].textFieldValue[len + 1] = '\0';
+                    }
+                    key = GetCharPressed();
+                }
+
+                if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
+                {
+                    size_t len = strlen(graph->pins[i].textFieldValue);
+                    graph->pins[i].textFieldValue[len - 1] = '\0';
+                }
+
+                if(IsKeyPressed(KEY_ENTER)){
+                    editor->nodeFieldPinFocused = -1;
                 }
             }
         }
@@ -475,9 +577,9 @@ const char *DrawNodeMenu(EditorContext *editor)
         {"Branch", "Loop"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
-        {"ex", "Literal"}};
+        {"ex", "Literal num", "Literal string", "Literal bool", "Literal color"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {5, 5, 3, 2, 3, 2, 2};
+    int subMenuCounts[] = {5, 5, 3, 2, 3, 2, 5};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 
@@ -636,7 +738,7 @@ bool CheckAllCollisions(EditorContext *editor, GraphContext *graph)
 
 bool CheckOpenMenus(EditorContext *editor)
 {
-    return editor->draggingNodeIndex != -1 || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->dropdownOpen != -1 || editor->editingNodeNameIndex != -1;
+    return editor->draggingNodeIndex != -1 || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->nodeDropdownFocused != -1 || editor->nodeFieldPinFocused != -1 || editor->editingNodeNameIndex != -1;
 }
 
 void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled)

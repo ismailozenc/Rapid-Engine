@@ -47,7 +47,10 @@ typedef enum
     PIN_BOOL,
     PIN_COLOR,
     PIN_SPRITE,
-    PIN_FIELD,
+    PIN_FIELD_NUM,
+    PIN_FIELD_STRING,
+    PIN_FIELD_BOOL,
+    PIN_FIELD_COLOR,
     PIN_COMPARISON_OPERATOR,
     PIN_GATE,
     PIN_ARITHMETIC
@@ -106,16 +109,16 @@ static InfoByType NodeInfoByType[] = {
     {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
     {NODE_BRANCH, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {""}},
     {NODE_LOOP, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {"", "Loop body"}},
-    {NODE_COMPARISON, 4, 2, 200, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_FLOAT, PIN_FLOAT}, {PIN_FLOW, PIN_BOOL}, {"", "Value A", "Value B", "Operator"}, {"", "Result"}},
-    {NODE_GATE, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"", "Condition A", "Condition B", "Gate"}, {"", "Result"}},
+    {NODE_COMPARISON, 4, 2, 200, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_FLOAT, PIN_FLOAT}, {PIN_FLOW, PIN_BOOL}, {"", "Operator", "Value A", "Value B"}, {"", "Result"}},
+    {NODE_GATE, 4, 2, 200, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"", "Gate", "Condition A", "Condition B"}, {"", "Result"}},
     {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_ARITHMETIC}, {PIN_FLOW, PIN_FLOAT}, {"", "Number A", "Number B", "Arithmetic"}, {"", "Result"}},
     {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW}, {"", "Print value"}, {""}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_COLOR}, {PIN_FLOW}, {"", "Start X", "Start Y", "End X", "End Y", "Color"}, {""}},
     {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT}, {PIN_FLOW, PIN_FLOW, PIN_FLOAT, PIN_FLOAT, PIN_FLOAT}, {""}, {""}},
-    {NODE_LITERAL_NUM, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_FLOAT}, {""}, {""}},
-    {NODE_LITERAL_STRING, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_STRING}, {""}, {""}},
-    {NODE_LITERAL_BOOL, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_BOOL}, {""}, {""}},
-    {NODE_LITERAL_COLOR, 1, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FIELD}, {PIN_COLOR}, {""}, {""}}
+    {NODE_LITERAL_NUM, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_NUM}, {PIN_FLOAT}, {""}, {""}},
+    {NODE_LITERAL_STRING, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {""}},
+    {NODE_LITERAL_BOOL, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {""}},
+    {NODE_LITERAL_COLOR, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {""}}
 };
 
 typedef struct DropdownOptionsByPinType{

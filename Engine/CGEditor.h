@@ -47,7 +47,8 @@ typedef struct
 
     Font font;
 
-    int dropdownOpen;
+    int nodeDropdownFocused;
+    int nodeFieldPinFocused;
 
     bool newLogMessage;
     char logMessage[128];

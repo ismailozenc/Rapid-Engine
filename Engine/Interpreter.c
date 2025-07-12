@@ -16,31 +16,60 @@ InterpreterContext InitInterpreterContext()
 
 void FreeInterpreterContext(InterpreterContext *interpreter)
 {
-    for (int i = 0; i < interpreter->valueCount; i++)
-    {
-        free(interpreter->values[i].name);
-    }
     free(interpreter->values);
     interpreter->values = NULL;
 }
 
-char *ValueTypeToString(ValueType type){
-    switch(type){
-        case VAL_NULL:
-            return "null(Error)";
-        case VAL_NUMBER:
-            return "number";
-        case VAL_STRING:
-            return "string";
-        case VAL_BOOL:
-            return "boolean";
-        case VAL_COLOR:
-            return "color";
-        case VAL_SPRITE:
-            return "sprite";
-        default:
-            return "Error";
+char *ValueTypeToString(ValueType type)
+{
+    switch (type)
+    {
+    case VAL_NULL:
+        return "null(Error)";
+    case VAL_NUMBER:
+        return "number";
+    case VAL_STRING:
+        return "string";
+    case VAL_BOOL:
+        return "boolean";
+    case VAL_COLOR:
+        return "color";
+    case VAL_SPRITE:
+        return "sprite";
+    default:
+        return "Error";
     }
+}
+
+char *ValueToString(Value value)
+{
+    char *temp = malloc(256);
+    if (!temp)
+        return NULL;
+    switch (value.type)
+    {
+    case VAL_NULL:
+        sprintf(temp, "Error");
+        break;
+    case VAL_NUMBER:
+        sprintf(temp, "%d", value.number);
+        break;
+    case VAL_STRING:
+        sprintf(temp, "%s", value.string);
+        break;
+    case VAL_BOOL:
+        sprintf(temp, "%s", value.boolean ? "true" : "false");
+        break;
+    case VAL_COLOR:
+        sprintf(temp, "%d %d %d %d", value.color.r, value.color.g, value.color.b, value.color.a);
+        break;
+    case VAL_SPRITE:
+        sprintf(temp, "");
+        break;
+    default:
+        sprintf(temp, "Error");
+    }
+    return temp;
 }
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
@@ -99,8 +128,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         dst->nodeIndex = -1;
         dst->isInput = src->isInput;
         dst->valueIndex = -1;
-        dst->linkCount = 0;
         dst->pickedOption = src->pickedOption;
+        dst->nextNodeIndex = -1;
+        strcpy(dst->textFieldValue, src->textFieldValue);
     }
 
     for (int i = 0; i < graph->nodeCount; i++)
@@ -144,32 +174,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         }
     }
 
-    for (int i = 0; i < graph->linkCount; i++)
-    {
-        int inputIndex = -1;
-        int outputIndex = -1;
-
-        for (int j = 0; j < graph->pinCount; j++)
-        {
-            if (graph->pins[j].id == graph->links[i].inputPinID)
-                inputIndex = j;
-            if (graph->pins[j].id == graph->links[i].outputPinID)
-                outputIndex = j;
-        }
-
-        if (inputIndex == -1 || outputIndex == -1)
-            continue;
-
-        RuntimePin *inputPin = &runtime.pins[inputIndex];
-        RuntimePin *outputPin = &runtime.pins[outputIndex];
-
-        if (inputPin->linkCount < MAX_LINKS_PER_PIN)
-            inputPin->linkedPins[inputPin->linkCount++] = outputPin;
-
-        if (outputPin->linkCount < MAX_LINKS_PER_PIN)
-            outputPin->linkedPins[outputPin->linkCount++] = inputPin;
-    }
-
     int totalOutputPins = 0;
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -189,6 +193,24 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         RuntimeNode *node = &runtime.nodes[i];
         Node *srcNode = &graph->nodes[i];
 
+        switch (node->type)
+        {
+        case NODE_LITERAL_NUM:
+            interpreter->values[interpreter->valueCount].number = strtof(node->inputPins[0]->textFieldValue, NULL);
+            interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
+            interpreter->values[interpreter->valueCount].isVariable = false;
+            interpreter->values[interpreter->valueCount].name = srcNode->name;
+            node->outputPins[0]->valueIndex = interpreter->valueCount;
+            interpreter->valueCount++;
+            continue;
+        case PIN_FIELD_STRING:
+        case PIN_FIELD_BOOL:
+        case PIN_FIELD_COLOR:
+            continue;
+        default:
+            break;
+        }
+
         for (int j = 0; j < node->outputCount; j++)
         {
             RuntimePin *pin = node->outputPins[j];
@@ -202,8 +224,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             {
                 isVariable = true;
             }
-
-            interpreter->values[idx].name = malloc(sizeof(char) * 16);
 
             switch (pin->type)
             {
@@ -246,6 +266,33 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         }
     }
 
+    for (int i = 0; i < graph->linkCount; i++)
+    {
+        int inputIndex = -1;
+        int outputIndex = -1;
+
+        for (int j = 0; j < graph->pinCount; j++)
+        {
+            if (graph->pins[j].id == graph->links[i].inputPinID)
+                inputIndex = j;
+            if (graph->pins[j].id == graph->links[i].outputPinID)
+                outputIndex = j;
+        }
+
+        if (inputIndex == -1 || outputIndex == -1)
+            continue;
+
+        RuntimePin *inputPin = &runtime.pins[inputIndex];
+        RuntimePin *outputPin = &runtime.pins[outputIndex];
+
+        inputPin->valueIndex = outputPin->valueIndex;
+
+        if (inputPin->type == PIN_FLOW && outputPin->type == PIN_FLOW)
+        {
+            outputPin->nextNodeIndex = inputPin->nodeIndex;
+        }
+    }
+
     return runtime;
 }
 
@@ -254,13 +301,12 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     if (lastNodeIndex < 0 || lastNodeIndex >= graph->nodeCount)
         return;
 
-    RuntimeNode *node = &graph->nodes[lastNodeIndex];
-    if (node->outputCount == 0)
+    if (graph->nodes[lastNodeIndex].outputCount == 0)
         return;
-    RuntimePin *outPin = node->outputPins[0];
-    if (outPin->linkCount == 0)
+
+    if (graph->nodes[lastNodeIndex].outputPins[0]->nextNodeIndex == -1)
         return;
-    int currNodeIndex = outPin->linkedPins[0]->nodeIndex;
+    int currNodeIndex = graph->nodes[lastNodeIndex].outputPins[0]->nextNodeIndex;
     if (currNodeIndex < 0 || currNodeIndex >= graph->nodeCount)
         return;
 
@@ -274,18 +320,18 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_NUM:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0)
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex;
+            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->valueIndex;
         }
         break;
     }
 
     case NODE_STRING:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0)
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex;
+            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->valueIndex;
         }
         break;
     }
@@ -337,16 +383,18 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_COMPARISON:
     {
+        float numA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+        float numB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
         switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
         {
         case EQUAL_TO:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number == interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = numA == numB;
             break;
         case GREATER_THAN:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number > interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = numA > numB;
             break;
         case LESS_THAN:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number < interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = numA < numB;
             break;
         default:
             // Error
@@ -391,9 +439,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_PRINT:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->linkCount > 0)
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->linkedPins[0]->valueIndex], 0);
+            AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex], 0);
         }
         break;
     }

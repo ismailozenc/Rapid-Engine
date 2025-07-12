@@ -14,9 +14,8 @@ typedef struct RuntimePin
     bool isInput;
     int valueIndex;
     int pickedOption;
-
-    struct RuntimePin *linkedPins[MAX_LINKS_PER_PIN];
-    int linkCount;
+    char textFieldValue[128];
+    int nextNodeIndex;
 } RuntimePin;
 
 typedef struct RuntimeNode
@@ -89,6 +88,8 @@ typedef struct {
 InterpreterContext InitInterpreterContext();
 
 char *ValueTypeToString(ValueType type);
+
+char *ValueToString(Value value);
 
 void FreeInterpreterContext(InterpreterContext *interpreter);
 

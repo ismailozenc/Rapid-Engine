@@ -36,6 +36,8 @@ typedef struct Pin
     bool isInput;
     Vector2 position;
     int pickedOption;
+    char textFieldValue[128];
+    bool isFloat;
 } Pin;
 
 typedef struct Link

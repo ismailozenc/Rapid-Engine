@@ -279,6 +279,12 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                     AddToLog(engine, "ERROR SAVING CHANGES!", 1);
             }
             break;
+        case STOP_GAME:
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                engine->isEditorOpened = true;
+                editor->delayFrames = true;
+            }
+            break;
         case RUN_GAME:
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
@@ -546,14 +552,25 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save");
         }
 
-        if (engine->wasBuilt)
+        if(!engine->isEditorOpened){
+            AddUIElement(engine, (UIElement){
+                                     .name = "StopButton",
+                                     .shape = UIRectangle,
+                                     .type = STOP_GAME,
+                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .color = RED,
+                                     .layer = 1,
+                                     .text = {.string = "Stop", .textPos = {engine->sideBarWidth - 62, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 });
+        }
+        else if (engine->wasBuilt)
         {
             AddUIElement(engine, (UIElement){
                                      .name = "RunButton",
                                      .shape = UIRectangle,
                                      .type = RUN_GAME,
                                      .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                     .color = (Color){255, 255, 255, 50},
+                                     .color = DARKGREEN,
                                      .layer = 1,
                                      .text = {.string = "Run", .textPos = {engine->sideBarWidth - 56, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                  });
@@ -1090,7 +1107,7 @@ int main()
         SetMouseCursor(engine.cursor);
         SetTargetFPS(engine.fps);
 
-        if (GetMouseWheelMove() != 0 && engine.isViewportFocused)
+        if (GetMouseWheelMove() != 0 && engine.isViewportFocused && !editor.menuOpen)
         {
             editor.delayFrames = true;
 

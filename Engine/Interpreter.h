@@ -13,9 +13,10 @@ typedef struct RuntimePin
     int nodeIndex;
     bool isInput;
     int valueIndex;
-    int pickedOption;
-    char textFieldValue[128];
-    int nextNodeIndex;
+
+    int nextNodeIndex; //Flow
+    int pickedOption; //Dropdown
+    char textFieldValue[128]; //Field
 } RuntimePin;
 
 typedef struct RuntimeNode

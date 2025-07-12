@@ -150,24 +150,25 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     node.type = type;
     node.position = pos;
 
-    switch(node.type){
-        case NODE_NUM:
-            sprintf(node.name, "Number");
-            break;
-        case NODE_STRING:
-            sprintf(node.name, "String");
-            break;
-        case NODE_BOOL:
-            sprintf(node.name, "Boolean");
-            break;
-        case NODE_COLOR:
-            sprintf(node.name, "Color");
-            break;
-        case NODE_SPRITE:
-            sprintf(node.name, "Sprite");
-            break;
-        default:
-            sprintf(node.name, "Node");
+    switch (node.type)
+    {
+    case NODE_NUM:
+        sprintf(node.name, "Number");
+        break;
+    case NODE_STRING:
+        sprintf(node.name, "String");
+        break;
+    case NODE_BOOL:
+        sprintf(node.name, "Boolean");
+        break;
+    case NODE_COLOR:
+        sprintf(node.name, "Color");
+        break;
+    case NODE_SPRITE:
+        sprintf(node.name, "Sprite");
+        break;
+    default:
+        sprintf(node.name, "Node");
     }
 
     if (type == NODE_UNKNOWN)
@@ -221,25 +222,36 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     return node;
 }
 
-int GetPinIndexByID1(int id, GraphContext *graph) {
-    for (int i = 0; i < graph->pinCount; i++) {
-        if (graph->pins[i].id == id) return i;
+int GetPinIndexByID1(int id, GraphContext *graph)
+{
+    for (int i = 0; i < graph->pinCount; i++)
+    {
+        if (graph->pins[i].id == id)
+            return i;
     }
     return -1;
 }
 
 void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2)
 {
-    if (Pin1.isInput == Pin2.isInput) return;
-    if ((Pin1.type == PIN_FLOW && Pin2.type != PIN_FLOW) || (Pin1.type != PIN_FLOW && Pin2.type == PIN_FLOW)) return;
-    if (Pin1.nodeID == Pin2.nodeID) return;
+    if (Pin1.isInput == Pin2.isInput)
+        return;
+    if ((Pin1.type == PIN_FLOW && Pin2.type != PIN_FLOW) || (Pin1.type != PIN_FLOW && Pin2.type == PIN_FLOW))
+        return;
+    if (Pin1.nodeID == Pin2.nodeID)
+        return;
+    if (Pin1.type != Pin2.type && Pin1.type != PIN_ANY_VALUE && Pin2.type != PIN_ANY_VALUE)
+        return;
 
     Link link = {0};
 
-    if (Pin1.isInput) {
+    if (Pin1.isInput)
+    {
         link.inputPinID = Pin1.id;
         link.outputPinID = Pin2.id;
-    } else {
+    }
+    else
+    {
         link.inputPinID = Pin2.id;
         link.outputPinID = Pin1.id;
     }
@@ -251,16 +263,21 @@ void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2)
     Pin outputPin = graph->pins[outputPinIndex];
 
     // Remove existing links if needed
-    for (int i = 0; i < graph->linkCount; i++) {
+    for (int i = 0; i < graph->linkCount; i++)
+    {
         Link l = graph->links[i];
 
         bool remove = false;
 
-        if (l.inputPinID == inputPin.id && inputPin.type != PIN_FLOW) remove = true;
-        if (l.outputPinID == outputPin.id && outputPin.type == PIN_FLOW) remove = true;
+        if (l.inputPinID == inputPin.id && inputPin.type != PIN_FLOW)
+            remove = true;
+        if (l.outputPinID == outputPin.id && outputPin.type == PIN_FLOW)
+            remove = true;
 
-        if (remove) {
-            for (int j = i; j < graph->linkCount - 1; j++) {
+        if (remove)
+        {
+            for (int j = i; j < graph->linkCount - 1; j++)
+            {
                 graph->links[j] = graph->links[j + 1];
             }
             graph->linkCount--;
@@ -274,73 +291,99 @@ void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2)
 
 void DeleteNode(GraphContext *graph, int nodeID)
 {
-    if (graph->nodeCount == 0) return;
+    if (graph->nodeCount == 0)
+        return;
 
     int nodeIndex = -1;
-    for (int i = 0; i < graph->nodeCount; i++) {
-        if (graph->nodes[i].id == nodeID) {
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        if (graph->nodes[i].id == nodeID)
+        {
             nodeIndex = i;
             break;
         }
     }
-    if (nodeIndex == -1) return;
+    if (nodeIndex == -1)
+        return;
 
     graph->nodes[nodeIndex] = graph->nodes[graph->nodeCount - 1];
     graph->nodeCount--;
 
-    if (graph->nodeCount == 0) {
+    if (graph->nodeCount == 0)
+    {
         free(graph->nodes);
         graph->nodes = NULL;
-    } else {
+    }
+    else
+    {
         Node *resized = realloc(graph->nodes, graph->nodeCount * sizeof(Node));
-        if (resized) graph->nodes = resized;
+        if (resized)
+            graph->nodes = resized;
     }
 
     int *pinsToDelete = malloc(graph->pinCount * sizeof(int));
     int pinsToDeleteCount = 0;
 
-    for (int i = 0; i < graph->pinCount;) {
-        if (graph->pins[i].nodeID == nodeID) {
+    for (int i = 0; i < graph->pinCount;)
+    {
+        if (graph->pins[i].nodeID == nodeID)
+        {
             pinsToDelete[pinsToDeleteCount++] = graph->pins[i].id;
             graph->pins[i] = graph->pins[graph->pinCount - 1];
             graph->pinCount--;
 
-            if (graph->pinCount == 0) {
+            if (graph->pinCount == 0)
+            {
                 free(graph->pins);
                 graph->pins = NULL;
                 break;
-            } else {
-                Pin *resized = realloc(graph->pins, graph->pinCount * sizeof(Pin));
-                if (resized) graph->pins = resized;
             }
-        } else {
+            else
+            {
+                Pin *resized = realloc(graph->pins, graph->pinCount * sizeof(Pin));
+                if (resized)
+                    graph->pins = resized;
+            }
+        }
+        else
+        {
             i++;
         }
     }
 
-    for (int i = 0; i < graph->linkCount;) {
+    for (int i = 0; i < graph->linkCount;)
+    {
         bool remove = false;
-        for (int j = 0; j < pinsToDeleteCount; j++) {
+        for (int j = 0; j < pinsToDeleteCount; j++)
+        {
             if (graph->links[i].inputPinID == pinsToDelete[j] ||
-                graph->links[i].outputPinID == pinsToDelete[j]) {
+                graph->links[i].outputPinID == pinsToDelete[j])
+            {
                 remove = true;
                 break;
             }
         }
 
-        if (remove) {
+        if (remove)
+        {
             graph->links[i] = graph->links[graph->linkCount - 1];
             graph->linkCount--;
 
-            if (graph->linkCount == 0) {
+            if (graph->linkCount == 0)
+            {
                 free(graph->links);
                 graph->links = NULL;
                 break;
-            } else {
-                Link *resized = realloc(graph->links, graph->linkCount * sizeof(Link));
-                if (resized) graph->links = resized;
             }
-        } else {
+            else
+            {
+                Link *resized = realloc(graph->links, graph->linkCount * sizeof(Link));
+                if (resized)
+                    graph->links = resized;
+            }
+        }
+        else
+        {
             i++;
         }
     }
@@ -350,7 +393,7 @@ void DeleteNode(GraphContext *graph, int nodeID)
 
 void RemoveConnections(GraphContext *graph, int pinID)
 {
-    for (int i = 0; i < graph->linkCount; )
+    for (int i = 0; i < graph->linkCount;)
     {
         if (graph->links[i].outputPinID == pinID || graph->links[i].inputPinID == pinID)
         {

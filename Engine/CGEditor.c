@@ -338,19 +338,33 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             DrawTextEx(editor->font, options.options[graph->pins[i].pickedOption], (Vector2){dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
             DrawRectangleLinesEx(dropdown, 1, WHITE);
 
-            if (CheckCollisionPointRec(editor->mousePos, dropdown))
+            bool mouseOnDropdown = CheckCollisionPointRec(editor->mousePos, dropdown);
+            bool mouseOnOptions = false;
+            if (editor->nodeDropdownFocused == i)
             {
-                hoveredNodeIndex = -1;
-                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                for (int j = 0; j < options.optionsCount; j++)
                 {
-                    if (editor->nodeDropdownFocused != i)
+                    Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
+                    if (CheckCollisionPointRec(editor->mousePos, option))
                     {
-                        editor->nodeDropdownFocused = i;
+                        mouseOnOptions = true;
+                        break;
                     }
-                    else
-                    {
+                }
+            }
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if (editor->nodeDropdownFocused == i)
+                {
+                    if (mouseOnDropdown)
                         editor->nodeDropdownFocused = -1;
-                    }
+                    else if (!mouseOnOptions)
+                        editor->nodeDropdownFocused = -1;
+                }
+                else if (mouseOnDropdown)
+                {
+                    editor->nodeDropdownFocused = i;
                 }
             }
 
@@ -407,7 +421,8 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                         graph->pins[i].textFieldValue[len] = (char)key;
                         graph->pins[i].textFieldValue[len + 1] = '\0';
                     }
-                    else if(key == 46 && !graph->pins[i].isFloat){
+                    else if (key == 46 && !graph->pins[i].isFloat)
+                    {
                         int len = strlen(graph->pins[i].textFieldValue);
                         graph->pins[i].textFieldValue[len] = (char)key;
                         graph->pins[i].textFieldValue[len + 1] = '\0';
@@ -419,13 +434,15 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
                 {
                     size_t len = strlen(graph->pins[i].textFieldValue);
-                    if(graph->pins[i].textFieldValue[len - 1] == 46){
+                    if (graph->pins[i].textFieldValue[len - 1] == 46)
+                    {
                         graph->pins[i].isFloat = false;
                     }
                     graph->pins[i].textFieldValue[len - 1] = '\0';
                 }
 
-                if(IsKeyPressed(KEY_ENTER)){
+                if (IsKeyPressed(KEY_ENTER))
+                {
                     editor->nodeFieldPinFocused = -1;
                 }
             }
@@ -471,7 +488,8 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     graph->pins[i].textFieldValue[len - 1] = '\0';
                 }
 
-                if(IsKeyPressed(KEY_ENTER)){
+                if (IsKeyPressed(KEY_ENTER))
+                {
                     editor->nodeFieldPinFocused = -1;
                 }
             }

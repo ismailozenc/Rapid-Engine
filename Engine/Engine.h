@@ -16,6 +16,7 @@ typedef enum
 {
     NO_COLLISION_ACTION,
     SAVE_CG,
+    STOP_GAME,
     RUN_GAME,
     BUILD_GRAPH,
     BACK_FILEPATH,

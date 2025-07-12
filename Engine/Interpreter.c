@@ -227,7 +227,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
             switch (pin->type)
             {
-            case PIN_FLOAT:
+            case PIN_NUM:
                 interpreter->values[idx].number = 0;
                 interpreter->values[idx].type = VAL_NUMBER;
                 interpreter->values[idx].isVariable = isVariable;
@@ -405,25 +405,28 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_GATE:
     {
+        bool boolA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean;
+        bool boolB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+        bool *result = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean;
         switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
         {
         case AND:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+            *result = boolA && boolB;
             break;
         case OR:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+            *result = boolA || boolB;
             break;
         case NOT:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean;
+            *result = !boolA;
             break;
         case XOR:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean != interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
+            *result = boolA != boolB;
             break;
         case NAND:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean && interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
+            *result = !(boolA && boolB);
             break;
         case NOR:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = !(interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean || interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean);
+            *result = !(boolA || boolB);
             break;
         default:
             // Error

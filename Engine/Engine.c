@@ -45,7 +45,7 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.viewport = LoadRenderTexture(10000, 10000);
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-    engine.resizeButton = LoadTexture("resize_btn.png");
+    engine.resizeButton = LoadTexture("textures//resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
@@ -55,7 +55,7 @@ EngineContext InitEngineContext(char *projectPath)
     engine.delayFrames = true;
     engine.draggingResizeButtonID = 0;
 
-    engine.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+    engine.font = LoadFontEx("fonts//arialbd.ttf", 128, NULL, 0);
     if (engine.font.texture.id == 0)
     {
         AddToLog(&engine, "Failed to load font: fonts/arialbd.ttf", 1);
@@ -84,7 +84,7 @@ EngineContext InitEngineContext(char *projectPath)
     engine.isEditorOpened = true;
     engine.isGameRunning = false;
 
-    engine.save = LoadSound("save.wav");
+    engine.save = LoadSound("sound//save.wav");
 
     engine.isSoundOn = true;
 

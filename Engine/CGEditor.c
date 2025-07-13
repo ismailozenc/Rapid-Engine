@@ -34,7 +34,7 @@ EditorContext InitEditorContext()
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
-    editor.gearTxt = LoadTexture("gear.png");
+    editor.gearTxt = LoadTexture("textures//gear.png");
     if (editor.gearTxt.id == 0)
     {
         // Error
@@ -43,7 +43,7 @@ EditorContext InitEditorContext()
     editor.nodeDropdownFocused = -1;
     editor.nodeFieldPinFocused = -1;
 
-    editor.font = LoadFontEx("fonts/arialbd.ttf", 128, NULL, 0);
+    editor.font = LoadFontEx("fonts//arialbd.ttf", 128, NULL, 0);
     if (editor.font.texture.id == 0)
     {
         AddToLogFromEditor(&editor, "Couldn't load font", 1);

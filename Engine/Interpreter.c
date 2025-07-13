@@ -206,7 +206,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->valueCount++;
             continue;
         case NODE_LITERAL_STRING:
-            strcpy(interpreter->values[interpreter->valueCount].string, node->inputPins[0]->textFieldValue);
+            interpreter->values[interpreter->valueCount].string = strdup(node->inputPins[0]->textFieldValue);
             interpreter->values[interpreter->valueCount].type = VAL_STRING;
             interpreter->values[interpreter->valueCount].isVariable = false;
             interpreter->values[interpreter->valueCount].name = srcNode->name;
@@ -318,7 +318,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     return runtime;
 }
 
-void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph)
+void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph, int outFlowPinIndexInNode)
 {
     if (lastNodeIndex < 0 || lastNodeIndex >= graph->nodeCount)
         return;
@@ -326,9 +326,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     if (graph->nodes[lastNodeIndex].outputCount == 0)
         return;
 
-    if (graph->nodes[lastNodeIndex].outputPins[0]->nextNodeIndex == -1)
+    if (graph->nodes[lastNodeIndex].outputPins[outFlowPinIndexInNode]->nextNodeIndex == -1)
         return;
-    int currNodeIndex = graph->nodes[lastNodeIndex].outputPins[0]->nextNodeIndex;
+    int currNodeIndex = graph->nodes[lastNodeIndex].outputPins[outFlowPinIndexInNode]->nextNodeIndex;
     if (currNodeIndex < 0 || currNodeIndex >= graph->nodeCount)
         return;
 
@@ -413,11 +413,21 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_BRANCH:
     {
+        if(interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean){
+            InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
+        }
+        else{
+            InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
+        }
+        return;
         break;
     }
 
     case NODE_LOOP:
     {
+        while(!interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean){
+            InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
+        }
         break;
     }
 
@@ -522,7 +532,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     if (currNodeIndex != lastNodeIndex)
     {
-        InterpretStringOfNodes(currNodeIndex, interpreter, graph);
+        InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
     }
 }
 
@@ -537,7 +547,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
             switch (graph->nodes[i].type)
             {
             case NODE_EVENT_START:
-                InterpretStringOfNodes(i, interpreter, graph);
+                InterpretStringOfNodes(i, interpreter, graph, 0);
                 break;
             case NODE_EVENT_LOOP:
                 if (interpreter->loopNodeIndex == -1)
@@ -571,7 +581,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     }
     else
     {
-        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
+        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph, 0);
     }
 
     return true;

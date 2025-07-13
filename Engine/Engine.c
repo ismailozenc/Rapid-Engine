@@ -271,17 +271,14 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph)
     int textWidth = MeasureTextEx(engine->font, message, 30, 0).x;
     DrawTextEx(engine->font, message, (Vector2){popupX + (popupWidth - textWidth) / 2, popupY + 20}, 30, 0, BLACK);
 
-    // Button dimensions
     int btnWidth = 120;
     int btnHeight = 30;
     int btnSpacing = 10;
     int btnY = popupY + popupHeight - btnHeight - 20;
 
-    // Calculate button X positions for 3 buttons spaced evenly
     int totalBtnWidth = btnWidth * 3 + btnSpacing * 2 + 30;
     int btnStartX = popupX + (popupWidth + 5 - totalBtnWidth) / 2;
 
-    // Draw and handle buttons
     Rectangle saveBtn = {btnStartX, btnY, btnWidth, btnHeight};
     Rectangle closeBtn = {btnStartX + btnWidth + btnSpacing, btnY, btnWidth + 34, btnHeight};
     Rectangle cancelBtn = {btnStartX + 2 * (btnWidth + btnSpacing) + 34, btnY, btnWidth, btnHeight};
@@ -295,13 +292,9 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph)
     DrawRectangleRounded(cancelBtn, 0.2f, 4, GRAY);
     DrawTextEx(engine->font, "Cancel", (Vector2){cancelBtn.x + 35, cancelBtn.y + 7}, 16, 0, BLACK);
 
-    // Mouse click detection
-    Vector2 mousePos = GetMousePosition();
-    DrawText(TextFormat("Mouse: %.0f %.0f", mousePos.x, mousePos.y), 10, 10, 20, RED);
-DrawText(TextFormat("Btn: %d", IsMouseButtonPressed(MOUSE_LEFT_BUTTON)), 10, 30, 20, RED);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        if (CheckCollisionPointRec(mousePos, saveBtn))
+        if (CheckCollisionPointRec(engine->mousePos, saveBtn))
         {
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
@@ -313,11 +306,11 @@ DrawText(TextFormat("Btn: %d", IsMouseButtonPressed(MOUSE_LEFT_BUTTON)), 10, 30,
             }
             return 2;
         }
-        else if (CheckCollisionPointRec(mousePos, closeBtn))
+        else if (CheckCollisionPointRec(engine->mousePos, closeBtn))
         {
             return 2;
         }
-        else if (CheckCollisionPointRec(mousePos, cancelBtn))
+        else if (CheckCollisionPointRec(engine->mousePos, cancelBtn))
         {
             return 0;
         }

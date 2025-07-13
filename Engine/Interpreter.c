@@ -531,7 +531,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     }
     else
     {
-        // InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
+        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph);
     }
 
     return true;

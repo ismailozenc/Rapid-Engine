@@ -127,4 +127,5 @@ typedef struct EngineContext
     bool sideBarFullSnap;
     float editorZoom;
     bool wasBuilt;
+    int showSaveWarning;
 } EngineContext;

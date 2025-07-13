@@ -95,6 +95,8 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.wasBuilt = false;
 
+    engine.showSaveWarning = 0;
+
     return engine;
 }
 
@@ -250,6 +252,80 @@ void SetProjectPaths(EngineContext *engine, const char *projectName)
     snprintf(engine->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
 }
 
+int DrawSaveWarning(EngineContext *engine, GraphContext *graph)
+{
+    engine->isViewportFocused = false;
+    int popupWidth = 500;
+    int popupHeight = 150;
+    int screenWidth = engine->screenWidth;
+    int screenHeight = engine->screenHeight;
+    int popupX = (screenWidth - popupWidth) / 2;
+    int popupY = (screenHeight - popupHeight) / 2 - 100;
+
+    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 150});
+
+    DrawRectangleRounded((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, LIGHTGRAY);
+    DrawRectangleRoundedLines((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, DARKGRAY);
+
+    const char *message = "Save changes before exit?";
+    int textWidth = MeasureTextEx(engine->font, message, 30, 0).x;
+    DrawTextEx(engine->font, message, (Vector2){popupX + (popupWidth - textWidth) / 2, popupY + 20}, 30, 0, BLACK);
+
+    // Button dimensions
+    int btnWidth = 120;
+    int btnHeight = 30;
+    int btnSpacing = 10;
+    int btnY = popupY + popupHeight - btnHeight - 20;
+
+    // Calculate button X positions for 3 buttons spaced evenly
+    int totalBtnWidth = btnWidth * 3 + btnSpacing * 2 + 30;
+    int btnStartX = popupX + (popupWidth + 5 - totalBtnWidth) / 2;
+
+    // Draw and handle buttons
+    Rectangle saveBtn = {btnStartX, btnY, btnWidth, btnHeight};
+    Rectangle closeBtn = {btnStartX + btnWidth + btnSpacing, btnY, btnWidth + 34, btnHeight};
+    Rectangle cancelBtn = {btnStartX + 2 * (btnWidth + btnSpacing) + 34, btnY, btnWidth, btnHeight};
+
+    DrawRectangleRounded(saveBtn, 0.2f, 4, GRAY);
+    DrawTextEx(engine->font, "Save and Close", (Vector2){saveBtn.x + 10, saveBtn.y + 7}, 16, 0, BLACK);
+
+    DrawRectangleRounded(closeBtn, 0.2f, 4, GRAY);
+    DrawTextEx(engine->font, "Close without Saving", (Vector2){closeBtn.x + 7, closeBtn.y + 7}, 16, 0, BLACK);
+
+    DrawRectangleRounded(cancelBtn, 0.2f, 4, GRAY);
+    DrawTextEx(engine->font, "Cancel", (Vector2){cancelBtn.x + 35, cancelBtn.y + 7}, 16, 0, BLACK);
+
+    // Mouse click detection
+    Vector2 mousePos = GetMousePosition();
+    DrawText(TextFormat("Mouse: %.0f %.0f", mousePos.x, mousePos.y), 10, 10, 20, RED);
+DrawText(TextFormat("Btn: %d", IsMouseButtonPressed(MOUSE_LEFT_BUTTON)), 10, 30, 20, RED);
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        if (CheckCollisionPointRec(mousePos, saveBtn))
+        {
+            if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
+            {
+                AddToLog(engine, "Saved successfully!", 0);
+            }
+            else
+            {
+                AddToLog(engine, "ERROR SAVING CHANGES!", 1);
+            }
+            return 2;
+        }
+        else if (CheckCollisionPointRec(mousePos, closeBtn))
+        {
+            return 2;
+        }
+        else if (CheckCollisionPointRec(mousePos, cancelBtn))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
     if (engine->hoveredUIElementIndex != -1)
@@ -280,7 +356,8 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             }
             break;
         case STOP_GAME:
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
                 engine->isEditorOpened = true;
                 editor->delayFrames = true;
             }
@@ -345,8 +422,15 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                CloseWindow();
-                return;
+                if (editor->hasChanged)
+                {
+                    engine->showSaveWarning = true;
+                }
+                else
+                {
+                    CloseWindow();
+                    return;
+                }
             }
             break;
         case MINIMIZE_WINDOW:
@@ -407,8 +491,8 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                         strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
                         openedFileName[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
 
-                        //FreeEditorContext(editor);
-                        //FreeGraphContext(graph);
+                        // FreeEditorContext(editor);
+                        // FreeGraphContext(graph);
 
                         *editor = InitEditorContext();
                         *graph = InitGraphContext();
@@ -552,7 +636,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save");
         }
 
-        if(!engine->isEditorOpened){
+        if (!engine->isEditorOpened)
+        {
             AddUIElement(engine, (UIElement){
                                      .name = "StopButton",
                                      .shape = UIRectangle,
@@ -632,7 +717,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
         int varsY = 40;
         for (int i = 0; i < interpreter->valueCount; i++)
         {
-            if(!interpreter->values[i].isVariable){
+            if (!interpreter->values[i].isVariable)
+            {
                 continue;
             }
             AddUIElement(engine, (UIElement){
@@ -642,8 +728,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){59, 59, 59, 255},
                                      .layer = 1,
-                                     .valueIndex = i
-                                 });
+                                     .valueIndex = i});
 
             Color varColor;
             sprintf(cutMessage, "%s", interpreter->values[i].name);
@@ -699,8 +784,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
                                      .color = varColor,
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
-                                     .layer = 0
-                                 });
+                                     .layer = 0});
 
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
@@ -1077,7 +1161,9 @@ int main()
 
     LoadGraphFromFile(engine.CGFilePath, &graph);
 
-    while (!WindowShouldClose())
+    bool windowShouldClose = false;
+
+    while (!windowShouldClose && !WindowShouldClose())
     {
         ContextChangePerFrame(&engine);
 
@@ -1199,7 +1285,16 @@ int main()
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
 
-        DrawFPS(engine.screenWidth / 2, 10);
+        //DrawFPS(engine.screenWidth / 2, 10);
+
+        if (engine.showSaveWarning == 1)
+        {
+            engine.showSaveWarning = DrawSaveWarning(&engine, &graph);
+        }
+        if (engine.showSaveWarning == 2)
+        {
+            windowShouldClose = true;
+        }
 
         EndDrawing();
     }

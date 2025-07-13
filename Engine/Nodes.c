@@ -175,8 +175,8 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
         return node;
     }
 
-    int inputCount = getNodeInfoByType(type, "inputCount");
-    int outputCount = getNodeInfoByType(type, "outputCount");
+    int inputCount = getNodeInfoByType(type, INPUT_COUNT);
+    int outputCount = getNodeInfoByType(type, OUTPUT_COUNT);
 
     if (inputCount > MAX_NODE_PINS || outputCount > MAX_NODE_PINS)
     {

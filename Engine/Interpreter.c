@@ -11,6 +11,8 @@ InterpreterContext InitInterpreterContext()
 
     interpreter.newLogMessage = false;
 
+    interpreter.buildFailed = false;
+
     return interpreter;
 }
 
@@ -203,9 +205,28 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             node->outputPins[0]->valueIndex = interpreter->valueCount;
             interpreter->valueCount++;
             continue;
-        case PIN_FIELD_STRING:
-        case PIN_FIELD_BOOL:
-        case PIN_FIELD_COLOR:
+        case NODE_LITERAL_STRING:
+            strcpy(interpreter->values[interpreter->valueCount].string, node->inputPins[0]->textFieldValue);
+            interpreter->values[interpreter->valueCount].type = VAL_STRING;
+            interpreter->values[interpreter->valueCount].isVariable = false;
+            interpreter->values[interpreter->valueCount].name = srcNode->name;
+            node->outputPins[0]->valueIndex = interpreter->valueCount;
+            interpreter->valueCount++;
+            continue;
+        case NODE_LITERAL_BOOL:
+            if(strcmp(node->inputPins[0]->textFieldValue, "1") == 0){
+                interpreter->values[interpreter->valueCount].boolean = true;
+            }
+            else{
+                interpreter->values[interpreter->valueCount].boolean = false;
+            }
+            interpreter->values[interpreter->valueCount].type = VAL_BOOL;
+            interpreter->values[interpreter->valueCount].isVariable = false;
+            interpreter->values[interpreter->valueCount].name = srcNode->name;
+            node->outputPins[0]->valueIndex = interpreter->valueCount;
+            interpreter->valueCount++;
+            continue;
+        case NODE_LITERAL_COLOR:
             continue;
         default:
             break;
@@ -223,6 +244,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (node->type == NODE_NUM || node->type == NODE_STRING || node->type == NODE_SPRITE || node->type == NODE_BOOL || node->type == NODE_COLOR)
             {
                 isVariable = true;
+                node->inputPins[1]->valueIndex = idx;
             }
 
             switch (pin->type)
@@ -322,7 +344,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->valueIndex;
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].number = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].number;
         }
         break;
     }
@@ -331,7 +353,25 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            graph->nodes[currNodeIndex].outputPins[1]->valueIndex = graph->nodes[currNodeIndex].inputPins[1]->valueIndex;
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].string = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].string;
+        }
+        break;
+    }
+
+    case NODE_BOOL:
+    {
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        {
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean;
+        }
+        break;
+    }
+
+    case NODE_COLOR:
+    {
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        {
+            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].color = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].color;
         }
         break;
     }

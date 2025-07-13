@@ -95,9 +95,11 @@ typedef struct InfoByType{
 }InfoByType;
 
 static InfoByType NodeInfoByType[] = {
-    {NODE_NUM, 2, 2, 120, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM}, {PIN_FLOW, PIN_NUM}, {"", "Set value"}, {"", "Get value"}},
+    {NODE_NUM, 2, 2, 120, 100, {80, 70, 110, 200}, true, {PIN_FLOW, PIN_NUM}, {PIN_FLOW, PIN_NUM}, {"", "Set value"}, {"", "Get value"}},
     {NODE_STRING, 2, 2, 120, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_STRING}, {PIN_FLOW, PIN_STRING}, {"", "Set value"}, {"", "Get value"}},
-    {NODE_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
+    {NODE_BOOL, 2, 2, 120, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"", "Set value"}, {"", "Get value"}},
+    {NODE_COLOR, 2, 2, 120, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COLOR}, {PIN_FLOW, PIN_COLOR}, {"", "Set value"}, {"", "Get value"}},
+    {NODE_SPRITE, 3, 3, 200, 180, {70, 90, 40, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW, PIN_SPRITE}, {"", "Sprite"}, {"", "Sprite"}},
     {NODE_GET_VAR, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW, PIN_NUM}, {""}, {"", "Get value"}},
     {NODE_SET_VAR, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM}, {PIN_FLOW}, {"", "Set value"}, {""}},
     {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
@@ -105,21 +107,21 @@ static InfoByType NodeInfoByType[] = {
     {NODE_EVENT_ON_BUTTON, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
     {NODE_CREATE_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {""}, {""}},
     {NODE_CALL_CUSTOM_EVENT, 99, 1, 240, 200, {148, 0, 0, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
-    {NODE_SPAWN_SPRITE, 1, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"", "Sprite"}, {""}},
-    {NODE_DESTROY_SPRITE, 2, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"", "Sprite"}, {""}},
-    {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
+    {NODE_SPAWN_SPRITE, 1, 2, 240, 200, {20, 100, 20, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"", "Sprite"}, {""}},
+    {NODE_DESTROY_SPRITE, 2, 1, 240, 200, {20, 100, 20, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"", "Sprite"}, {""}},
+    {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {20, 100, 20, 200}, true, {PIN_FLOW}, {PIN_FLOW}, {""}, {""}},
     {NODE_BRANCH, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {""}},
     {NODE_LOOP, 2, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"", "Condition"}, {"", "Loop body"}},
     {NODE_COMPARISON, 4, 2, 200, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_BOOL}, {"", "Operator", "Value A", "Value B"}, {"", "Result"}},
     {NODE_GATE, 4, 2, 200, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"", "Gate", "Condition A", "Condition B"}, {"", "Result"}},
     {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_ARITHMETIC}, {PIN_FLOW, PIN_NUM}, {"", "Number A", "Number B", "Arithmetic"}, {"", "Result"}},
-    {NODE_PRINT, 2, 1, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW}, {"", "Print value"}, {""}},
-    {NODE_DRAW_LINE, 6, 1, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"", "Start X", "Start Y", "End X", "End Y", "Color"}, {""}},
+    {NODE_PRINT, 2, 1, 140, 100, {90, 20, 120, 200}, true, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW}, {"", "Print value"}, {""}},
+    {NODE_DRAW_LINE, 6, 1, 240, 200, {90, 20, 120, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"", "Start X", "Start Y", "End X", "End Y", "Color"}, {""}},
     {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM}, {""}, {""}},
-    {NODE_LITERAL_NUM, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {""}},
-    {NODE_LITERAL_STRING, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {""}},
-    {NODE_LITERAL_BOOL, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {""}},
-    {NODE_LITERAL_COLOR, 1, 1, 240, 70, {60, 100, 159, 200}, true, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {""}}
+    {NODE_LITERAL_NUM, 1, 1, 240, 70, {110, 85, 40, 200}, true, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {""}},
+    {NODE_LITERAL_STRING, 1, 1, 240, 70, {110, 85, 40, 200}, true, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {""}},
+    {NODE_LITERAL_BOOL, 1, 1, 180, 70, {110, 85, 40, 200}, true, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {""}},
+    {NODE_LITERAL_COLOR, 1, 1, 240, 70, {110, 85, 40, 200}, true, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {""}}
 };
 
 typedef struct DropdownOptionsByPinType{
@@ -224,6 +226,8 @@ static inline const char* NodeTypeToString(NodeType type) {
         case NODE_UNKNOWN: return "unknown";
         case NODE_NUM: return "num";
         case NODE_STRING: return "string";
+        case NODE_BOOL: return "bool";
+        case NODE_COLOR: return "color";
         case NODE_SPRITE: return "sprite";
         case NODE_GET_VAR: return "Get var";
         case NODE_SET_VAR: return "Set var";
@@ -254,6 +258,8 @@ static inline const char* NodeTypeToString(NodeType type) {
 static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH]) {
     if (strcmp(strType, "num") == 0) return NODE_NUM;
     if (strcmp(strType, "string") == 0) return NODE_STRING;
+    if (strcmp(strType, "bool") == 0) return NODE_BOOL;
+    if (strcmp(strType, "color") == 0) return NODE_COLOR;
     if (strcmp(strType, "sprite") == 0) return NODE_SPRITE;
     if (strcmp(strType, "Get var") == 0) return NODE_GET_VAR;
     if (strcmp(strType, "Set var") == 0) return NODE_SET_VAR;

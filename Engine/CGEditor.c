@@ -120,6 +120,10 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     float distance = fabsf(inputPos.x - outputPos.x);
     float controlOffset = distance * 0.5f;
 
+    DrawLineEx(outputPos, (Vector2){outputPos.x + 17, outputPos.y}, thickness, color);
+    outputPos.x += 17;
+    inputPos.x -= 12;
+
     Vector2 p0 = outputPos;
     Vector2 p1 = {outputPos.x + controlOffset, outputPos.y};
     Vector2 p2 = {inputPos.x - controlOffset, inputPos.y};
@@ -140,6 +144,8 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
         DrawLineEx(prev, point, thickness, color);
         prev = point;
     }
+
+    DrawLineEx(inputPos, (Vector2){inputPos.x + 12, inputPos.y}, thickness, color);
 }
 
 void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int index)
@@ -256,7 +262,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
                    (Vector2){x + 10, y + 3}, 30, 1, WHITE);
 
-        if (graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_SPRITE /*|| graph->nodes[i].type == NODE_BOOL/COLOR*/)
+        if (graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
         {
             Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, "width") - 18, graph->nodes[i].position.y + 5, 16, 16};
             DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
@@ -494,6 +500,28 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 }
             }
         }
+        else if (graph->pins[i].type == PIN_FIELD_BOOL)
+        {
+            Rectangle box = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 24, 24};
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(editor->mousePos, box))
+            {
+                if (strcmp(graph->pins[i].textFieldValue, "0") == 0 || strcmp(graph->pins[i].textFieldValue, "") == 0)
+                    strcpy(graph->pins[i].textFieldValue, "1");
+                else
+                    strcpy(graph->pins[i].textFieldValue, "0");
+            }
+
+            DrawRectangleRec(box, GRAY);
+            DrawRectangleLinesEx(box, 1, WHITE);
+
+            if (strcmp(graph->pins[i].textFieldValue, "1") == 0)
+                DrawText("1", box.x + 6, box.y + 4, 20, BLACK);
+            else
+            {
+                DrawText("0", box.x + 6, box.y + 4, 20, BLACK);
+            }
+        }
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
@@ -588,8 +616,8 @@ const char *DrawNodeMenu(EditorContext *editor)
     Color HighlightColor = {80, 80, 80, 255};
 
     const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Logical", "Debug", "More"};
-    const char *subMenuItems[][5] = {
-        {"num", "string", "sprite", "Get var", "Set var"},
+    const char *subMenuItems[][7] = {
+        {"num", "string", "bool", "color", "sprite", "Get var", "Set var"},
         {"Start", "On Loop", "On Button", "Create custom", "Call custom"},
         {"Spawn", "Destroy", "Move To"},
         {"Branch", "Loop"},
@@ -597,7 +625,7 @@ const char *DrawNodeMenu(EditorContext *editor)
         {"Print", "Draw Line"},
         {"ex", "Literal num", "Literal string", "Literal bool", "Literal color"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {5, 5, 3, 2, 3, 2, 5};
+    int subMenuCounts[] = {7, 5, 3, 2, 3, 2, 5};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 

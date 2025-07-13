@@ -71,26 +71,6 @@ EditorContext InitEditorContext(void);
 
 void FreeEditorContext(EditorContext *editor);
 
-void AddToLogFromEditor(EditorContext *editor, char *message, int level);
-
-void OpenNewCGFile(EditorContext *editor, GraphContext *graph, char *openedFileName);
-
-void DrawBackgroundGrid(EditorContext *editor, int gridSpacing, RenderTexture2D dot);
-
-void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color color);
-
-void DrawNodes(EditorContext *editor, GraphContext *graph);
-
-bool CheckNodeCollisions(EditorContext *editor, GraphContext *graph);
-
-const char *DrawNodeMenu(EditorContext *editor);
-
-void HandleDragging(EditorContext *editor, GraphContext *graph);
-
-int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D view, RenderTexture2D dot);
-
-bool CheckAllCollisions(EditorContext *editor, GraphContext *graph);
-
 void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled);
 
 #endif

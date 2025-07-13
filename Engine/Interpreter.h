@@ -84,20 +84,18 @@ typedef struct {
     bool newLogMessage;
     char logMessage[128];
     int logMessageLevel;
+
+    bool buildFailed;
 } InterpreterContext;
 
 InterpreterContext InitInterpreterContext();
+
+void FreeInterpreterContext(InterpreterContext *interpreter);
 
 char *ValueTypeToString(ValueType type);
 
 char *ValueToString(Value value);
 
-void FreeInterpreterContext(InterpreterContext *interpreter);
-
 RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter);
-
-void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level);
-
-void InterpretStringOfNodes(int eventNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph);
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph);

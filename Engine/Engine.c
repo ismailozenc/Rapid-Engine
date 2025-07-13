@@ -727,14 +727,20 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             sprintf(cutMessage, "%s", interpreter->values[i].name);
             switch (interpreter->values[i].type)
             {
-            case VAL_NUMBER:
+            case VAL_NUMBER: //38, 38, 38
+                varColor = (Color){24, 119, 149, 255};
+                break;
             case VAL_STRING:
+                varColor = (Color){219, 58, 52, 255}; //179, 0, 27
+                break;
             case VAL_BOOL:
+                varColor = (Color){27, 64, 121, 255};
+                break;
             case VAL_COLOR:
-                varColor = (Color){145, 0, 0, 255};
+                varColor = (Color){217, 3, 104, 255};
                 break;
             case VAL_SPRITE:
-                varColor = (Color){3, 161, 252, 255};
+                varColor = (Color){3, 206, 164, 255};
                 break;
             default:
                 varColor = LIGHTGRAY;
@@ -1270,15 +1276,15 @@ int main()
             0.0f,
             WHITE);
 
-        DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
-
         if (engine.CGFilePath[0] != '\0' && engine.isEditorOpened)
         {
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
 
-        //DrawFPS(engine.screenWidth / 2, 10);
+        DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+
+        // DrawFPS(engine.screenWidth / 2, 10);
 
         if (engine.showSaveWarning == 1)
         {

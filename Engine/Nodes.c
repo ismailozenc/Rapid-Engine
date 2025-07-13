@@ -79,7 +79,6 @@ int SaveGraphToFile(const char *filename, GraphContext *graph)
     FILE *file = fopen(filename, "wb");
     if (!file)
     {
-        printf("Failed to open file for writing: %s\n", filename);
         return 1;
     }
 

@@ -254,7 +254,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             roundness, segments, 2.0f / editor->zoom, WHITE);
 
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
-                   (Vector2){x + 10, y + 3}, 30, 2, WHITE);
+                   (Vector2){x + 10, y + 3}, 30, 1, WHITE);
 
         if (graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_SPRITE /*|| graph->nodes[i].type == NODE_BOOL/COLOR*/)
         {
@@ -614,8 +614,8 @@ const char *DrawNodeMenu(EditorContext *editor)
         editor->menuPosition.x -= MENU_WIDTH;
     }
 
-    DrawRectangleRounded((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2f, 8, MenuColor);
-    DrawRectangleRoundedLinesEx((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.2, 8, MENU_BORDER_THICKNESS, BorderColor);
+    DrawRectangleRounded((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.1f, 8, MenuColor);
+    DrawRectangleRoundedLinesEx((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.1f, 8, MENU_BORDER_THICKNESS, BorderColor);
 
     for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
     {
@@ -623,7 +623,7 @@ const char *DrawNodeMenu(EditorContext *editor)
         if (itemIndex >= menuItemCount)
             break;
 
-        Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
+        Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 5, MENU_WIDTH, MENU_ITEM_HEIGHT};
         if (CheckCollisionPointRec(editor->mousePos, itemRect))
         {
             DrawRectangleRec(itemRect, HighlightColor);
@@ -631,12 +631,30 @@ const char *DrawNodeMenu(EditorContext *editor)
             editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth) ? (editor->menuPosition.x - SUBMENU_WIDTH) : (editor->menuPosition.x + MENU_WIDTH);
             editor->submenuPosition.y = itemRect.y;
         }
-        DrawText(menuItems[itemIndex], editor->menuPosition.x + 10, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 10, 25, WHITE);
+        DrawTextEx(editor->font, menuItems[itemIndex], (Vector2){editor->menuPosition.x + 10, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 12}, 25, 1, WHITE);
+        DrawLine(editor->menuPosition.x, itemRect.y + MENU_ITEM_HEIGHT - 1, editor->menuPosition.x + MENU_WIDTH, itemRect.y + MENU_ITEM_HEIGHT - 1, DARKGRAY);
     }
 
     // Scrollbar
-    float scrollBarHeight = (menuHeight / (menuItemCount * 2)) * (int)MENU_VISIBLE_ITEMS;
-    float scrollBarY = editor->menuPosition.y + 20 + (editor->scrollIndexNodeMenu * (menuHeight / menuItemCount));
+    float padding = 6.0f;
+    float scrollTrackY = editor->menuPosition.y + padding;
+    float scrollTrackHeight = menuHeight - 2 * padding - 40;
+
+    int maxScroll = menuItemCount - MENU_VISIBLE_ITEMS;
+    if (maxScroll < 1)
+        maxScroll = 1;
+
+    float scrollBarHeight = scrollTrackHeight * ((float)MENU_VISIBLE_ITEMS / menuItemCount);
+    if (scrollBarHeight < 20.0f)
+        scrollBarHeight = 20.0f;
+    if (scrollBarHeight > scrollTrackHeight)
+        scrollBarHeight = scrollTrackHeight;
+
+    float scrollStep = (scrollTrackHeight - scrollBarHeight) / maxScroll;
+    float scrollBarY = scrollTrackY + editor->scrollIndexNodeMenu * scrollStep;
+
+    DrawRectangle(editor->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
+
     DrawRectangle(editor->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -664,7 +682,7 @@ const char *DrawNodeMenu(EditorContext *editor)
                     return subMenuItems[editor->hoveredItem][j];
                 }
             }
-            DrawText(subMenuItems[editor->hoveredItem][j], editor->submenuPosition.x + 10, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10, 25, WHITE);
+            DrawTextEx(editor->font, subMenuItems[editor->hoveredItem][j], (Vector2){editor->submenuPosition.x + 10, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10}, 25, 0, WHITE);
         }
     }
 

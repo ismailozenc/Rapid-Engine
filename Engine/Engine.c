@@ -43,7 +43,7 @@ EngineContext InitEngineContext(char *projectPath)
 
     engine.mousePos = GetMousePosition();
 
-    engine.viewport = LoadRenderTexture(3000, 3000);
+    engine.viewport = LoadRenderTexture(10000, 10000);
     engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     engine.resizeButton = LoadTexture("resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)

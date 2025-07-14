@@ -325,7 +325,10 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         graph->pins[i].position = (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset};
 
-        if (graph->pins[i].type == PIN_FLOW)
+        if(graph->pins[i].type == PIN_NONE){
+            continue;
+        }
+        else if (graph->pins[i].type == PIN_FLOW)
         {
             DrawTriangle((Vector2){nodePos.x + xOffset, nodePos.y + yOffset - 8}, (Vector2){nodePos.x + xOffset, nodePos.y + yOffset + 8}, (Vector2){nodePos.x + xOffset + 15, nodePos.y + yOffset}, WHITE);
             if (CheckCollisionPointRec(editor->mousePos, (Rectangle){nodePos.x + xOffset - 5, nodePos.y + yOffset - 15, 25, 31}))

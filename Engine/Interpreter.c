@@ -187,8 +187,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         }
     }
 
-    interpreter->values = malloc(sizeof(Value) * totalOutputPins);
-    interpreter->valueCount = 0;
+    interpreter->values = malloc(sizeof(Value) * (totalOutputPins + 1));
+    interpreter->values[0] = (Value){.type = VAL_STRING, .string = "Error value"};
+    interpreter->valueCount = 1;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -227,6 +228,20 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->valueCount++;
             continue;
         case NODE_LITERAL_COLOR:
+            continue;
+        case NODE_GET_VAR:
+            bool valueFound = false;
+            for(int j = 0; j < graph->nodeCount; j++){
+                if(j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0){
+                    node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
+                    valueFound = true;
+                    break;
+                }
+            }
+            printf("%d", valueFound);
+            if(!valueFound){
+                node->outputPins[1]->valueIndex = 0;
+            }
             continue;
         default:
             break;

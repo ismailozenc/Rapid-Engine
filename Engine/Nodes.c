@@ -166,6 +166,12 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     case NODE_SPRITE:
         sprintf(node.name, "Sprite");
         break;
+    case NODE_GET_VAR:
+        sprintf(node.name, "");
+        break;
+    case NODE_SET_VAR:
+        sprintf(node.name, "");
+        break;
     default:
         sprintf(node.name, "Node");
     }

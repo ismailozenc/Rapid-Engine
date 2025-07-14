@@ -262,7 +262,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
                    (Vector2){x + 10, y + 3}, 30, 1, WHITE);
 
-        if (graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
+        if (getIsEditableByType(graph->nodes[i].type))
         {
             Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18, graph->nodes[i].position.y + 5, 16, 16};
             DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);

@@ -74,6 +74,15 @@ typedef enum
     NOR
 } Gate;
 
+typedef enum
+{
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
+    MODULO
+} Arithmetic;
+
 typedef struct InfoByType
 {
     NodeType type;
@@ -116,7 +125,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_LOOP, 2, 2, 130, 100, {200, 170, 50, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"Next", "Loop body"}},
     {NODE_COMPARISON, 4, 2, 210, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Operator", "Value A", "Value B"}, {"Next", "Result"}},
     {NODE_GATE, 4, 2, 180, 160, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Gate", "Condition A", "Condition B"}, {"Next", "Result"}},
-    {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_ARITHMETIC}, {PIN_FLOW, PIN_NUM}, {"Prev", "Number A", "Number B", "Arithmetic"}, {"Next", "Result"}},
+    {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_ARITHMETIC, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_NUM}, {"Prev", "Arithmetic", "Number A", "Number B"}, {"Next", "Result"}},
     {NODE_PRINT, 2, 1, 140, 100, {90, 20, 120, 200}, true, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW}, {"Prev", "Print value"}, {"Next"}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {90, 20, 120, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Start X", "Start Y", "End X", "End Y", "Color"}, {"Next"}},
     {NODE_EX, 5, 5, 240, 200, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM}, {"Prev"}, {"Next"}},
@@ -135,7 +144,8 @@ typedef struct DropdownOptionsByPinType
 
 static DropdownOptionsByPinType PinDropdownOptionsByType[] = {
     {PIN_COMPARISON_OPERATOR, 3, {"Equal To", "Greater Than", "Less Than"}, 120},
-    {PIN_GATE, 6, {"AND", "OR", "NOT", "XOR", "NAND", "NOR"}, 60}};
+    {PIN_GATE, 6, {"AND", "OR", "NOT", "XOR", "NAND", "NOR"}, 60},
+    {PIN_ARITHMETIC, 5, {"ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MODULO"}, 110}};
 
 static inline DropdownOptionsByPinType getPinDropdownOptionsByType(PinType type)
 {

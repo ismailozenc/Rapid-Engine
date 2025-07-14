@@ -344,7 +344,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 hoveredPinIndex = i;
             }
         }
-        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE) // ||
+        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE || graph->pins[i].type == PIN_ARITHMETIC)
         {
             DropdownOptionsByPinType options = getPinDropdownOptionsByType(graph->pins[i].type);
 

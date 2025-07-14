@@ -435,16 +435,17 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         float numA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
         float numB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+        bool *result = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean;
         switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
         {
         case EQUAL_TO:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = numA == numB;
+            *result = numA == numB;
             break;
         case GREATER_THAN:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = numA > numB;
+            *result = numA > numB;
             break;
         case LESS_THAN:
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = numA < numB;
+            *result = numA < numB;
             break;
         default:
             // Error
@@ -487,6 +488,29 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_ARITHMETIC:
     {
+        float numA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+        float numB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+        float *result = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].number;
+        switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption){
+            case ADD:
+                *result = numA + numB;
+                break;
+            case SUBTRACT:
+                *result = numA - numB;
+                break;
+            case MULTIPLY:
+                *result = numA * numB;
+                break;
+            case DIVIDE:
+                *result = numA / numB;
+                break;
+            case MODULO:
+                *result = (int)numA % (int)numB;
+                break;
+            default:
+                //Error
+                break;
+        }
         break;
     }
 

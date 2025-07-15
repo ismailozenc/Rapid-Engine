@@ -208,22 +208,18 @@ char *PrepareProjectPath(char *fileName)
     return projectPath;
 }
 
-int GetFileType(const char *fileName)
+FileType GetFileType(const char *fileName)
 {
-    const char *ext = strrchr(fileName, '.');
+    const char *ext = GetFileExtension(fileName);
     if (!ext || *(ext + 1) == '\0')
-        return 0;
+        return FILE_FOLDER;
 
-    if (strcmp(ext + 1, "c") == 0)
-        return 1;
-    else if (strcmp(ext + 1, "cg") == 0)
-        return 2;
-    else if (strcmp(ext + 1, "txt") == 0)
-        return 3;
+    if (strcmp(ext + 1, "cg") == 0)
+        return FILE_CG;
     else if (strcmp(ext + 1, "png") == 0 || strcmp(ext + 1, "jpg") == 0 || strcmp(ext + 1, "jpeg") == 0)
-        return 4;
+        return FILE_IMAGE;
 
-    return -1;
+    return FILE_OTHER;
 }
 
 void SetProjectPaths(EngineContext *engine, const char *projectName)
@@ -472,7 +468,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
 
                 if (currentTime - lastClickTime <= doubleClickThreshold)
                 {
-                    if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == 2)
+                    if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == FILE_CG)
                     {
                         char *openedFileName = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
                         strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
@@ -490,7 +486,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
 
                         engine->isEditorOpened = true;
                     }
-                    else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != 0)
+                    else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
                     {
                         char command[512];
                         snprintf(command, sizeof(command), "start \"\" \"%s\"", engine->uiElements[engine->hoveredUIElementIndex].name);
@@ -842,22 +838,20 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
         switch (GetFileType(fileName))
         {
-        case 0:
-            fileColor = (Color){200, 160, 50, 255};
+        case FILE_FOLDER:
+            fileColor = (Color){140, 110, 30, 255};
             break;
-        case 1:
-            fileColor = (Color){40, 100, 180, 255};
+        case FILE_CG:
+            fileColor = (Color){90, 70, 140, 255};
             break;
-        case 2:
-            fileColor = (Color){80, 150, 80, 255};
+        case FILE_IMAGE:
+            fileColor = (Color){100, 30, 30, 255};
             break;
-        case 3:
-            fileColor = (Color){120, 90, 180, 255};
-            break;
-        case 4:
-            fileColor = (Color){160, 40, 40, 255};
+        case FILE_OTHER:
+            fileColor = (Color){30, 70, 130, 255};
             break;
         default:
+            AddToLog(engine, "File error", 2);
             fileColor = (Color){110, 110, 110, 255};
             break;
         }
@@ -868,20 +862,33 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
         if (MeasureTextEx(engine->font, fileName, 25, 0).x > 135)
         {
-            for (int j = (int)strlen(buff) - 1; j >= 0; j--)
+            const char *ext = GetFileExtension(fileName);
+            int extLen = strlen(ext);
+            int maxLen = strlen(buff) - extLen;
+
+            for (int j = maxLen - 1; j >= 0; j--)
             {
                 buff[j] = '\0';
-                if (MeasureText(buff, 25) < 135)
+                if (MeasureText(buff, 25) < 115)
                 {
-                    if (j > 2)
+                    if (j > 3)
                     {
-                        buff[j - 2] = '\0';
+                        buff[j - 3] = '\0';
                         strcat(buff, "...");
+                        strcat(buff, ext);
                     }
                     break;
                 }
             }
         }
+
+        AddUIElement(engine, (UIElement){
+                                 .name = "FileOutline",
+                                 .shape = UIRectangle,
+                                 .type = NO_COLLISION_ACTION,
+                                 .rect = {.pos = {xOffset - 2, yOffset - 2}, .recSize = {154, 64}, .roundness = 0.5f, .roundSegments = 8},
+                                 .color = BLACK,
+                                 .layer = 0});
 
         AddUIElement(engine, (UIElement){
                                  .name = "File",

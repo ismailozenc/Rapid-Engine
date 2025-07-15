@@ -127,3 +127,11 @@ typedef struct EngineContext
     bool wasBuilt;
     int showSaveWarning;
 } EngineContext;
+
+typedef enum
+{
+    FILE_FOLDER = 0,
+    FILE_CG,
+    FILE_IMAGE,
+    FILE_OTHER
+}FileType;

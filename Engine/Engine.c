@@ -87,7 +87,6 @@ EngineContext InitEngineContext(char *projectPath)
     engine.isSoundOn = true;
 
     engine.sideBarHalfSnap = false;
-    engine.sideBarFullSnap = false;
 
     engine.editorZoom = 1.0f;
 
@@ -938,13 +937,13 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .layer = 1,
                          });
     AddUIElement(engine, (UIElement){
-                            .name = "SideBarMiddleResizeButton",
-                            .shape = UICircle,
-                            .type = RESIZE_SIDE_BAR_MIDDLE,
-                            .circle = {.center = (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, .radius = 10},
-                            .color = (Color){255, 255, 255, 1},
-                            .layer = 1,
-                        });
+                             .name = "SideBarMiddleResizeButton",
+                             .shape = UICircle,
+                             .type = RESIZE_SIDE_BAR_MIDDLE,
+                             .circle = {.center = (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, .radius = 10},
+                             .color = (Color){255, 255, 255, 1},
+                             .layer = 1,
+                         });
 
     DrawUIElements(engine, CGFilePath, graph, editor, interpreter, runtimeGraph);
 
@@ -1042,11 +1041,19 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         case 0:
             break;
         case 1:
-            if (engine->bottomBarHeight < 50 && GetMouseDelta().y > 0)
+            engine->bottomBarHeight -= GetMouseDelta().y;
+            if (engine->bottomBarHeight <= 5)
             {
                 engine->bottomBarHeight = 5;
             }
-            engine->bottomBarHeight -= GetMouseDelta().y;
+            else if (engine->bottomBarHeight >= 3 * engine->screenHeight / 4)
+            {
+                engine->bottomBarHeight = 3 * engine->screenHeight / 4;
+            }
+            else
+            {
+                engine->sideBarMiddleY += GetMouseDelta().y / 2;
+            }
             break;
         case 2:
             engine->sideBarWidth += GetMouseDelta().x;
@@ -1059,22 +1066,26 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
             else if (engine->sideBarWidth > 110)
             {
                 engine->sideBarHalfSnap = false;
+                if (engine->sideBarWidth >= 3 * engine->screenWidth / 4)
+                {
+                    engine->sideBarWidth = 3 * engine->screenWidth / 4;
+                }
             }
             break;
         case 3:
             engine->sideBarMiddleY += GetMouseDelta().y;
-
-            if(engine->sideBarMiddleY > engine->screenHeight - engine->bottomBarHeight - 100 && GetMouseDelta().y > 0){
-                if(engine->sideBarHalfSnap){
-                    engine->sideBarMiddleY = engine->screenHeight - engine->bottomBarHeight - 120;
-                }
-                else{
-                    engine->sideBarMiddleY = engine->screenHeight - engine->bottomBarHeight - 60;
-                }
-            }
             break;
         default:
             break;
+        }
+
+        if (engine->sideBarMiddleY >= engine->screenHeight - engine->bottomBarHeight - 60 - engine->sideBarHalfSnap * 40)
+        {
+            engine->sideBarMiddleY = engine->screenHeight - engine->bottomBarHeight - 60 - engine->sideBarHalfSnap * 40;
+        }
+        else if (engine->sideBarMiddleY <= 5)
+        {
+            engine->sideBarMiddleY = 5;
         }
     }
 
@@ -1131,22 +1142,27 @@ bool ProjectCGFileExists(EngineContext *engine)
     return false;
 }
 
-int GetMouseCursor(EngineContext *engine, EditorContext *editor){
-    if(engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3){
+int GetMouseCursor(EngineContext *engine, EditorContext *editor)
+{
+    if (engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3)
+    {
         return MOUSE_CURSOR_RESIZE_NS;
     }
-    else if(engine->draggingResizeButtonID == 2){
+    else if (engine->draggingResizeButtonID == 2)
+    {
         return MOUSE_CURSOR_RESIZE_EW;
     }
 
-    if(engine->isViewportFocused){
+    if (engine->isViewportFocused)
+    {
         return editor->cursor;
     }
 
-    if(engine->hoveredUIElementIndex != -1){
+    if (engine->hoveredUIElementIndex != -1)
+    {
         return MOUSE_CURSOR_POINTING_HAND;
     }
-    
+
     return MOUSE_CURSOR_ARROW;
 }
 

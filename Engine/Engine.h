@@ -123,7 +123,6 @@ typedef struct EngineContext
     int fps;
     bool isGameRunning;
     bool sideBarHalfSnap;
-    bool sideBarFullSnap;
     float editorZoom;
     bool wasBuilt;
     int showSaveWarning;

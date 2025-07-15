@@ -6,6 +6,8 @@
 
 #define MAX_LINKS_PER_PIN 8
 
+#define MAX_LOG_MESSAGES 32
+
 typedef struct RuntimePin
 {
     int id;
@@ -82,8 +84,9 @@ typedef struct {
     bool isFirstFrame;
 
     bool newLogMessage;
-    char logMessage[128];
-    int logMessageLevel;
+    char logMessages[MAX_LOG_MESSAGES][128];
+    int logMessageLevels[MAX_LOG_MESSAGES];
+    int logMessageCount;
 
     bool buildFailed;
 } InterpreterContext;

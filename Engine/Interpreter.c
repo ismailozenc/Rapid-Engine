@@ -191,8 +191,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     interpreter->values[0] = (Value){.type = VAL_STRING, .string = "Error value"};
     interpreter->valueCount = 1;
 
-    bool valueFound = false;
-
     for (int i = 0; i < graph->nodeCount; i++)
     {
         RuntimeNode *node = &runtime.nodes[i];
@@ -232,36 +230,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->valueCount++;
             continue;
         case NODE_LITERAL_COLOR:
-            continue;
-        case NODE_GET_VAR:
-            for (int j = 0; j < graph->nodeCount; j++)
-            {
-                if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
-                {
-                    node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
-                    valueFound = true;
-                    break;
-                }
-            }
-            if (!valueFound)
-            {
-                node->outputPins[1]->valueIndex = 0;
-            }
-            continue;
-        case NODE_SET_VAR:
-            for (int j = 0; j < graph->nodeCount; j++)
-            {
-                if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
-                {
-                    node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
-                    valueFound = true;
-                    break;
-                }
-            }
-            if (!valueFound)
-            {
-                node->outputPins[1]->valueIndex = 0;
-            }
             continue;
         default:
             break;
@@ -320,6 +288,51 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
             pin->valueIndex = idx;
             interpreter->valueCount++;
+        }
+    }
+
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        RuntimeNode *node = &runtime.nodes[i];
+        Node *srcNode = &graph->nodes[i];
+
+        bool valueFound = false;
+
+        switch (graph->nodes[i].type)
+        {
+        case NODE_GET_VAR:
+            for (int j = 0; j < graph->nodeCount; j++)
+            {
+                if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
+                {
+                    node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
+                    printf("%d %d\n", node->outputPins[1]->valueIndex, runtime.nodes[j].outputPins[1]->valueIndex);
+                    valueFound = true;
+                    break;
+                }
+            }
+            if (!valueFound)
+            {
+                node->outputPins[1]->valueIndex = 0;
+            }
+            continue;
+        case NODE_SET_VAR:
+            for (int j = 0; j < graph->nodeCount; j++)
+            {
+                if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
+                {
+                    node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
+                    valueFound = true;
+                    break;
+                }
+            }
+            if (!valueFound)
+            {
+                node->outputPins[1]->valueIndex = 0;
+            }
+            continue;
+        default:
+            continue;
         }
     }
 
@@ -418,32 +431,37 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_GET_VAR:
     {
+        // printf("%d", graph->nodes[currNodeIndex].outputPins[1]->valueIndex);
         break;
     }
 
     case NODE_SET_VAR:
     {
-        if(graph->nodes[currNodeIndex].outputPins[1]->valueIndex == -1){break;}
+        if (graph->nodes[currNodeIndex].outputPins[1]->valueIndex == -1)
+        {
+            break;
+        }
         Value *valToSet = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex];
         Value newValue = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex];
-        switch(valToSet->type){
-            case VAL_NUMBER:
-                valToSet->number = newValue.number;
-                break;
-            case VAL_STRING:
-                valToSet->string = newValue.string;
-                break;
-            case VAL_BOOL:
-                valToSet->boolean = newValue.boolean;
-                break;
-            case VAL_COLOR:
-                valToSet->color = newValue.color;
-                break;
-            case VAL_SPRITE:
-                valToSet->sprite = newValue.sprite;
-                break;
-            default:
-                break;
+        switch (valToSet->type)
+        {
+        case VAL_NUMBER:
+            valToSet->number = newValue.number;
+            break;
+        case VAL_STRING:
+            valToSet->string = newValue.string;
+            break;
+        case VAL_BOOL:
+            valToSet->boolean = newValue.boolean;
+            break;
+        case VAL_COLOR:
+            valToSet->color = newValue.color;
+            break;
+        case VAL_SPRITE:
+            valToSet->sprite = newValue.sprite;
+            break;
+        default:
+            break;
         }
         break;
     }
@@ -484,12 +502,13 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_LOOP:
     {
+        int steps = 1000;
         while (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean)
         {
-            printf("a");
+            if(steps == 0){AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected!"}, 2); break;}
+            else{steps--;}
             InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
         }
-        printf("b");
         break;
     }
 

@@ -20,9 +20,6 @@ EditorContext InitEditorContext()
 
     editor.mousePos = (Vector2){0, 0};
 
-    editor.screenWidth = GetScreenWidth();
-    editor.screenHeight = GetScreenHeight();
-
     editor.draggingNodeIndex = -1;
     editor.isDraggingScreen = false;
 

@@ -44,7 +44,7 @@ EngineContext InitEngineContext(char *projectPath)
     engine.mousePos = GetMousePosition();
 
     engine.viewport = LoadRenderTexture(10000, 10000);
-    engine.UI = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    engine.UI = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
     engine.resizeButton = LoadTexture("textures//resize_btn.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
     {
@@ -180,16 +180,6 @@ void EmergencyExit(EngineContext *engine)
     }
 
     exit(1);
-}
-
-void DrawTopBar()
-{
-    DrawRectangleLinesEx((Rectangle){1, 1, GetScreenWidth() - 1, GetScreenHeight() - 1}, 4.0f, WHITE);
-
-    DrawLineEx((Vector2){GetScreenWidth() - 35, 15}, (Vector2){GetScreenWidth() - 15, 35}, 2, WHITE);
-    DrawLineEx((Vector2){GetScreenWidth() - 35, 35}, (Vector2){GetScreenWidth() - 15, 15}, 2, WHITE);
-
-    DrawLineEx((Vector2){GetScreenWidth() - 85, 25}, (Vector2){GetScreenWidth() - 65, 25}, 2, WHITE);
 }
 
 char *PrepareProjectPath(char *fileName)
@@ -914,7 +904,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .name = "TopBarClose",
                              .shape = UIRectangle,
                              .type = CLOSE_WINDOW,
-                             .rect = {.pos = {GetScreenWidth() - 50, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = RED},
+                             .rect = {.pos = {engine->screenWidth - 50, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = RED},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
                          });
@@ -922,7 +912,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .name = "TopBarMinimize",
                              .shape = UIRectangle,
                              .type = MINIMIZE_WINDOW,
-                             .rect = {.pos = {GetScreenWidth() - 100, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
+                             .rect = {.pos = {engine->screenWidth - 100, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
                          });
@@ -955,12 +945,12 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
     DrawUIElements(engine, CGFilePath, graph, editor, interpreter, runtimeGraph);
 
     // special symbols and textures
-    DrawRectangleLinesEx((Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()}, 4.0f, WHITE);
+    DrawRectangleLinesEx((Rectangle){0, 0, engine->screenWidth, engine->screenHeight}, 4.0f, WHITE);
 
-    DrawLineEx((Vector2){GetScreenWidth() - 35, 15}, (Vector2){GetScreenWidth() - 15, 35}, 2, WHITE);
-    DrawLineEx((Vector2){GetScreenWidth() - 35, 35}, (Vector2){GetScreenWidth() - 15, 15}, 2, WHITE);
+    DrawLineEx((Vector2){engine->screenWidth - 35, 15}, (Vector2){engine->screenWidth - 15, 35}, 2, WHITE);
+    DrawLineEx((Vector2){engine->screenWidth - 35, 35}, (Vector2){engine->screenWidth - 15, 15}, 2, WHITE);
 
-    DrawLineEx((Vector2){GetScreenWidth() - 85, 25}, (Vector2){GetScreenWidth() - 65, 25}, 2, WHITE);
+    DrawLineEx((Vector2){engine->screenWidth - 85, 25}, (Vector2){engine->screenWidth - 65, 25}, 2, WHITE);
 
     DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
     DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);

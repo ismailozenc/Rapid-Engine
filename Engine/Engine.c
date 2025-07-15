@@ -727,11 +727,11 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
             sprintf(cutMessage, "%s", interpreter->values[i].name);
             switch (interpreter->values[i].type)
             {
-            case VAL_NUMBER: //38, 38, 38
+            case VAL_NUMBER: // 38, 38, 38
                 varColor = (Color){24, 119, 149, 255};
                 break;
             case VAL_STRING:
-                varColor = (Color){219, 58, 52, 255}; //179, 0, 27
+                varColor = (Color){219, 58, 52, 255}; // 179, 0, 27
                 break;
             case VAL_BOOL:
                 varColor = (Color){27, 64, 121, 255};
@@ -1250,7 +1250,11 @@ int main()
 
                 if (interpreter.newLogMessage)
                 {
-                    AddToLog(&engine, interpreter.logMessage, interpreter.logMessageLevel);
+                    for (int i = 0; i < interpreter.logMessageCount; i++)
+                        AddToLog(&engine, interpreter.logMessages[i], interpreter.logMessageLevels[i]);
+
+                    interpreter.newLogMessage = false;
+                    interpreter.logMessageCount = 0;
                 }
             }
             else

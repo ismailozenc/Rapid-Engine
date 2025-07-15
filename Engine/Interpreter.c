@@ -76,24 +76,23 @@ char *ValueToString(Value value)
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
 {
+    if (interpreter->logMessageCount >= MAX_LOG_MESSAGES)
+        return;
+
     char str[128];
 
     if (message.type == VAL_NUMBER)
-    {
         sprintf(str, "%f", message.number);
-    }
     else if (message.type == VAL_BOOL)
-    {
-        sprintf(str, "%s", message.boolean ? "true" : "false");
-    }
+        strcpy(str, message.boolean ? "true" : "false");
     else
-    {
-        strcpy(str, message.string);
-    }
+        strncpy(str, message.string, 127);
 
-    strncpy(interpreter->logMessage, str, 127);
-    interpreter->logMessage[128] = '\0';
-    interpreter->logMessageLevel = level;
+    str[127] = '\0';
+
+    strncpy(interpreter->logMessages[interpreter->logMessageCount], str, 127);
+    interpreter->logMessageLevels[interpreter->logMessageCount] = level;
+    interpreter->logMessageCount++;
     interpreter->newLogMessage = true;
 }
 

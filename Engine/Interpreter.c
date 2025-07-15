@@ -13,6 +13,8 @@ InterpreterContext InitInterpreterContext()
 
     interpreter.buildFailed = false;
 
+    interpreter.isInfiniteLoopProtectionOn = true;
+
     return interpreter;
 }
 
@@ -504,7 +506,15 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         int steps = 1000;
         while (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean)
         {
-            if(steps == 0){AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected!"}, 2); break;}
+            if(steps == 0){
+                if(interpreter->isInfiniteLoopProtectionOn){
+                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected and exited! To turn off infinite loop protection [BLANK]"}, 2); 
+                    break;
+                }
+                else{
+                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected! Infinite loop protection is off!"}, 2);
+                }
+            }
             else{steps--;}
             InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
         }

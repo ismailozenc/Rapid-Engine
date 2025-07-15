@@ -459,7 +459,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
         case OPEN_FILE:
             char tooltipText[256] = "";
-            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", engine->uiElements[engine->hoveredUIElementIndex].text.string, GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
+            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", engine->uiElements[engine->hoveredUIElementIndex].name, GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
             Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
             AddUIElement(engine, (UIElement){
                                      .name = "FileTooltip",

@@ -88,6 +88,8 @@ typedef struct {
     int logMessageLevels[MAX_LOG_MESSAGES];
     int logMessageCount;
 
+    bool isInfiniteLoopProtectionOn;
+
     bool buildFailed;
 } InterpreterContext;
 

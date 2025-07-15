@@ -453,7 +453,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
         case OPEN_FILE:
             char tooltipText[256] = "";
-            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", engine->uiElements[engine->hoveredUIElementIndex].name, GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
+            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name), GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
             Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
             AddUIElement(engine, (UIElement){
                                      .name = "FileTooltip",
@@ -662,7 +662,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
         int logY = engine->screenHeight - engine->bottomBarHeight - 30;
         char cutMessage[256];
-        for (int i = engine->logs.count - 1; i >= 0 && logY > engine->sideBarMiddleY + 50; i--)
+        for (int i = engine->logs.count - 1; i >= 0 && logY > engine->sideBarMiddleY + 60 + engine->sideBarHalfSnap * 40; i--)
         {
             if (engine->sideBarHalfSnap)
             {
@@ -702,7 +702,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
         }
 
         int varsY = 40;
-        for (int i = 0; i < interpreter->valueCount; i++)
+        for (int i = 0; i < interpreter->valueCount && varsY < engine->sideBarMiddleY - 40; i++)
         {
             if (!interpreter->values[i].isVariable)
             {

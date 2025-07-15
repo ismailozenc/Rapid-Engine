@@ -75,8 +75,6 @@ EngineContext InitEngineContext(char *projectPath)
     engine.CGFilePath = malloc(MAX_PATH_LENGTH);
     engine.CGFilePath[0] = '\0';
 
-    engine.cursor = MOUSE_CURSOR_POINTING_HAND;
-
     engine.files = LoadDirectoryFilesEx(projectPath, NULL, false);
 
     engine.hoveredUIElementIndex = -1;
@@ -352,7 +350,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 engine->isEditorOpened = true;
-                editor->delayFrames = true;
+                editor->isFirstFrame = true;
             }
             break;
         case RUN_GAME:
@@ -435,24 +433,21 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             break;
         case RESIZE_BOTTOM_BAR:
             engine->isViewportFocused = false;
-            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 1;
             }
             break;
         case RESIZE_SIDE_BAR:
             engine->isViewportFocused = false;
-            engine->cursor = MOUSE_CURSOR_RESIZE_EW;
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 2;
             }
             break;
         case RESIZE_SIDE_BAR_MIDDLE:
             engine->isViewportFocused = false;
-            engine->cursor = MOUSE_CURSOR_RESIZE_NS;
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 3;
             }
@@ -943,13 +938,13 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .layer = 1,
                          });
     AddUIElement(engine, (UIElement){
-                             .name = "SideBarMiddleResizeButton",
-                             .shape = UICircle,
-                             .type = RESIZE_SIDE_BAR_MIDDLE,
-                             .circle = {.center = (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, .radius = 10},
-                             .color = (Color){255, 255, 255, 1},
-                             .layer = 1,
-                         });
+                            .name = "SideBarMiddleResizeButton",
+                            .shape = UICircle,
+                            .type = RESIZE_SIDE_BAR_MIDDLE,
+                            .circle = {.center = (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, .radius = 10},
+                            .color = (Color){255, 255, 255, 1},
+                            .layer = 1,
+                        });
 
     DrawUIElements(engine, CGFilePath, graph, editor, interpreter, runtimeGraph);
 
@@ -1068,6 +1063,15 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
             break;
         case 3:
             engine->sideBarMiddleY += GetMouseDelta().y;
+
+            if(engine->sideBarMiddleY > engine->screenHeight - engine->bottomBarHeight - 100 && GetMouseDelta().y > 0){
+                if(engine->sideBarHalfSnap){
+                    engine->sideBarMiddleY = engine->screenHeight - engine->bottomBarHeight - 120;
+                }
+                else{
+                    engine->sideBarMiddleY = engine->screenHeight - engine->bottomBarHeight - 60;
+                }
+            }
             break;
         default:
             break;
@@ -1127,6 +1131,25 @@ bool ProjectCGFileExists(EngineContext *engine)
     return false;
 }
 
+int GetMouseCursor(EngineContext *engine, EditorContext *editor){
+    if(engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3){
+        return MOUSE_CURSOR_RESIZE_NS;
+    }
+    else if(engine->draggingResizeButtonID == 2){
+        return MOUSE_CURSOR_RESIZE_EW;
+    }
+
+    if(engine->isViewportFocused){
+        return editor->cursor;
+    }
+
+    if(engine->hoveredUIElementIndex != -1){
+        return MOUSE_CURSOR_POINTING_HAND;
+    }
+    
+    return MOUSE_CURSOR_ARROW;
+}
+
 int main()
 {
 
@@ -1168,10 +1191,6 @@ int main()
 
         if (HandleUICollisions(&engine, engine.files.count, projectPath, engine.CGFilePath, &graph, &interpreter, &editor, &runtimeGraph))
         {
-            if (engine.cursor == MOUSE_CURSOR_ARROW)
-            {
-                engine.cursor = MOUSE_CURSOR_POINTING_HAND;
-            }
             BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
             engine.fps = 140;
             engine.delayFrames = true;
@@ -1179,18 +1198,12 @@ int main()
         else if (engine.delayFrames)
         {
             BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
-            engine.cursor = MOUSE_CURSOR_ARROW;
             engine.fps = 60;
             engine.delayFrames = false;
         }
 
-        if (engine.isViewportFocused)
-        {
-            engine.cursor = editor.cursor; // should be viewport.cursor
-            engine.fps = editor.fps;
-        }
-        SetMouseCursor(engine.cursor);
-        SetTargetFPS(engine.fps);
+        SetMouseCursor(GetMouseCursor(&engine, &editor));
+        SetTargetFPS(engine.isViewportFocused ? editor.fps : engine.fps);
 
         if (GetMouseWheelMove() != 0 && engine.isViewportFocused && !editor.menuOpen)
         {
@@ -1218,7 +1231,7 @@ int main()
 
         if (engine.isEditorOpened)
         {
-            if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.delayFrames || editor.draggingNodeIndex != 0))
+            if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.isFirstFrame))
             {
                 HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.draggingResizeButtonID != 0);
             }

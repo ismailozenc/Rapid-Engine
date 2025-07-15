@@ -113,7 +113,6 @@ typedef struct EngineContext
     FilePathList files;
     int draggingResizeButtonID;
     bool hasResizedBar;
-    int cursor;
     UIElement uiElements[MAX_UI_ELEMENTS]; // temporary hardcoded size
     int uiElementCount;
     int hoveredUIElementIndex;

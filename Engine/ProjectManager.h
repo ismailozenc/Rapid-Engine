@@ -28,6 +28,6 @@ int CreateProject(ProjectOptions PO);
 
 int WindowCreateProject(char *projectFileName, Font font);
 
-char *handleProjectManager();
+char *HandleProjectManager();
 
 #endif

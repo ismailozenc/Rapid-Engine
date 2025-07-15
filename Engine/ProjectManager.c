@@ -549,7 +549,7 @@ int WindowCreateProject(char *projectFileName, Font font)
     return 2;
 }
 
-char *handleProjectManager()
+char *HandleProjectManager()
 {
     Font font = LoadFontEx("fonts/arialbd.ttf", 256, NULL, 0);
     Font fontRE = LoadFontEx("fonts/sonsie.ttf", 256, NULL, 0);

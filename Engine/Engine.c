@@ -235,7 +235,7 @@ void SetProjectPaths(EngineContext *engine, const char *projectName)
     snprintf(engine->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
 }
 
-int DrawSaveWarning(EngineContext *engine, GraphContext *graph)
+int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *editor)
 {
     engine->isViewportFocused = false;
     int popupWidth = 500;
@@ -282,6 +282,7 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph)
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
                 AddToLog(engine, "Saved successfully!", 0);
+                editor->hasChanged = false;
             }
             else
             {
@@ -1115,10 +1116,10 @@ void ContextChangePerFrame(EngineContext *engine)
 
     if (engine->prevScreenWidth != engine->screenWidth || engine->prevScreenHeight != engine->screenHeight || engine->hasResizedBar)
     {
-        engine->screenWidth = GetScreenWidth();
-        engine->screenHeight = GetScreenHeight();
         engine->prevScreenWidth = engine->screenWidth;
         engine->prevScreenHeight = engine->screenHeight;
+        engine->screenWidth = GetScreenWidth();
+        engine->screenHeight = GetScreenHeight();
         engine->viewportWidth = engine->screenWidth - engine->sideBarWidth;
         engine->viewportHeight = engine->screenHeight - engine->bottomBarHeight;
         engine->hasResizedBar = false;
@@ -1126,17 +1127,21 @@ void ContextChangePerFrame(EngineContext *engine)
     }
 }
 
-bool ProjectCGFileExists(EngineContext *engine)
+void CreateCGFileIfNotExists(EngineContext *engine)
 {
     for (int i = 0; i < engine->files.count; i++)
     {
         if (strcmp(engine->CGFilePath, engine->files.paths[i]) == 0)
         {
-            return true;
+            return;
         }
     }
 
-    return false;
+    FILE *f = fopen(engine->CGFilePath, "w");
+    if (f)
+    {
+        fclose(f);
+    }
 }
 
 int GetMouseCursor(EngineContext *engine, EditorContext *editor)
@@ -1171,7 +1176,7 @@ int main()
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
     char fileName[32];
-    strcpy(fileName, /*handleProjectManager()*/ "Tetris"); // temporary hardcode
+    strcpy(fileName, /*HandleProjectManager()*/ "Tetris"); // temporary hardcode
     char *projectPath = PrepareProjectPath(fileName);
 
     SetTargetFPS(60);
@@ -1186,19 +1191,15 @@ int main()
     InterpreterContext interpreter = InitInterpreterContext();
     RuntimeGraphContext runtimeGraph = {0};
 
-    AddToLog(&engine, "All resources loaded", 0);
-
-    AddToLog(&engine, "Welcome!", 0);
+    AddToLog(&engine, "All resources loaded. Welcome!", 0);
 
     SetProjectPaths(&engine, "Tetris");
 
-    ProjectCGFileExists(&engine);
+    CreateCGFileIfNotExists(&engine);
 
     LoadGraphFromFile(engine.CGFilePath, &graph);
 
-    bool windowShouldClose = false;
-
-    while (!windowShouldClose && !WindowShouldClose())
+    while (!WindowShouldClose())
     {
         ContextChangePerFrame(&engine);
 
@@ -1310,11 +1311,12 @@ int main()
 
         if (engine.showSaveWarning == 1)
         {
-            engine.showSaveWarning = DrawSaveWarning(&engine, &graph);
-        }
-        if (engine.showSaveWarning == 2)
-        {
-            windowShouldClose = true;
+            engine.showSaveWarning = DrawSaveWarning(&engine, &graph, &editor);
+            if (engine.showSaveWarning == 2)
+            {
+                CloseWindow();
+                break;
+            }
         }
 
         EndDrawing();

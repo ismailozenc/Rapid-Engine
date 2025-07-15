@@ -1200,18 +1200,18 @@ int main()
             float zoom = engine.editorZoom;
 
             if (wheel > 0 && zoom < 1.5f)
-                engine.editorZoom = zoom + 0.5f;
+                engine.editorZoom = zoom + 0.25f;
 
             if (wheel < 0 && zoom > 0.5f)
-                engine.editorZoom = zoom - 0.5f;
+                engine.editorZoom = zoom - 0.25f;
         }
         editor.zoom = engine.editorZoom;
 
         float srcW = engine.viewportWidth / engine.editorZoom;
         float srcH = engine.viewportHeight / engine.editorZoom;
 
-        int textureX = (GetMouseX() - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-        int textureY = GetMouseY() / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
+        int textureX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
+        int textureY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -1235,7 +1235,6 @@ int main()
             if (editor.hasChanged)
             {
                 engine.delayFrames = true;
-                ;
                 engine.wasBuilt = false;
             }
         }
@@ -1244,22 +1243,15 @@ int main()
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            if (engine.isGameRunning && engine.CGFilePath[0] != '\0')
-            {
-                engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph);
+            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph);
 
-                if (interpreter.newLogMessage)
-                {
-                    for (int i = 0; i < interpreter.logMessageCount; i++)
-                        AddToLog(&engine, interpreter.logMessages[i], interpreter.logMessageLevels[i]);
-
-                    interpreter.newLogMessage = false;
-                    interpreter.logMessageCount = 0;
-                }
-            }
-            else
+            if (interpreter.newLogMessage)
             {
-                DrawTextEx(engine.font, "Game Screen", (Vector2){(engine.screenWidth - engine.sideBarWidth) / 2 - 100, (engine.screenHeight - engine.bottomBarHeight) / 2}, 50, 0, WHITE);
+                for (int i = 0; i < interpreter.logMessageCount; i++)
+                    AddToLog(&engine, interpreter.logMessages[i], interpreter.logMessageLevels[i]);
+
+                interpreter.newLogMessage = false;
+                interpreter.logMessageCount = 0;
             }
             EndTextureMode();
         }

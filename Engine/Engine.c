@@ -1242,7 +1242,7 @@ int main()
 
         if (HandleUICollisions(&engine, engine.files.count, projectPath, engine.CGFilePath, &graph, &interpreter, &editor, &runtimeGraph))
         {
-            if(prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+            if(prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0){
                 BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
                 engine.fps = 140;
             }

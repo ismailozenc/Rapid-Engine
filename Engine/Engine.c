@@ -303,15 +303,45 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
     return 1;
 }
 
+void CountingSortByLayer(EngineContext *engine)
+{
+    int **elements = malloc(MAX_LAYER_COUNT * sizeof(int *));
+    int *layerCount = calloc(MAX_LAYER_COUNT, sizeof(int));
+    for (int i = 0; i < MAX_LAYER_COUNT; i++)
+    {
+        elements[i] = malloc(engine->uiElementCount * sizeof(int));
+    }
+
+    for(int i = 0; i < engine->uiElementCount; i++){
+        if(engine->uiElements[i].layer < MAX_LAYER_COUNT){
+            elements[engine->uiElements[i].layer][layerCount[engine->uiElements[i].layer]] = i;
+            layerCount[engine->uiElements[i].layer]++;
+        }
+    }
+
+    UIElement *sorted = malloc(sizeof(UIElement) * engine->uiElementCount);
+    int sortedCount = 0;
+
+    for(int i = 0; i < MAX_LAYER_COUNT; i++){
+        for(int j = 0; j < layerCount[i]; j++){
+            sorted[sortedCount++] = engine->uiElements[elements[i][j]];
+        }
+    }
+
+    memcpy(engine->uiElements, sorted, sizeof(UIElement) * sortedCount);
+    free(sorted);
+    free(layerCount);
+
+    for (int i = 0; i < MAX_LAYER_COUNT; i++) {
+        free(elements[i]);
+    }
+    free(elements);
+}
+
 void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
     if (engine->hoveredUIElementIndex != -1)
     {
-        if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
-        {
-            DrawRectangleRounded((Rectangle){engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments, engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor);
-        }
-
         switch (engine->uiElements[engine->hoveredUIElementIndex].type)
         {
         case NO_COLLISION_ACTION:
@@ -510,6 +540,17 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
             free(valueString);
         }
+
+        if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
+        {
+            AddUIElement(engine, (UIElement){
+                                     .name = "HoverBlink",
+                                     .shape = UIRectangle,
+                                     .type = VAR_TOOLTIP,
+                                     .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
+                                     .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
+                                     .layer = 99});
+        }
     }
 
     for (int i = 0; i < engine->uiElementCount; i++)
@@ -531,14 +572,6 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
         if (el->text.string[0] != '\0')
         {
             DrawTextEx(engine->font, el->text.string, el->text.textPos, el->text.textSize, el->text.textSpacing, el->text.textColor);
-        }
-    }
-
-    if (engine->hoveredUIElementIndex != -1)
-    {
-        if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
-        {
-            DrawRectangleRounded((Rectangle){engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments, engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor);
         }
     }
 }
@@ -764,7 +797,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                                      .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
                                      .color = varColor,
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
-                                     .layer = 0});
+                                     .layer = 2});
 
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
@@ -942,6 +975,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
                          });
+
+    CountingSortByLayer(engine);
 
     DrawUIElements(engine, CGFilePath, graph, editor, interpreter, runtimeGraph);
 
@@ -1203,10 +1238,14 @@ int main()
     {
         ContextChangePerFrame(&engine);
 
+        int prevHoveredUIIndex = engine.hoveredUIElementIndex;
+
         if (HandleUICollisions(&engine, engine.files.count, projectPath, engine.CGFilePath, &graph, &interpreter, &editor, &runtimeGraph))
         {
-            BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
-            engine.fps = 140;
+            if(prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)){
+                BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
+                engine.fps = 140;
+            }
             engine.delayFrames = true;
         }
         else if (engine.delayFrames)
@@ -1259,9 +1298,10 @@ int main()
                 editor.engineDelayFrames = false;
                 engine.delayFrames = true;
             }
-            if (editor.hasChanged)
+            if (editor.hasChangedInLastFrame)
             {
                 engine.delayFrames = true;
+                editor.hasChangedInLastFrame = false;
                 engine.wasBuilt = false;
             }
         }
@@ -1307,7 +1347,7 @@ int main()
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
-        // DrawFPS(engine.screenWidth / 2, 10);
+        DrawFPS(engine.screenWidth / 2, 10);
 
         if (engine.showSaveWarning == 1)
         {

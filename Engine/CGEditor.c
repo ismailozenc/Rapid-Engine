@@ -53,6 +53,7 @@ EditorContext InitEditorContext()
     editor.editingNodeNameIndex = -1;
 
     editor.hasChanged = false;
+    editor.hasChangedInLastFrame = false;
 
     return editor;
 }
@@ -171,6 +172,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
             text[len + 1] = '\0';
         }
         editor->hasChanged = true;
+        editor->hasChangedInLastFrame = true;
     }
 
     if (IsKeyPressed(KEY_BACKSPACE))
@@ -179,6 +181,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
         if (len > 0)
             text[len - 1] = '\0';
         editor->hasChanged = true;
+        editor->hasChangedInLastFrame = true;
     }
 }
 
@@ -401,6 +404,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                         graph->pins[i].pickedOption = j;
                         editor->nodeDropdownFocused = -1;
                         editor->hasChanged = true;
+                        editor->hasChangedInLastFrame = true;
                     }
                 }
             }
@@ -576,6 +580,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             CreateLink(graph, editor->lastClickedPin, graph->pins[hoveredPinIndex]);
             editor->lastClickedPin = INVALID_PIN;
             editor->hasChanged = true;
+            editor->hasChangedInLastFrame = true;
         }
     }
     else if (hoveredPinIndex == -1 && (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)))
@@ -587,6 +592,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         RemoveConnections(graph, graph->pins[hoveredPinIndex].id);
         editor->menuOpen = false;
         editor->hasChanged = true;
+        editor->hasChangedInLastFrame = true;
     }
 
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
@@ -612,6 +618,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         DeleteNode(graph, nodeToDelete);
         editor->menuOpen = false;
         editor->hasChanged = true;
+        editor->hasChangedInLastFrame = true;
         return;
     }
 }
@@ -727,6 +734,7 @@ const char *DrawNodeMenu(EditorContext *editor)
                 {
                     editor->delayFrames = true;
                     editor->hasChanged = true;
+                    editor->hasChangedInLastFrame = true;
                     // Handle click event for submenu item
                     return subMenuItems[editor->hoveredItem][j];
                 }
@@ -752,6 +760,7 @@ void HandleDragging(EditorContext *editor, GraphContext *graph)
                 editor->draggingNodeIndex = i;
                 dragOffset = (Vector2){editor->mousePos.x - graph->nodes[i].position.x, editor->mousePos.y - graph->nodes[i].position.y};
                 editor->hasChanged = true;
+                editor->hasChangedInLastFrame = true;
                 return;
             }
         }

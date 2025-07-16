@@ -12,6 +12,8 @@
 
 const double doubleClickThreshold = 0.3;
 
+#define MAX_LAYER_COUNT 100
+
 typedef enum
 {
     NO_COLLISION_ACTION,

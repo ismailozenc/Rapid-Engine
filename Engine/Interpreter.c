@@ -307,7 +307,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
                 {
                     node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
-                    printf("%d %d\n", node->outputPins[1]->valueIndex, runtime.nodes[j].outputPins[1]->valueIndex);
                     valueFound = true;
                     break;
                 }
@@ -432,7 +431,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_GET_VAR:
     {
-        // printf("%d", graph->nodes[currNodeIndex].outputPins[1]->valueIndex);
         break;
     }
 

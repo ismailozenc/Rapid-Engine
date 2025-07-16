@@ -61,6 +61,7 @@ typedef struct
     int cursor;
 
     bool hasChanged;
+    bool hasChangedInLastFrame;
 
     int fps;
 

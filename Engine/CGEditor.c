@@ -6,6 +6,7 @@
 #include <math.h>
 #include "shell_execute.h"
 #include "raymath.h"
+#include "rlgl.h"
 
 void AddToLogFromEditor(EditorContext *editor, char *message, int level);
 
@@ -231,29 +232,30 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         float height = getNodeInfoByType(graph->nodes[i].type, HEIGHT);
         float roundness = 0.2f;
         float segments = 8;
-        Color nodeColor = getNodeColorByType(graph->nodes[i].type);
+        Color nodeLeftGradientColor = getNodeColorByType(graph->nodes[i].type);
+        nodeLeftGradientColor.r += 30;
+        nodeLeftGradientColor.g += 30;
+        nodeLeftGradientColor.b += 30;
 
         float fullRadius = roundness * fminf(width, height) / 2.0f;
+
+        Color nodeRightGradientColor = (Color){(unsigned char)(nodeLeftGradientColor.r > 80 ? nodeLeftGradientColor.r - 80 : 0), (unsigned char)(nodeLeftGradientColor.g > 80 ? nodeLeftGradientColor.g - 80 : 0), (unsigned char)(nodeLeftGradientColor.b > 80 ? nodeLeftGradientColor.b - 80 : 0), nodeLeftGradientColor.a};
 
         DrawRectangleRounded(
             (Rectangle){x, y, width, height},
             roundness, segments, (Color){0, 0, 0, 120});
 
-        DrawRectangleRec(
-            (Rectangle){x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius},
-            nodeColor);
+        DrawRectangleGradientH(x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
 
-        DrawRectangleRec(
-            (Rectangle){x - 2, y + fullRadius - 2, width + 4, 35 - fullRadius},
-            nodeColor);
+        DrawRectangleGradientH(x - 2, y + fullRadius - 2, width + 4, 35 - fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
 
         DrawCircleSector(
             (Vector2){x + fullRadius - 2, y + fullRadius - 2},
-            fullRadius, 180, 270, segments, nodeColor);
+            fullRadius, 180, 270, segments, nodeLeftGradientColor);
 
         DrawCircleSector(
             (Vector2){x + width - fullRadius + 2, y + fullRadius - 2},
-            fullRadius, 270, 360, segments, nodeColor);
+            fullRadius, 270, 360, segments, nodeRightGradientColor);
 
         DrawRectangleRoundedLinesEx(
             (Rectangle){x - 1, y - 1, width + 2, height + 2},
@@ -264,7 +266,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         if (getIsEditableByType(graph->nodes[i].type))
         {
-            Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18, graph->nodes[i].position.y + 5, 16, 16};
+            Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18 - fullRadius/5, graph->nodes[i].position.y + 5 + fullRadius/5, 16, 16};
             DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
 
             if (CheckCollisionPointRec(editor->mousePos, gearRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -325,7 +327,8 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         graph->pins[i].position = (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset};
 
-        if(graph->pins[i].type == PIN_NONE){
+        if (graph->pins[i].type == PIN_NONE)
+        {
             continue;
         }
         else if (graph->pins[i].type == PIN_FLOW)
@@ -662,6 +665,16 @@ const char *DrawNodeMenu(EditorContext *editor)
     if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0)
         editor->scrollIndexNodeMenu--;
 
+    if (editor->menuPosition.x != editor->rightClickPos.x || editor->menuPosition.y != editor->rightClickPos.y)
+    {
+        editor->hoveredItem = editor->scrollIndexNodeMenu;
+        editor->submenuPosition.x = (editor->rightClickPos.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth)
+                                        ? (editor->rightClickPos.x - SUBMENU_WIDTH)
+                                        : (editor->rightClickPos.x + MENU_WIDTH - 15);
+        editor->submenuPosition.y = editor->rightClickPos.y + 2;
+        editor->hoveredItem = 0;
+    }
+
     editor->menuPosition.x = editor->rightClickPos.x;
     editor->menuPosition.y = editor->rightClickPos.y;
 
@@ -682,12 +695,16 @@ const char *DrawNodeMenu(EditorContext *editor)
         Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 5, MENU_WIDTH, MENU_ITEM_HEIGHT};
         if (CheckCollisionPointRec(editor->mousePos, itemRect))
         {
-            DrawRectangleRec(itemRect, HighlightColor);
             editor->hoveredItem = itemIndex;
-            editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth) ? (editor->menuPosition.x - SUBMENU_WIDTH) : (editor->menuPosition.x + MENU_WIDTH);
-            editor->submenuPosition.y = itemRect.y;
+            editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth) ? (editor->menuPosition.x - SUBMENU_WIDTH) : (editor->menuPosition.x + MENU_WIDTH - 15);
+            editor->submenuPosition.y = itemRect.y - 3;
         }
-        DrawTextEx(editor->font, menuItems[itemIndex], (Vector2){editor->menuPosition.x + 10, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 12}, 25, 1, WHITE);
+
+        if (itemIndex == editor->hoveredItem)
+        {
+            DrawRectangleRec(itemRect, HighlightColor);
+        }
+        DrawTextEx(editor->font, menuItems[itemIndex], (Vector2){editor->menuPosition.x + 20, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 12}, 25, 1, WHITE);
         DrawLine(editor->menuPosition.x, itemRect.y + MENU_ITEM_HEIGHT - 1, editor->menuPosition.x + MENU_WIDTH, itemRect.y + MENU_ITEM_HEIGHT - 1, DARKGRAY);
     }
 
@@ -709,37 +726,36 @@ const char *DrawNodeMenu(EditorContext *editor)
     float scrollStep = (scrollTrackHeight - scrollBarHeight) / maxScroll;
     float scrollBarY = scrollTrackY + editor->scrollIndexNodeMenu * scrollStep;
 
-    DrawRectangle(editor->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
-
-    DrawRectangle(editor->menuPosition.x + MENU_WIDTH - 10, scrollBarY, 8, scrollBarHeight, ScrollIndicatorColor);
+    DrawRectangleRounded((Rectangle){editor->menuPosition.x + 2, scrollBarY, 8, scrollBarHeight}, 0.8f, 4, ScrollIndicatorColor);
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
         editor->menuOpen = false;
+        editor->hoveredItem = 0;
     }
 
     if (editor->hoveredItem >= 0 && editor->hoveredItem < menuItemCount)
     {
         int subCount = subMenuCounts[editor->hoveredItem];
         float submenuHeight = subCount * MENU_ITEM_HEIGHT;
-        DrawRectangle(editor->submenuPosition.x, editor->submenuPosition.y, SUBMENU_WIDTH, submenuHeight, MenuColor);
-        DrawRectangleLinesEx((Rectangle){editor->submenuPosition.x, editor->submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, MENU_BORDER_THICKNESS, BorderColor);
+        DrawRectangleRounded((Rectangle){editor->submenuPosition.x, editor->submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, 0.1f, 2, MenuColor);
+        DrawRectangleRoundedLinesEx((Rectangle){editor->submenuPosition.x, editor->submenuPosition.y, SUBMENU_WIDTH, submenuHeight}, 0.1f, 2, MENU_BORDER_THICKNESS, BorderColor);
+        DrawRectangleGradientH(editor->submenuPosition.x - 5, editor->submenuPosition.y + 3, 20, MENU_ITEM_HEIGHT, HighlightColor, MenuColor);
         for (int j = 0; j < subCount; j++)
         {
             Rectangle subItemRect = {editor->submenuPosition.x, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT, SUBMENU_WIDTH, MENU_ITEM_HEIGHT};
             if (CheckCollisionPointRec(editor->mousePos, subItemRect))
             {
-                DrawRectangleRec(subItemRect, HighlightColor);
+                DrawRectangleRounded(subItemRect, 0.2f, 2, HighlightColor);
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 {
                     editor->delayFrames = true;
                     editor->hasChanged = true;
                     editor->hasChangedInLastFrame = true;
-                    // Handle click event for submenu item
                     return subMenuItems[editor->hoveredItem][j];
                 }
             }
-            DrawTextEx(editor->font, subMenuItems[editor->hoveredItem][j], (Vector2){editor->submenuPosition.x + 10, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10}, 25, 0, WHITE);
+            DrawTextEx(editor->font, subMenuItems[editor->hoveredItem][j], (Vector2){editor->submenuPosition.x + 20, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10}, 25, 0, WHITE);
         }
     }
 

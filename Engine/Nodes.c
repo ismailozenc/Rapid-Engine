@@ -139,6 +139,19 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     pin.posInNode = index;
     pin.position = pos;
     pin.pickedOption = 0;
+    switch(type){
+        case PIN_FIELD_NUM:
+            strcpy(pin.textFieldValue, "0");
+            break;
+        case PIN_FIELD_BOOL:
+            strcpy(pin.textFieldValue, "false");
+            break;
+        case PIN_FIELD_COLOR:
+            strcpy(pin.textFieldValue, "00000000");
+            break;
+        default:
+            break;
+    }
     return pin;
 }
 

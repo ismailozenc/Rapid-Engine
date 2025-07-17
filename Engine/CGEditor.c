@@ -186,6 +186,230 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
     }
 }
 
+void ttb(EditorContext *editor, GraphContext *graph, int currPinIndex)
+{
+    PinType type = graph->pins[currPinIndex].type;
+    int limit = 0;
+    switch (type)
+    {
+    case PIN_FIELD_NUM:
+        limit = 90;
+        break;
+    case PIN_FIELD_STRING:
+        limit = 150;
+        break;
+    case PIN_FIELD_BOOL:
+        limit = 100;
+        break;
+    case PIN_FIELD_COLOR:
+        limit = 120;
+        break;
+    default:
+        break;
+    }
+
+    Rectangle textbox = {
+        graph->pins[currPinIndex].position.x - 6,
+        graph->pins[currPinIndex].position.y - 12,
+        limit,
+        26};
+
+    float textWidth = MeasureTextEx(editor->font, graph->pins[currPinIndex].textFieldValue, 20, 0).x;
+    if (editor->nodeFieldPinFocused == currPinIndex)
+        textWidth += MeasureTextEx(editor->font, "_", 20, 0).x;
+    float boxWidth = (textWidth + 10 > limit) ? limit : textWidth + 10;
+    if (boxWidth < 25)
+    {
+        boxWidth = 25;
+    }
+    textbox.width = boxWidth;
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        if (CheckCollisionPointRec(editor->mousePos, textbox))
+        {
+            if (type == PIN_FIELD_BOOL)
+            {
+                if (strcmp(graph->pins[currPinIndex].textFieldValue, "false") == 0 || strcmp(graph->pins[currPinIndex].textFieldValue, "") == 0)
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "true");
+                else
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "false");
+            }
+            else
+            {
+                editor->nodeFieldPinFocused = currPinIndex;
+            }
+        }
+        else if (editor->nodeFieldPinFocused == currPinIndex)
+        {
+            switch (type)
+            {
+            case PIN_FIELD_NUM:
+                if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
+                {
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "0");
+                }
+                break;
+            case PIN_FIELD_STRING:
+                if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
+                {
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "");
+                }
+                break;
+            case PIN_FIELD_COLOR:
+                if (strlen(graph->pins[currPinIndex].textFieldValue) != 8)
+                {
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "00000000");
+                }
+                break;
+            default:
+                break;
+            }
+            editor->nodeFieldPinFocused = -1;
+        }
+    }
+
+    DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
+    DrawRectangleLinesEx(textbox, 1, WHITE);
+
+    const char *originalText = graph->pins[currPinIndex].textFieldValue;
+    const char *text = originalText;
+
+    static char truncated[256];
+
+    if (boxWidth == limit)
+    {
+        int len = strlen(originalText);
+        int maxChars = 0;
+        char temp[256];
+
+        for (int c = 1; c <= len; c++)
+        {
+            if (editor->nodeFieldPinFocused == currPinIndex)
+                strncpy(temp, originalText + (len - c), c);
+            else
+                strncpy(temp, originalText, c);
+
+            temp[c] = '\0';
+            float cursorPadding = (editor->nodeFieldPinFocused == currPinIndex) ? MeasureTextEx(editor->font, "_", 20, 0).x : 0;
+            float w = MeasureTextEx(editor->font, temp, 20, 0).x + 10 + cursorPadding;
+            if (w > limit)
+                break;
+            maxChars = c;
+        }
+
+        if (maxChars < len)
+        {
+            if (editor->nodeFieldPinFocused == currPinIndex)
+                strncpy(truncated, originalText + (len - maxChars), maxChars);
+            else
+                strncpy(truncated, originalText, maxChars);
+            truncated[maxChars] = '\0';
+            text = truncated;
+        }
+    }
+
+    if (editor->nodeFieldPinFocused == currPinIndex)
+    {
+        static float blinkTime = 0;
+        blinkTime += GetFrameTime();
+        if (fmodf(blinkTime, 1.0f) < 0.5f)
+        {
+            char blinking[256];
+            snprintf(blinking, sizeof(blinking), "%s_", text);
+            DrawTextEx(editor->font, blinking, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+        }
+        else
+        {
+            DrawTextEx(editor->font, text, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+        }
+    }
+    else
+    {
+        DrawTextEx(editor->font, text, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+    }
+
+    if (editor->nodeFieldPinFocused == currPinIndex)
+    {
+        int key = GetCharPressed();
+        while (key > 0)
+        {
+            int len = strlen(graph->pins[currPinIndex].textFieldValue);
+
+            bool validKey =
+                (type == PIN_FIELD_NUM && key >= '0' && key <= '9') ||
+                (type == PIN_FIELD_STRING && key >= 32 && key <= 126) ||
+                (type == PIN_FIELD_COLOR &&
+                 ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f') || (key >= 'A' && key <= 'F')));
+
+            if (validKey)
+            {
+                if (type == PIN_FIELD_COLOR && len >= 8)
+                {
+                    key = GetCharPressed();
+                    continue;
+                }
+
+                graph->pins[currPinIndex].textFieldValue[len] = (char)key;
+                graph->pins[currPinIndex].textFieldValue[len + 1] = '\0';
+            }
+            else if (
+                key == 46 &&
+                type == PIN_FIELD_NUM &&
+                !graph->pins[currPinIndex].isFloat)
+            {
+                graph->pins[currPinIndex].textFieldValue[len] = (char)key;
+                graph->pins[currPinIndex].textFieldValue[len + 1] = '\0';
+                graph->pins[currPinIndex].isFloat = true;
+            }
+
+            key = GetCharPressed();
+        }
+
+        if (IsKeyPressed(KEY_BACKSPACE))
+        {
+            size_t len = strlen(graph->pins[currPinIndex].textFieldValue);
+            if (len > 0)
+            {
+                if (type == PIN_FIELD_NUM &&
+                    graph->pins[currPinIndex].textFieldValue[len - 1] == 46)
+                {
+                    graph->pins[currPinIndex].isFloat = false;
+                }
+                graph->pins[currPinIndex].textFieldValue[len - 1] = '\0';
+            }
+        }
+
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            switch (type)
+            {
+            case PIN_FIELD_NUM:
+                if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
+                {
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "0");
+                }
+                break;
+            case PIN_FIELD_STRING:
+                if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
+                {
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "");
+                }
+                break;
+            case PIN_FIELD_COLOR:
+                if (strlen(graph->pins[currPinIndex].textFieldValue) != 8)
+                {
+                    strcpy(graph->pins[currPinIndex].textFieldValue, "00000000");
+                }
+                break;
+            default:
+                break;
+            }
+            editor->nodeFieldPinFocused = -1;
+        }
+    }
+}
+
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
     if (graph->nodeCount == 0)
@@ -431,179 +655,9 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 }
             }
         }
-        else if (graph->pins[i].type == PIN_FIELD_NUM)
+        else if (graph->pins[i].type == PIN_FIELD_NUM || graph->pins[i].type == PIN_FIELD_STRING || graph->pins[i].type == PIN_FIELD_BOOL || graph->pins[i].type == PIN_FIELD_COLOR)
         {
-            Rectangle textbox = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 150, 24};
-
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                if (CheckCollisionPointRec(editor->mousePos, textbox))
-                {
-                    editor->nodeFieldPinFocused = i;
-                }
-                else if (editor->nodeFieldPinFocused == i)
-                {
-                    editor->nodeFieldPinFocused = -1;
-                }
-            }
-
-            DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == i) ? LIGHTGRAY : GRAY);
-            DrawRectangleLinesEx(textbox, 1, WHITE);
-
-            DrawTextEx(editor->font, graph->pins[i].textFieldValue, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
-
-            if (editor->nodeFieldPinFocused == i)
-            {
-                int key = GetCharPressed();
-                while (key > 0)
-                {
-                    if ((key >= 48) && (key <= 57) && strlen(graph->pins[i].textFieldValue) < 255)
-                    {
-                        int len = strlen(graph->pins[i].textFieldValue);
-                        graph->pins[i].textFieldValue[len] = (char)key;
-                        graph->pins[i].textFieldValue[len + 1] = '\0';
-                    }
-                    else if (key == 46 && !graph->pins[i].isFloat)
-                    {
-                        int len = strlen(graph->pins[i].textFieldValue);
-                        graph->pins[i].textFieldValue[len] = (char)key;
-                        graph->pins[i].textFieldValue[len + 1] = '\0';
-                        graph->pins[i].isFloat = true;
-                    }
-                    key = GetCharPressed();
-                }
-
-                if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
-                {
-                    size_t len = strlen(graph->pins[i].textFieldValue);
-                    if (graph->pins[i].textFieldValue[len - 1] == 46)
-                    {
-                        graph->pins[i].isFloat = false;
-                    }
-                    graph->pins[i].textFieldValue[len - 1] = '\0';
-                }
-
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    editor->nodeFieldPinFocused = -1;
-                }
-            }
-        }
-        else if (graph->pins[i].type == PIN_FIELD_STRING)
-        {
-            Rectangle textbox = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 150, 24};
-
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                if (CheckCollisionPointRec(editor->mousePos, textbox))
-                {
-                    editor->nodeFieldPinFocused = i;
-                }
-                else if (editor->nodeFieldPinFocused == i)
-                {
-                    editor->nodeFieldPinFocused = -1;
-                }
-            }
-
-            DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == i) ? LIGHTGRAY : GRAY);
-            DrawRectangleLinesEx(textbox, 1, WHITE);
-
-            DrawTextEx(editor->font, graph->pins[i].textFieldValue, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
-
-            if (editor->nodeFieldPinFocused == i)
-            {
-                int key = GetCharPressed();
-                while (key > 0)
-                {
-                    if ((key >= 32) && (key <= 126) && strlen(graph->pins[i].textFieldValue) < 255)
-                    {
-                        int len = strlen(graph->pins[i].textFieldValue);
-                        graph->pins[i].textFieldValue[len] = (char)key;
-                        graph->pins[i].textFieldValue[len + 1] = '\0';
-                    }
-                    key = GetCharPressed();
-                }
-
-                if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
-                {
-                    size_t len = strlen(graph->pins[i].textFieldValue);
-                    graph->pins[i].textFieldValue[len - 1] = '\0';
-                }
-
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    editor->nodeFieldPinFocused = -1;
-                }
-            }
-        }
-        else if (graph->pins[i].type == PIN_FIELD_BOOL)
-        {
-            Rectangle box = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 24, 24};
-
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(editor->mousePos, box))
-            {
-                if (strcmp(graph->pins[i].textFieldValue, "0") == 0 || strcmp(graph->pins[i].textFieldValue, "") == 0)
-                    strcpy(graph->pins[i].textFieldValue, "1");
-                else
-                    strcpy(graph->pins[i].textFieldValue, "0");
-            }
-
-            DrawRectangleRec(box, GRAY);
-            DrawRectangleLinesEx(box, 1, WHITE);
-
-            if (strcmp(graph->pins[i].textFieldValue, "1") == 0)
-                DrawText("1", box.x + 6, box.y + 4, 20, BLACK);
-            else
-            {
-                DrawText("0", box.x + 6, box.y + 4, 20, BLACK);
-            }
-        }
-        else if (graph->pins[i].type == PIN_FIELD_COLOR)
-        {
-            Rectangle textbox = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 150, 24};
-
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                if (CheckCollisionPointRec(editor->mousePos, textbox))
-                {
-                    editor->nodeFieldPinFocused = i;
-                }
-                else if (editor->nodeFieldPinFocused == i)
-                {
-                    editor->nodeFieldPinFocused = -1;
-                }
-            }
-
-            DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == i) ? LIGHTGRAY : GRAY);
-            DrawRectangleLinesEx(textbox, 1, WHITE);
-
-            DrawTextEx(editor->font, graph->pins[i].textFieldValue, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
-
-            if (editor->nodeFieldPinFocused == i)
-            {
-                int key = GetCharPressed();
-                while (key > 0)
-                {
-                    if ((isdigit(key) || (key >= 'a' && key <= 'f') || (key >= 'A' && key <= 'F')) && strlen(graph->pins[i].textFieldValue) < 8)
-                    {
-                        int len = strlen(graph->pins[i].textFieldValue);
-                        graph->pins[i].textFieldValue[len] = (char)key;
-                        graph->pins[i].textFieldValue[len + 1] = '\0';
-                    }
-                    key = GetCharPressed();
-                }
-
-                if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
-                {
-                    size_t len = strlen(graph->pins[i].textFieldValue);
-                    graph->pins[i].textFieldValue[len - 1] = '\0';
-                }
-
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    editor->nodeFieldPinFocused = -1;
-                }
-            }
+            ttb(editor, graph, i);
         }
         else
         {

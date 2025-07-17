@@ -226,7 +226,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->valueCount++;
             continue;
         case NODE_LITERAL_BOOL:
-            if (strcmp(node->inputPins[0]->textFieldValue, "1") == 0)
+            if (strcmp(node->inputPins[0]->textFieldValue, "true") == 0)
             {
                 interpreter->values[interpreter->valueCount].boolean = true;
             }

@@ -232,14 +232,20 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         float height = getNodeInfoByType(graph->nodes[i].type, HEIGHT);
         float roundness = 0.2f;
         float segments = 8;
-        Color nodeLeftGradientColor = getNodeColorByType(graph->nodes[i].type);
-        nodeLeftGradientColor.r += 30;
-        nodeLeftGradientColor.g += 30;
-        nodeLeftGradientColor.b += 30;
+
+        Color nodeColor = getNodeColorByType(graph->nodes[i].type);
+        Color nodeLeftGradientColor = {
+            (unsigned char)Clamp((int)nodeColor.r + 40, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.g + 40, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.b + 40, 0, 255),
+            nodeColor.a};
+        Color nodeRightGradientColor = {
+            (unsigned char)Clamp((int)nodeColor.r - 60, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.g - 60, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.b - 60, 0, 255),
+            nodeColor.a};
 
         float fullRadius = roundness * fminf(width, height) / 2.0f;
-
-        Color nodeRightGradientColor = (Color){(unsigned char)(nodeLeftGradientColor.r > 80 ? nodeLeftGradientColor.r - 80 : 0), (unsigned char)(nodeLeftGradientColor.g > 80 ? nodeLeftGradientColor.g - 80 : 0), (unsigned char)(nodeLeftGradientColor.b > 80 ? nodeLeftGradientColor.b - 80 : 0), nodeLeftGradientColor.a};
 
         DrawRectangleRounded(
             (Rectangle){x, y, width, height},
@@ -247,7 +253,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         DrawRectangleGradientH(x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
 
-        DrawRectangleGradientH(x - 2, y + fullRadius - 2, width + 4, 35 - fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
+        DrawRectangleGradientH(x - 2, y + fullRadius - 2, width + 4, 38 - fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
 
         DrawCircleSector(
             (Vector2){x + fullRadius - 2, y + fullRadius - 2},
@@ -266,7 +272,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         if (getIsEditableByType(graph->nodes[i].type))
         {
-            Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18 - fullRadius/5, graph->nodes[i].position.y + 5 + fullRadius/5, 16, 16};
+            Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18 - fullRadius / 5, graph->nodes[i].position.y + 5 + fullRadius / 5, 16, 16};
             DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
 
             if (CheckCollisionPointRec(editor->mousePos, gearRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -323,7 +329,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
         Vector2 nodePos = graph->nodes[currNodeIndex].position;
         int xOffset = graph->pins[i].isInput ? 5 : (getNodeInfoByType(graph->nodes[currNodeIndex].type, WIDTH) - 20);
-        int yOffset = 50 + graph->pins[i].posInNode * 30;
+        int yOffset = 52 + graph->pins[i].posInNode * 30;
 
         graph->pins[i].position = (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset};
 
@@ -539,6 +545,53 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 DrawText("0", box.x + 6, box.y + 4, 20, BLACK);
             }
         }
+        else if (graph->pins[i].type == PIN_FIELD_COLOR)
+        {
+            Rectangle textbox = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, 150, 24};
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                if (CheckCollisionPointRec(editor->mousePos, textbox))
+                {
+                    editor->nodeFieldPinFocused = i;
+                }
+                else if (editor->nodeFieldPinFocused == i)
+                {
+                    editor->nodeFieldPinFocused = -1;
+                }
+            }
+
+            DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == i) ? LIGHTGRAY : GRAY);
+            DrawRectangleLinesEx(textbox, 1, WHITE);
+
+            DrawTextEx(editor->font, graph->pins[i].textFieldValue, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+
+            if (editor->nodeFieldPinFocused == i)
+            {
+                int key = GetCharPressed();
+                while (key > 0)
+                {
+                    if ((isdigit(key) || (key >= 'a' && key <= 'f') || (key >= 'A' && key <= 'F')) && strlen(graph->pins[i].textFieldValue) < 8)
+                    {
+                        int len = strlen(graph->pins[i].textFieldValue);
+                        graph->pins[i].textFieldValue[len] = (char)key;
+                        graph->pins[i].textFieldValue[len + 1] = '\0';
+                    }
+                    key = GetCharPressed();
+                }
+
+                if (IsKeyPressed(KEY_BACKSPACE) && strlen(graph->pins[i].textFieldValue) > 0)
+                {
+                    size_t len = strlen(graph->pins[i].textFieldValue);
+                    graph->pins[i].textFieldValue[len - 1] = '\0';
+                }
+
+                if (IsKeyPressed(KEY_ENTER))
+                {
+                    editor->nodeFieldPinFocused = -1;
+                }
+            }
+        }
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
@@ -731,7 +784,6 @@ const char *DrawNodeMenu(EditorContext *editor)
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
         editor->menuOpen = false;
-        editor->hoveredItem = 0;
     }
 
     if (editor->hoveredItem >= 0 && editor->hoveredItem < menuItemCount)

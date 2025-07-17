@@ -83,12 +83,22 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
 
     char str[128];
 
-    if (message.type == VAL_NUMBER)
-        sprintf(str, "%f", message.number);
-    else if (message.type == VAL_BOOL)
-        strcpy(str, message.boolean ? "true" : "false");
-    else
-        strncpy(str, message.string, 127);
+    switch(message.type){
+        case VAL_NUMBER:
+            sprintf(str, "%f", message.number);
+            break;
+        case VAL_STRING:
+            strncpy(str, message.string, 127);
+            break;
+        case VAL_BOOL:
+            strcpy(str, message.boolean ? "true" : "false");
+            break;
+        case VAL_COLOR:
+            sprintf(str, "%08X", (message.color.r << 24) | (message.color.g << 16) | (message.color.b << 8) | message.color.a);
+            break;
+        default:
+            strcpy(str, "Error");
+    }
 
     str[127] = '\0';
 
@@ -231,6 +241,21 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->valueCount++;
             continue;
         case NODE_LITERAL_COLOR:
+            unsigned int hexValue;
+            if (sscanf(node->inputPins[0]->textFieldValue, "%x", &hexValue) == 1)
+            {
+                Color color = {(hexValue >> 24) & 0xFF, (hexValue >> 16) & 0xFF, (hexValue >> 8) & 0xFF, hexValue & 0xFF};
+                interpreter->values[interpreter->valueCount].color = color;
+                interpreter->values[interpreter->valueCount].type = VAL_COLOR;
+                interpreter->values[interpreter->valueCount].isVariable = false;
+                interpreter->values[interpreter->valueCount].name = srcNode->name;
+                node->outputPins[0]->valueIndex = interpreter->valueCount;
+                interpreter->valueCount++;
+            }
+            else
+            {
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Error: Invalid color"}, 2);
+            }
             continue;
         default:
             break;
@@ -504,16 +529,22 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         int steps = 1000;
         while (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean)
         {
-            if(steps == 0){
-                if(interpreter->isInfiniteLoopProtectionOn){
-                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected and exited! To turn off infinite loop protection [BLANK]"}, 2); 
+            if (steps == 0)
+            {
+                if (interpreter->isInfiniteLoopProtectionOn)
+                {
+                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected and exited! To turn off infinite loop protection [BLANK]"}, 2);
                     break;
                 }
-                else{
+                else
+                {
                     AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected! Infinite loop protection is off!"}, 2);
                 }
             }
-            else{steps--;}
+            else
+            {
+                steps--;
+            }
             InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
         }
         break;

@@ -223,6 +223,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     int hoveredNodeIndex = -1;
     int nodeToDelete = -1;
     static Rectangle textBoxRect = {0};
+    static float glareTime = 0;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -232,28 +233,45 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         float height = getNodeInfoByType(graph->nodes[i].type, HEIGHT);
         float roundness = 0.2f;
         float segments = 8;
+        int glareOffset = 0;
+
+        if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, WIDTH), getNodeInfoByType(graph->nodes[i].type, HEIGHT)}))
+        {
+            hoveredNodeIndex = i;
+            glareTime += GetFrameTime();
+            glareOffset = (int)(sinf(glareTime * 6.0f) * 30);
+
+            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            {
+                nodeToDelete = graph->nodes[i].id;
+            }
+        }
 
         Color nodeColor = getNodeColorByType(graph->nodes[i].type);
+
         Color nodeLeftGradientColor = {
-            (unsigned char)Clamp((int)nodeColor.r + 40, 0, 255),
-            (unsigned char)Clamp((int)nodeColor.g + 40, 0, 255),
-            (unsigned char)Clamp((int)nodeColor.b + 40, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.r + 40 + glareOffset, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.g + 40 + glareOffset, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.b + 40 + glareOffset, 0, 255),
             nodeColor.a};
+
         Color nodeRightGradientColor = {
-            (unsigned char)Clamp((int)nodeColor.r - 60, 0, 255),
-            (unsigned char)Clamp((int)nodeColor.g - 60, 0, 255),
-            (unsigned char)Clamp((int)nodeColor.b - 60, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.r - 60 + glareOffset, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.g - 60 + glareOffset, 0, 255),
+            (unsigned char)Clamp((int)nodeColor.b - 60 + glareOffset, 0, 255),
             nodeColor.a};
 
         float fullRadius = roundness * fminf(width, height) / 2.0f;
 
+        Color nodeBackgroundColor = {
+            (unsigned char)Clamp((int)glareOffset + 5, 0, 255),
+            (unsigned char)Clamp((int)glareOffset + 5, 0, 255),
+            (unsigned char)Clamp((int)glareOffset + 5, 0, 255),
+            120};
+
         DrawRectangleRounded(
             (Rectangle){x, y, width, height},
-            roundness, segments, (Color){0, 0, 0, 120});
-
-        DrawRectangleGradientH(x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
-
-        DrawRectangleGradientH(x - 2, y + fullRadius - 2, width + 4, 38 - fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
+            roundness, segments, nodeBackgroundColor);
 
         DrawCircleSector(
             (Vector2){x + fullRadius - 2, y + fullRadius - 2},
@@ -262,6 +280,10 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         DrawCircleSector(
             (Vector2){x + width - fullRadius + 2, y + fullRadius - 2},
             fullRadius, 270, 360, segments, nodeRightGradientColor);
+
+        DrawRectangleGradientH(x + fullRadius - 2, y - 2, width - 2 * fullRadius + 4, fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
+
+        DrawRectangleGradientH(x - 2, y + fullRadius - 2, width + 4, 38 - fullRadius, nodeLeftGradientColor, nodeRightGradientColor);
 
         DrawRectangleRoundedLinesEx(
             (Rectangle){x - 1, y - 1, width + 2, height + 2},
@@ -293,15 +315,6 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     editor->editingNodeNameIndex = -1;
                     editor->engineDelayFrames = true;
                 }
-            }
-        }
-
-        if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->nodes[i].position.x, graph->nodes[i].position.y, getNodeInfoByType(graph->nodes[i].type, WIDTH), getNodeInfoByType(graph->nodes[i].type, HEIGHT)}))
-        {
-            hoveredNodeIndex = i;
-            if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
-            {
-                nodeToDelete = graph->nodes[i].id;
             }
         }
     }
@@ -653,7 +666,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
     {
-        DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, WIDTH) + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, HEIGHT) + 2}, 0.2f, 8, (Color){255, 255, 255, 30});
+        DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, WIDTH) + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, HEIGHT) + 2}, 0.2f, 8, (Color){255, 255, 255, 5}); //
         editor->delayFrames = true;
     }
 

@@ -22,7 +22,7 @@ void AddToLog(EngineContext *engine, const char *newLine, int level);
 
 void EmergencyExit(EngineContext *engine);
 
-EngineContext InitEngineContext(char *projectPath)
+EngineContext InitEngineContext()
 {
     EngineContext engine = {0};
 
@@ -62,20 +62,8 @@ EngineContext InitEngineContext(char *projectPath)
         EmergencyExit(&engine);
     }
 
-    if (projectPath == NULL || projectPath[0] == '\0')
-    {
-        AddToLog(&engine, "Couldn't find file", 2);
-        EmergencyExit(&engine);
-    }
-    else
-    {
-        engine.currentPath = projectPath;
-    }
-
     engine.CGFilePath = malloc(MAX_PATH_LENGTH);
     engine.CGFilePath[0] = '\0';
-
-    engine.files = LoadDirectoryFilesEx(projectPath, NULL, false);
 
     engine.hoveredUIElementIndex = -1;
 
@@ -182,7 +170,7 @@ void EmergencyExit(EngineContext *engine)
     exit(1);
 }
 
-char *PrepareProjectPath(char *fileName)
+char *SetProjectFolderPath(char *fileName)
 {
     char *projectPath = malloc(260);
     if (!projectPath)
@@ -212,7 +200,7 @@ FileType GetFileType(const char *fileName)
     return FILE_OTHER;
 }
 
-void SetProjectPaths(EngineContext *engine, const char *projectName)
+void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 {
     char cwd[MAX_PATH_LENGTH];
 
@@ -233,6 +221,20 @@ void SetProjectPaths(EngineContext *engine, const char *projectName)
     cwd[len - 7] = '\0';
 
     snprintf(engine->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
+
+    for (int i = 0; i < engine->files.count; i++)
+    {
+        if (strcmp(engine->CGFilePath, engine->files.paths[i]) == 0)
+        {
+            return;
+        }
+    }
+
+    FILE *f = fopen(engine->CGFilePath, "w");
+    if (f)
+    {
+        fclose(f);
+    }
 }
 
 int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *editor)
@@ -338,7 +340,7 @@ void CountingSortByLayer(EngineContext *engine)
     free(elements);
 }
 
-void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
+void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
     if (engine->hoveredUIElementIndex != -1)
     {
@@ -353,7 +355,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                 {
                     PlaySound(engine->save);
                 }
-                if (SaveGraphToFile(CGFilePath, graph) == 0)
+                if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
                 {
                     editor->hasChanged = false;
                     AddToLog(engine, "Saved successfully!", 0);
@@ -501,7 +503,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
                         *editor = InitEditorContext();
                         *graph = InitGraphContext();
 
-                        SetProjectPaths(engine, openedFileName);
+                        PrepareCGFilePath(engine, openedFileName);
 
                         LoadGraphFromFile(engine->CGFilePath, graph);
 
@@ -576,7 +578,7 @@ void DrawUIElements(EngineContext *engine, char *CGFilePath, GraphContext *graph
     }
 }
 
-void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
+void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
     engine->uiElementCount = 0;
 
@@ -978,7 +980,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
 
     CountingSortByLayer(engine);
 
-    DrawUIElements(engine, CGFilePath, graph, editor, interpreter, runtimeGraph);
+    DrawUIElements(engine, graph, editor, interpreter, runtimeGraph);
 
     // special symbols and textures
     DrawRectangleLinesEx((Rectangle){0, 0, engine->screenWidth, engine->screenHeight}, 4.0f, WHITE);
@@ -998,7 +1000,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, char *CGFilePath
     EndTextureMode();
 }
 
-bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath, char *CGFilePath, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
+bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
 {
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
     {
@@ -1006,7 +1008,7 @@ bool HandleUICollisions(EngineContext *engine, int fileCount, char *projectPath,
         {
             PlaySound(engine->save);
         }
-        if (SaveGraphToFile(CGFilePath, graph) == 0)
+        if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
         {
             editor->hasChanged = false;
             AddToLog(engine, "Saved successfully!", 0);
@@ -1162,23 +1164,6 @@ void ContextChangePerFrame(EngineContext *engine)
     }
 }
 
-void CreateCGFileIfNotExists(EngineContext *engine)
-{
-    for (int i = 0; i < engine->files.count; i++)
-    {
-        if (strcmp(engine->CGFilePath, engine->files.paths[i]) == 0)
-        {
-            return;
-        }
-    }
-
-    FILE *f = fopen(engine->CGFilePath, "w");
-    if (f)
-    {
-        fclose(f);
-    }
-}
-
 int GetMouseCursor(EngineContext *engine, EditorContext *editor)
 {
     if (engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3)
@@ -1210,9 +1195,8 @@ int main()
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
-    char fileName[32];
-    strcpy(fileName, /*HandleProjectManager()*/ "Tetris"); // temporary hardcode
-    char *projectPath = PrepareProjectPath(fileName);
+    char fileName[128];
+    strcpy(fileName, HandleProjectManager()); // temporary hardcode
 
     SetTargetFPS(60);
 
@@ -1220,19 +1204,21 @@ int main()
 
     InitAudioDevice();
 
-    EngineContext engine = InitEngineContext(projectPath);
+    EngineContext engine = InitEngineContext();
     EditorContext editor = InitEditorContext();
     GraphContext graph = InitGraphContext();
     InterpreterContext interpreter = InitInterpreterContext();
     RuntimeGraphContext runtimeGraph = {0};
 
-    AddToLog(&engine, "All resources loaded. Welcome!", 0);
+    engine.currentPath = SetProjectFolderPath(fileName);
 
-    SetProjectPaths(&engine, "Tetris");
+    engine.files = LoadDirectoryFilesEx(engine.currentPath, NULL, false);
 
-    CreateCGFileIfNotExists(&engine);
+    PrepareCGFilePath(&engine, fileName);
 
     LoadGraphFromFile(engine.CGFilePath, &graph);
+
+    AddToLog(&engine, "All resources loaded. Welcome!", 0);
 
     while (!WindowShouldClose())
     {
@@ -1240,17 +1226,17 @@ int main()
 
         int prevHoveredUIIndex = engine.hoveredUIElementIndex;
 
-        if (HandleUICollisions(&engine, engine.files.count, projectPath, engine.CGFilePath, &graph, &interpreter, &editor, &runtimeGraph))
+        if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph))
         {
             if(prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0){
-                BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
+                BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
                 engine.fps = 140;
             }
             engine.delayFrames = true;
         }
         else if (engine.delayFrames)
         {
-            BuildUITexture(&engine, &graph, engine.CGFilePath, &editor, &interpreter, &runtimeGraph);
+            BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
             engine.fps = 60;
             engine.delayFrames = false;
         }
@@ -1361,8 +1347,6 @@ int main()
 
         EndDrawing();
     }
-
-    free(projectPath);
 
     FreeEngineContext(&engine);
     FreeEditorContext(&editor);

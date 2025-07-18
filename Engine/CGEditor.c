@@ -186,7 +186,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
     }
 }
 
-void ttb(EditorContext *editor, GraphContext *graph, int currPinIndex)
+void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int currPinIndex)
 {
     PinType type = graph->pins[currPinIndex].type;
     int limit = 0;
@@ -269,8 +269,8 @@ void ttb(EditorContext *editor, GraphContext *graph, int currPinIndex)
         }
     }
 
-    DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
-    DrawRectangleLinesEx(textbox, 1, WHITE);
+    DrawRectangleRounded(textbox, 0.1f, 2, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
+    DrawRectangleRoundedLinesEx(textbox, 0.1f, 2, 1, WHITE);
 
     const char *originalText = graph->pins[currPinIndex].textFieldValue;
     const char *text = originalText;
@@ -657,7 +657,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else if (graph->pins[i].type == PIN_FIELD_NUM || graph->pins[i].type == PIN_FIELD_STRING || graph->pins[i].type == PIN_FIELD_BOOL || graph->pins[i].type == PIN_FIELD_COLOR)
         {
-            ttb(editor, graph, i);
+            HandleLiteralNodeField(editor, graph, i);
         }
         else
         {

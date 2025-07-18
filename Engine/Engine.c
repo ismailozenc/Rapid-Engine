@@ -314,8 +314,10 @@ void CountingSortByLayer(EngineContext *engine)
         elements[i] = malloc(engine->uiElementCount * sizeof(int));
     }
 
-    for(int i = 0; i < engine->uiElementCount; i++){
-        if(engine->uiElements[i].layer < MAX_LAYER_COUNT){
+    for (int i = 0; i < engine->uiElementCount; i++)
+    {
+        if (engine->uiElements[i].layer < MAX_LAYER_COUNT)
+        {
             elements[engine->uiElements[i].layer][layerCount[engine->uiElements[i].layer]] = i;
             layerCount[engine->uiElements[i].layer]++;
         }
@@ -324,8 +326,10 @@ void CountingSortByLayer(EngineContext *engine)
     UIElement *sorted = malloc(sizeof(UIElement) * engine->uiElementCount);
     int sortedCount = 0;
 
-    for(int i = 0; i < MAX_LAYER_COUNT; i++){
-        for(int j = 0; j < layerCount[i]; j++){
+    for (int i = 0; i < MAX_LAYER_COUNT; i++)
+    {
+        for (int j = 0; j < layerCount[i]; j++)
+        {
             sorted[sortedCount++] = engine->uiElements[elements[i][j]];
         }
     }
@@ -334,7 +338,8 @@ void CountingSortByLayer(EngineContext *engine)
     free(sorted);
     free(layerCount);
 
-    for (int i = 0; i < MAX_LAYER_COUNT; i++) {
+    for (int i = 0; i < MAX_LAYER_COUNT; i++)
+    {
         free(elements[i]);
     }
     free(elements);
@@ -545,13 +550,21 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
         {
-            AddUIElement(engine, (UIElement){
+            Color col = engine->uiElements[engine->hoveredUIElementIndex].color;
+            engine->uiElements[engine->hoveredUIElementIndex].color = (Color){
+                Clamp(col.r + 50, 0, 255),
+                Clamp(col.g + 50, 0, 255),
+                Clamp(col.b + 50, 0, 255),
+                col.a};
+            if(engine->uiElements[engine->hoveredUIElementIndex].type == CLOSE_WINDOW || engine->uiElements[engine->hoveredUIElementIndex].type == MINIMIZE_WINDOW){
+                AddUIElement(engine, (UIElement){
                                      .name = "HoverBlink",
                                      .shape = UIRectangle,
                                      .type = VAR_TOOLTIP,
                                      .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
                                      .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
                                      .layer = 99});
+            }
         }
     }
 
@@ -632,7 +645,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .shape = UIRectangle,
                                  .type = SAVE_CG,
                                  .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                 .color = (Color){255, 255, 255, 50},
+                                 .color = (Color){70, 70, 70, 200},
                                  .layer = 1,
                                  .text = {.textPos = {editor->hasChanged ? saveButtonPos.x + 5 : saveButtonPos.x + 8, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                              });
@@ -676,7 +689,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .shape = UIRectangle,
                                      .type = BUILD_GRAPH,
                                      .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                     .color = (Color){255, 255, 255, 50},
+                                     .color = (Color){70, 70, 70, 200},
                                      .layer = 1,
                                      .text = {.string = "Build", .textPos = {engine->sideBarWidth - 64, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                  });
@@ -860,25 +873,25 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     {
         const char *fileName = GetFileName(engine->files.paths[i]);
 
-        Color fileColor;
+        Color fileOutlineColor;
 
         switch (GetFileType(fileName))
         {
         case FILE_FOLDER:
-            fileColor = (Color){140, 110, 30, 255};
+            fileOutlineColor = (Color){205, 205, 50, 200}; //(Color){200, 170, 50, 200}
             break;
         case FILE_CG:
-            fileColor = (Color){90, 70, 140, 255};
+            fileOutlineColor = (Color){220, 140, 240, 200};
             break;
         case FILE_IMAGE:
-            fileColor = (Color){100, 30, 30, 255};
+            fileOutlineColor = (Color){205, 30, 30, 200};
             break;
         case FILE_OTHER:
-            fileColor = (Color){30, 70, 130, 255};
+            fileOutlineColor = (Color){120, 120, 120, 255};
             break;
         default:
             AddToLog(engine, "File error", 2);
-            fileColor = (Color){110, 110, 110, 255};
+            fileOutlineColor = (Color){120, 120, 120, 255};
             break;
         }
 
@@ -912,8 +925,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .name = "FileOutline",
                                  .shape = UIRectangle,
                                  .type = NO_COLLISION_ACTION,
-                                 .rect = {.pos = {xOffset - 2, yOffset - 2}, .recSize = {154, 64}, .roundness = 0.5f, .roundSegments = 8},
-                                 .color = BLACK,
+                                 .rect = {.pos = {xOffset - 1, yOffset - 1}, .recSize = {152, 62}, .roundness = 0.5f, .roundSegments = 8},
+                                 .color = fileOutlineColor, //(Color){0, 80, 120, 255}
                                  .layer = 0});
 
         AddUIElement(engine, (UIElement){
@@ -921,9 +934,9 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .shape = UIRectangle,
                                  .type = OPEN_FILE,
                                  .rect = {.pos = {xOffset, yOffset}, .recSize = {150, 60}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
-                                 .color = fileColor,
+                                 .color = (Color){40, 40, 40, 255},
                                  .layer = 1,
-                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = BLACK}});
+                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = fileOutlineColor}});
         strncpy(engine->uiElements[engine->uiElementCount - 1].name, engine->files.paths[i], 256);
         strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
         engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
@@ -1196,7 +1209,7 @@ int main()
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
     char fileName[128];
-    strcpy(fileName, HandleProjectManager()); // temporary hardcode
+    strcpy(fileName, "Tetris" /*HandleProjectManager()*/); // temporary hardcode
 
     SetTargetFPS(60);
 
@@ -1228,7 +1241,8 @@ int main()
 
         if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph))
         {
-            if(prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0){
+            if (prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0)
+            {
                 BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
                 engine.fps = 140;
             }

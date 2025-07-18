@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "raymath.h"
 
 #define MAX_UI_ELEMENTS 100
 

@@ -142,6 +142,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         dst->isInput = src->isInput;
         dst->valueIndex = -1;
         dst->pickedOption = src->pickedOption;
+        strcpy(dst->pickedVariableName, src->pickedVariableName);
         dst->nextNodeIndex = -1;
         strcpy(dst->textFieldValue, src->textFieldValue);
     }
@@ -329,7 +330,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_GET_VAR:
             for (int j = 0; j < graph->nodeCount; j++)
             {
-                if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
+                if (j != i && strcmp(runtime.nodes[i].inputPins[1]->pickedVariableName, graph->nodes[j].name) == 0)
                 {
                     node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
                     valueFound = true;
@@ -344,7 +345,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_SET_VAR:
             for (int j = 0; j < graph->nodeCount; j++)
             {
-                if (j != i && strcmp(graph->nodes[i].name, graph->nodes[j].name) == 0)
+                if (j != i && strcmp(runtime.nodes[i].inputPins[1]->pickedVariableName, graph->nodes[j].name) == 0)
                 {
                     node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
                     valueFound = true;
@@ -466,7 +467,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             break;
         }
         Value *valToSet = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex];
-        Value newValue = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex];
+        Value newValue = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex];
         switch (valToSet->type)
         {
         case VAL_NUMBER:

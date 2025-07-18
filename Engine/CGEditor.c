@@ -593,9 +593,27 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 hoveredPinIndex = i;
             }
         }
-        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE || graph->pins[i].type == PIN_ARITHMETIC)
+        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE || graph->pins[i].type == PIN_ARITHMETIC || graph->pins[i].type == PIN_VARIABLE)
         {
-            DropdownOptionsByPinType options = getPinDropdownOptionsByType(graph->pins[i].type);
+            DropdownOptionsByPinType options;
+            if (graph->pins[i].type == PIN_VARIABLE)
+            {
+                options.boxWidth = 100;
+                options.optionsCount = graph->variablesCount;
+                if(options.optionsCount == 0){
+                    options.optionsCount = 1;
+                    options.options[0] = strdup("No variables");
+                }
+                for (int j = 0; j < graph->variablesCount && j < 32; j++)
+                {
+                    options.options[j] = strdup(graph->variables[j]);
+                }
+                strcpy(graph->pins[i].pickedVariableName, graph->variables[graph->pins[i].pickedOption]); // Warning: overrides every frame
+            }
+            else
+            {
+                options = getPinDropdownOptionsByType(graph->pins[i].type);
+            }
 
             Rectangle dropdown = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, options.boxWidth, 24};
 

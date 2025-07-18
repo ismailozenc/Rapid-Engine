@@ -36,6 +36,7 @@ typedef struct Pin
     bool isInput;
     Vector2 position;
     int pickedOption;
+    char pickedVariableName[32];
     char textFieldValue[128];
     bool isFloat;
 } Pin;
@@ -61,6 +62,9 @@ typedef struct GraphContext
     Link *links;
     int linkCount;
     int nextLinkID;
+
+    char **variables;
+    int variablesCount;
 } GraphContext;
 
 GraphContext InitGraphContext();

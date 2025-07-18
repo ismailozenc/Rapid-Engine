@@ -18,6 +18,7 @@ typedef struct RuntimePin
 
     int nextNodeIndex; //Flow
     int pickedOption; //Dropdown
+    char pickedVariableName[32]; //Vars dropdown
     char textFieldValue[128]; //Field
 } RuntimePin;
 

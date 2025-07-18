@@ -54,6 +54,7 @@ typedef enum
     PIN_COMPARISON_OPERATOR,
     PIN_GATE,
     PIN_ARITHMETIC,
+    PIN_VARIABLE,
     PIN_ANY_VALUE
 } PinType;
 
@@ -111,8 +112,8 @@ static InfoByType NodeInfoByType[] = {
     {NODE_BOOL, 2, 2, 120, 100, {100, 60, 120, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Set value"}, {"Next", "Get value"}},
     {NODE_COLOR, 2, 2, 120, 100, {100, 60, 120, 200}, true, {PIN_FLOW, PIN_COLOR}, {PIN_FLOW, PIN_COLOR}, {"Prev", "Set value"}, {"Next", "Get value"}},
     {NODE_SPRITE, 3, 3, 200, 180, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Sprite"}, {"Next", "Sprite"}},
-    {NODE_GET_VAR, 1, 2, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW}, {PIN_FLOW, PIN_ANY_VALUE}, {"Prev"}, {"Next", "Get value"}},
-    {NODE_SET_VAR, 2, 2, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
+    {NODE_GET_VAR, 2, 2, 140, 100, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_VARIABLE}, {PIN_FLOW, PIN_ANY_VALUE}, {"Prev"}, {"Next", "Get value"}},
+    {NODE_SET_VAR, 3, 2, 140, 130, {60, 100, 159, 200}, true, {PIN_FLOW, PIN_VARIABLE, PIN_ANY_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
     {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_EVENT_LOOP, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_EVENT_ON_BUTTON, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},

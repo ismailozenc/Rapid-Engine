@@ -126,6 +126,21 @@ bool LoadGraphFromFile(const char *filename, GraphContext *graph)
 
     fclose(file);
 
+    graph->variables = NULL;
+    graph->variablesCount = 0;
+
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING ||
+            graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR ||
+            graph->nodes[i].type == NODE_SPRITE)
+        {
+
+            graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
+            graph->variables[graph->variablesCount++] = strdup(graph->nodes[i].name);
+        }
+    }
+
     return true;
 }
 
@@ -139,18 +154,20 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     pin.posInNode = index;
     pin.position = pos;
     pin.pickedOption = 0;
-    switch(type){
-        case PIN_FIELD_NUM:
-            strcpy(pin.textFieldValue, "0");
-            break;
-        case PIN_FIELD_BOOL:
-            strcpy(pin.textFieldValue, "false");
-            break;
-        case PIN_FIELD_COLOR:
-            strcpy(pin.textFieldValue, "00000000");
-            break;
-        default:
-            break;
+    strcpy(pin.pickedVariableName, "");
+    switch (type)
+    {
+    case PIN_FIELD_NUM:
+        strcpy(pin.textFieldValue, "0");
+        break;
+    case PIN_FIELD_BOOL:
+        strcpy(pin.textFieldValue, "false");
+        break;
+    case PIN_FIELD_COLOR:
+        strcpy(pin.textFieldValue, "00000000");
+        break;
+    default:
+        break;
     }
     return pin;
 }

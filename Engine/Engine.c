@@ -283,7 +283,7 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
         {
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
-                AddToLog(engine, "Saved successfully!", 0);
+                AddToLog(engine, "Saved successfully!", 3);
                 editor->hasChanged = false;
             }
             else
@@ -363,7 +363,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
                 {
                     editor->hasChanged = false;
-                    AddToLog(engine, "Saved successfully!", 0);
+                    AddToLog(engine, "Saved successfully!", 3);
                 }
                 else
                     AddToLog(engine, "ERROR SAVING CHANGES!", 1);
@@ -724,12 +724,32 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
             }
             cutMessage[j] = '\0';
+            Color logColor;
+            switch(engine->logs.entries[i].level){
+                case LOG_LEVEL_NORMAL:
+                    logColor = WHITE;
+                    break;
+                case LOG_LEVEL_WARNING:
+                    logColor = YELLOW;
+                    break;
+                case LOG_LEVEL_ERROR:
+                    logColor = RED;
+                    break;
+                case LOG_LEVEL_DEBUG:
+                    logColor = PURPLE;
+                    break;
+                case LOG_LEVEL_SAVE:
+                    logColor = GREEN;
+                    break;
+                default:
+                    logColor = WHITE;
+                    break;
+            }
             AddUIElement(engine, (UIElement){
                                      .name = "LogText",
                                      .shape = UIText,
                                      .type = NO_COLLISION_ACTION,
-                                     .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = (engine->logs.entries[i].level == 0) ? WHITE : (engine->logs.entries[i].level == 1) ? YELLOW
-                                                                                                                                                                                                        : RED},
+                                     .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = logColor},
                                      .layer = 0});
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
             engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
@@ -887,11 +907,11 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             fileOutlineColor = (Color){205, 30, 30, 200};
             break;
         case FILE_OTHER:
-            fileOutlineColor = (Color){120, 120, 120, 255};
+            fileOutlineColor = (Color){160, 160, 160, 255};
             break;
         default:
             AddToLog(engine, "File error", 2);
-            fileOutlineColor = (Color){120, 120, 120, 255};
+            fileOutlineColor = (Color){160, 160, 160, 255};
             break;
         }
 
@@ -1024,7 +1044,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
         {
             editor->hasChanged = false;
-            AddToLog(engine, "Saved successfully!", 0);
+            AddToLog(engine, "Saved successfully!", 3);
         }
         else
         {

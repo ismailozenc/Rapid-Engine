@@ -638,7 +638,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex], 0);
+            AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex], 4);
         }
         break;
     }

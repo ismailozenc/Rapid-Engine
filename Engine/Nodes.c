@@ -131,13 +131,15 @@ bool LoadGraphFromFile(const char *filename, GraphContext *graph)
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
-        if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING ||
-            graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR ||
-            graph->nodes[i].type == NODE_SPRITE)
+        if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
         {
-
             graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
-            graph->variables[graph->variablesCount++] = strdup(graph->nodes[i].name);
+            graph->variables[graph->variablesCount] = strdup(graph->nodes[i].name);
+
+            graph->variableTypes = realloc(graph->variableTypes, sizeof(int) * (graph->variablesCount + 1));
+            graph->variableTypes[graph->variablesCount] = graph->nodes[i].type;
+
+            graph->variablesCount++;
         }
     }
 
@@ -154,7 +156,6 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     pin.posInNode = index;
     pin.position = pos;
     pin.pickedOption = 0;
-    strcpy(pin.pickedVariableName, "");
     switch (type)
     {
     case PIN_FIELD_NUM:
@@ -340,6 +341,32 @@ void DeleteNode(GraphContext *graph, int nodeID)
     }
     if (nodeIndex == -1)
         return;
+
+    if (graph->nodes[nodeIndex].type == NODE_NUM || graph->nodes[nodeIndex].type == NODE_STRING || graph->nodes[nodeIndex].type == NODE_BOOL || graph->nodes[nodeIndex].type == NODE_COLOR || graph->nodes[nodeIndex].type == NODE_SPRITE)
+    {
+        int variableToDeleteIndex = -1;
+        for (int i = 0; i < graph->variablesCount; i++)
+        {
+            if (strcmp(graph->nodes[nodeIndex].name, graph->variables[i]) == 0)
+            {
+                variableToDeleteIndex = i;
+                break;
+            }
+        }
+
+        free(graph->variables[variableToDeleteIndex]);
+
+        for (int i = variableToDeleteIndex; i < graph->variablesCount - 1; i++)
+        {
+            graph->variables[i] = graph->variables[i + 1];
+            graph->variableTypes[i] = graph->variableTypes[i + 1];
+        }
+
+        graph->variablesCount--;
+
+        graph->variables = realloc(graph->variables, graph->variablesCount * sizeof(char *));
+        graph->variableTypes = realloc(graph->variableTypes, graph->variablesCount * sizeof(NodeType));
+    }
 
     graph->nodes[nodeIndex] = graph->nodes[graph->nodeCount - 1];
     graph->nodeCount--;

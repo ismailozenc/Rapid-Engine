@@ -147,7 +147,7 @@ void DrawCurvedWire(Vector2 outputPos, Vector2 inputPos, float thickness, Color 
     DrawLineEx(inputPos, (Vector2){inputPos.x + 12, inputPos.y}, thickness, color);
 }
 
-void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int index)
+void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int index, GraphContext *graph)
 {
     bounds.width = MeasureTextEx(editor->font, text, 16, 2).x + 25;
 
@@ -164,6 +164,8 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
 
     int key = GetCharPressed();
 
+    bool hasNameChanged = false;
+
     if (key > 0)
     {
         int len = strlen(text);
@@ -171,18 +173,37 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
         {
             text[len] = (char)key;
             text[len + 1] = '\0';
+            hasNameChanged = true;
+            editor->hasChanged = true;
+            editor->hasChangedInLastFrame = true;
         }
-        editor->hasChanged = true;
-        editor->hasChangedInLastFrame = true;
     }
 
     if (IsKeyPressed(KEY_BACKSPACE))
     {
         int len = strlen(text);
         if (len > 0)
+        {
             text[len - 1] = '\0';
-        editor->hasChanged = true;
-        editor->hasChangedInLastFrame = true;
+            hasNameChanged = true;
+            editor->hasChanged = true;
+            editor->hasChangedInLastFrame = true;
+        }
+    }
+
+    if (hasNameChanged)
+    {
+        graph->variables = NULL;
+        graph->variablesCount = 0;
+
+        for (int i = 0; i < graph->nodeCount; i++)
+        {
+            if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
+            {
+                graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
+                graph->variables[graph->variablesCount++] = strdup(graph->nodes[i].name);
+            }
+        }
     }
 }
 
@@ -528,7 +549,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             }
             else if (editor->editingNodeNameIndex == i)
             {
-                HandleVarTextBox(editor, textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex);
+                HandleVarTextBox(editor, textBoxRect, graph->nodes[editor->editingNodeNameIndex].name, editor->editingNodeNameIndex, graph);
                 editor->delayFrames = true;
 
                 if (CheckCollisionPointRec(editor->mousePos, textBoxRect))
@@ -600,15 +621,14 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             {
                 options.boxWidth = 100;
                 options.optionsCount = graph->variablesCount;
-                if(options.optionsCount == 0){
-                    options.optionsCount = 1;
-                    options.options[0] = strdup("No variables");
-                }
-                for (int j = 0; j < graph->variablesCount && j < 32; j++)
+                options.options = graph->variables;
+
+                if (options.optionsCount == 0)
                 {
-                    options.options[j] = strdup(graph->variables[j]);
+                    static char *noVars[] = {"No variables"};
+                    options.options = noVars;
+                    options.optionsCount = 1;
                 }
-                strcpy(graph->pins[i].pickedVariableName, graph->variables[graph->pins[i].pickedOption]); // Warning: overrides every frame
             }
             else
             {
@@ -618,8 +638,33 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             Rectangle dropdown = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, options.boxWidth, 24};
 
             DrawRectangleRec(dropdown, GRAY);
-            DrawTextEx(editor->font, options.options[graph->pins[i].pickedOption], (Vector2){dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
+            DrawTextEx(editor->font, options.options[graph->pins[i].pickedOption], (Vector2){graph->pins[i].type == PIN_VARIABLE ? dropdown.x + 20 : dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
             DrawRectangleLinesEx(dropdown, 1, WHITE);
+            if (graph->pins[i].type == PIN_VARIABLE)
+            {
+                Color varTypeColor;
+                switch (graph->variableTypes[graph->pins[i].pickedOption])
+                {
+                case NODE_NUM: // 38, 38, 38
+                    varTypeColor = (Color){24, 119, 149, 255};
+                    break;
+                case NODE_STRING:
+                    varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                    break;
+                case NODE_BOOL:
+                    varTypeColor = (Color){27, 64, 121, 255};
+                    break;
+                case NODE_COLOR:
+                    varTypeColor = (Color){217, 3, 104, 255};
+                    break;
+                case NODE_SPRITE:
+                    varTypeColor = (Color){3, 206, 164, 255};
+                    break;
+                default:
+                    varTypeColor = LIGHTGRAY;
+                }
+                DrawCircle(graph->pins[i].position.x + 4, graph->pins[i].position.y, 6, varTypeColor);
+            }
 
             bool mouseOnDropdown = CheckCollisionPointRec(editor->mousePos, dropdown);
             bool mouseOnOptions = false;
@@ -660,8 +705,31 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 {
                     Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
                     DrawRectangleRec(option, RAYWHITE);
-                    DrawTextEx(editor->font, options.options[j], (Vector2){option.x + 3, option.y + 3}, 20, 0, BLACK);
+                    DrawTextEx(editor->font, options.options[j], (Vector2){option.x + 20, option.y + 3}, 20, 0, BLACK);
                     DrawRectangleLinesEx(option, 1, DARKGRAY);
+
+                    Color varTypeColor;
+                    switch (graph->variableTypes[j])
+                    {
+                    case NODE_NUM: // 38, 38, 38
+                        varTypeColor = (Color){24, 119, 149, 255};
+                        break;
+                    case NODE_STRING:
+                        varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                        break;
+                    case NODE_BOOL:
+                        varTypeColor = (Color){27, 64, 121, 255};
+                        break;
+                    case NODE_COLOR:
+                        varTypeColor = (Color){217, 3, 104, 255};
+                        break;
+                    case NODE_SPRITE:
+                        varTypeColor = (Color){3, 206, 164, 255};
+                        break;
+                    default:
+                        varTypeColor = LIGHTGRAY;
+                    }
+                    DrawCircle(option.x + 10, option.y + 12, 6, varTypeColor);
 
                     if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                     {
@@ -961,7 +1029,18 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
         strcpy(createdNode, DrawNodeMenu(editor));
         if (strcmp(createdNode, "NULL") != 0)
         {
-            CreateNode(graph, StringToNodeType(createdNode), editor->rightClickPos);
+            NodeType newNodeType = StringToNodeType(createdNode);
+            CreateNode(graph, newNodeType, editor->rightClickPos);
+            if (newNodeType == NODE_NUM || newNodeType == NODE_STRING || newNodeType == NODE_BOOL || newNodeType == NODE_COLOR || newNodeType == NODE_SPRITE)
+            {
+                graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
+                graph->variables[graph->variablesCount] = strdup(graph->nodes[graph->nodeCount - 1].name);
+
+                graph->variableTypes = realloc(graph->variableTypes, sizeof(int) * (graph->variablesCount + 1));
+                graph->variableTypes[graph->variablesCount] = graph->nodes[graph->nodeCount - 1].type;
+
+                graph->variablesCount++;
+            }
         }
     }
 

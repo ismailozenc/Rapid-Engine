@@ -247,14 +247,8 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
     int popupX = (screenWidth - popupWidth) / 2;
     int popupY = (screenHeight - popupHeight) / 2 - 100;
 
-    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 150});
-
-    DrawRectangleRounded((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, LIGHTGRAY);
-    DrawRectangleRoundedLines((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, DARKGRAY);
-
-    const char *message = "Save changes before exit?";
+    const char *message = "Save changes before exiting?";
     int textWidth = MeasureTextEx(engine->font, message, 30, 0).x;
-    DrawTextEx(engine->font, message, (Vector2){popupX + (popupWidth - textWidth) / 2, popupY + 20}, 30, 0, BLACK);
 
     int btnWidth = 120;
     int btnHeight = 30;
@@ -265,21 +259,29 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
     int btnStartX = popupX + (popupWidth + 5 - totalBtnWidth) / 2;
 
     Rectangle saveBtn = {btnStartX, btnY, btnWidth, btnHeight};
-    Rectangle closeBtn = {btnStartX + btnWidth + btnSpacing, btnY, btnWidth + 34, btnHeight};
-    Rectangle cancelBtn = {btnStartX + 2 * (btnWidth + btnSpacing) + 34, btnY, btnWidth, btnHeight};
+    Rectangle closeBtn = {btnStartX + btnWidth + btnSpacing, btnY, btnWidth + 20, btnHeight};
+    Rectangle cancelBtn = {btnStartX + 2 * (btnWidth + btnSpacing) + 20, btnY, btnWidth, btnHeight};
 
-    DrawRectangleRounded(saveBtn, 0.2f, 4, GRAY);
-    DrawTextEx(engine->font, "Save and Close", (Vector2){saveBtn.x + 10, saveBtn.y + 7}, 16, 0, BLACK);
+    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 150});
 
-    DrawRectangleRounded(closeBtn, 0.2f, 4, GRAY);
-    DrawTextEx(engine->font, "Close without Saving", (Vector2){closeBtn.x + 7, closeBtn.y + 7}, 16, 0, BLACK);
+    DrawRectangleRounded((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, (Color){30, 30, 30, 255});
+    DrawRectangleRoundedLines((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, (Color){200, 200, 200, 255});
 
-    DrawRectangleRounded(cancelBtn, 0.2f, 4, GRAY);
-    DrawTextEx(engine->font, "Cancel", (Vector2){cancelBtn.x + 35, cancelBtn.y + 7}, 16, 0, BLACK);
+    DrawTextEx(engine->font, message, (Vector2){popupX + (popupWidth - textWidth) / 2, popupY + 20}, 30, 0, WHITE);
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    DrawRectangleRounded(saveBtn, 0.2f, 2, DARKGREEN);
+    DrawTextEx(engine->font, "Save", (Vector2){saveBtn.x + 35, saveBtn.y + 4}, 24, 0, WHITE);
+
+    DrawRectangleRounded(closeBtn, 0.2f, 2, (Color){210, 21, 35, 255});
+    DrawTextEx(engine->font, "Don't save", (Vector2){closeBtn.x + 18, closeBtn.y + 4}, 24, 0, WHITE);
+
+    DrawRectangleRounded(cancelBtn, 0.2f, 2, (Color){80, 80, 80, 255});
+    DrawTextEx(engine->font, "Cancel", (Vector2){cancelBtn.x + 25, cancelBtn.y + 4}, 24, 0, WHITE);
+
+    if (CheckCollisionPointRec(engine->mousePos, saveBtn))
     {
-        if (CheckCollisionPointRec(engine->mousePos, saveBtn))
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
@@ -292,14 +294,26 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
             }
             return 2;
         }
-        else if (CheckCollisionPointRec(engine->mousePos, closeBtn))
+    }
+    else if (CheckCollisionPointRec(engine->mousePos, closeBtn))
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             return 2;
         }
-        else if (CheckCollisionPointRec(engine->mousePos, cancelBtn))
+    }
+    else if (CheckCollisionPointRec(engine->mousePos, cancelBtn))
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             return 0;
         }
+    }
+    else
+    {
+        SetMouseCursor(MOUSE_CURSOR_ARROW);
     }
 
     return 1;
@@ -556,14 +570,15 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 Clamp(col.g + 50, 0, 255),
                 Clamp(col.b + 50, 0, 255),
                 col.a};
-            if(engine->uiElements[engine->hoveredUIElementIndex].type == CLOSE_WINDOW || engine->uiElements[engine->hoveredUIElementIndex].type == MINIMIZE_WINDOW){
+            if (engine->uiElements[engine->hoveredUIElementIndex].type == CLOSE_WINDOW || engine->uiElements[engine->hoveredUIElementIndex].type == MINIMIZE_WINDOW)
+            {
                 AddUIElement(engine, (UIElement){
-                                     .name = "HoverBlink",
-                                     .shape = UIRectangle,
-                                     .type = VAR_TOOLTIP,
-                                     .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
-                                     .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
-                                     .layer = 99});
+                                         .name = "HoverBlink",
+                                         .shape = UIRectangle,
+                                         .type = VAR_TOOLTIP,
+                                         .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
+                                         .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
+                                         .layer = 99});
             }
         }
     }
@@ -725,25 +740,26 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             }
             cutMessage[j] = '\0';
             Color logColor;
-            switch(engine->logs.entries[i].level){
-                case LOG_LEVEL_NORMAL:
-                    logColor = WHITE;
-                    break;
-                case LOG_LEVEL_WARNING:
-                    logColor = YELLOW;
-                    break;
-                case LOG_LEVEL_ERROR:
-                    logColor = RED;
-                    break;
-                case LOG_LEVEL_DEBUG:
-                    logColor = PURPLE;
-                    break;
-                case LOG_LEVEL_SAVE:
-                    logColor = GREEN;
-                    break;
-                default:
-                    logColor = WHITE;
-                    break;
+            switch (engine->logs.entries[i].level)
+            {
+            case LOG_LEVEL_NORMAL:
+                logColor = WHITE;
+                break;
+            case LOG_LEVEL_WARNING:
+                logColor = YELLOW;
+                break;
+            case LOG_LEVEL_ERROR:
+                logColor = RED;
+                break;
+            case LOG_LEVEL_DEBUG:
+                logColor = PURPLE;
+                break;
+            case LOG_LEVEL_SAVE:
+                logColor = GREEN;
+                break;
+            default:
+                logColor = WHITE;
+                break;
             }
             AddUIElement(engine, (UIElement){
                                      .name = "LogText",
@@ -1261,7 +1277,7 @@ int main()
 
         if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph))
         {
-            if (prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0)
+            if ((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0) && engine.showSaveWarning != 1)
             {
                 BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
                 engine.fps = 140;
@@ -1301,6 +1317,11 @@ int main()
 
         BeginDrawing();
         ClearBackground(BLACK);
+
+        if (engine.showSaveWarning == 1)
+        {
+            engine.isViewportFocused = false;
+        }
 
         if (engine.isEditorOpened)
         {
@@ -1367,10 +1388,9 @@ int main()
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
-        DrawFPS(engine.screenWidth / 2, 10);
+        // DrawFPS(engine.screenWidth / 2, 10);
 
-        if (engine.showSaveWarning == 1)
-        {
+        if(engine.showSaveWarning == 1){
             engine.showSaveWarning = DrawSaveWarning(&engine, &graph, &editor);
             if (engine.showSaveWarning == 2)
             {

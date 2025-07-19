@@ -705,31 +705,34 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 {
                     Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
                     DrawRectangleRec(option, RAYWHITE);
-                    DrawTextEx(editor->font, options.options[j], (Vector2){option.x + 20, option.y + 3}, 20, 0, BLACK);
+                    DrawTextEx(editor->font, options.options[j], (Vector2){graph->pins[i].type == PIN_VARIABLE ? option.x + 20 : option.x + 3, option.y + 3}, 20, 0, BLACK);
                     DrawRectangleLinesEx(option, 1, DARKGRAY);
 
-                    Color varTypeColor;
-                    switch (graph->variableTypes[j])
+                    if (graph->pins[i].type == PIN_VARIABLE)
                     {
-                    case NODE_NUM: // 38, 38, 38
-                        varTypeColor = (Color){24, 119, 149, 255};
-                        break;
-                    case NODE_STRING:
-                        varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
-                        break;
-                    case NODE_BOOL:
-                        varTypeColor = (Color){27, 64, 121, 255};
-                        break;
-                    case NODE_COLOR:
-                        varTypeColor = (Color){217, 3, 104, 255};
-                        break;
-                    case NODE_SPRITE:
-                        varTypeColor = (Color){3, 206, 164, 255};
-                        break;
-                    default:
-                        varTypeColor = LIGHTGRAY;
+                        Color varTypeColor;
+                        switch (graph->variableTypes[j])
+                        {
+                        case NODE_NUM: // 38, 38, 38
+                            varTypeColor = (Color){24, 119, 149, 255};
+                            break;
+                        case NODE_STRING:
+                            varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                            break;
+                        case NODE_BOOL:
+                            varTypeColor = (Color){27, 64, 121, 255};
+                            break;
+                        case NODE_COLOR:
+                            varTypeColor = (Color){217, 3, 104, 255};
+                            break;
+                        case NODE_SPRITE:
+                            varTypeColor = (Color){3, 206, 164, 255};
+                            break;
+                        default:
+                            varTypeColor = LIGHTGRAY;
+                        }
+                        DrawCircle(option.x + 10, option.y + 12, 6, varTypeColor);
                     }
-                    DrawCircle(option.x + 10, option.y + 12, 6, varTypeColor);
 
                     if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                     {

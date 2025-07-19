@@ -336,7 +336,6 @@ void DeleteNode(GraphContext *graph, int nodeID)
         if (graph->nodes[i].id == nodeID)
         {
             nodeIndex = i;
-            break;
         }
     }
     if (nodeIndex == -1)
@@ -366,6 +365,22 @@ void DeleteNode(GraphContext *graph, int nodeID)
 
         graph->variables = realloc(graph->variables, graph->variablesCount * sizeof(char *));
         graph->variableTypes = realloc(graph->variableTypes, graph->variablesCount * sizeof(NodeType));
+
+        for (int i = 0; i < graph->nodeCount; i++)
+        {
+            if (graph->nodes[i].type == NODE_GET_VAR || graph->nodes[i].type == NODE_SET_VAR)
+            {
+                for (int j = 0; j < graph->pinCount; j++)
+                {
+                    if (graph->pins[j].id == graph->nodes[i].inputPins[1])
+                    {
+                        if (graph->pins[j].pickedOption > variableToDeleteIndex){
+                            graph->pins[j].pickedOption--;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     graph->nodes[nodeIndex] = graph->nodes[graph->nodeCount - 1];

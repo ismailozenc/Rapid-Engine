@@ -74,6 +74,18 @@ void FreeGraphContext(GraphContext *graph)
     graph->nextLinkID = 0;
 }
 
+int FindPinIndexByID(GraphContext *graph, int id)
+{
+    for (int i = 0; i < graph->pinCount; i++)
+    {
+        if (graph->pins[i].id == id)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 int SaveGraphToFile(const char *filename, GraphContext *graph)
 {
     FILE *file = fopen(filename, "wb");
@@ -374,7 +386,8 @@ void DeleteNode(GraphContext *graph, int nodeID)
                 {
                     if (graph->pins[j].id == graph->nodes[i].inputPins[1])
                     {
-                        if (graph->pins[j].pickedOption > variableToDeleteIndex){
+                        if (graph->pins[j].pickedOption > variableToDeleteIndex)
+                        {
                             graph->pins[j].pickedOption--;
                         }
                     }

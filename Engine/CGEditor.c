@@ -643,22 +643,28 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             if (graph->pins[i].type == PIN_VARIABLE)
             {
                 Color varTypeColor;
+                int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[1] : graph->nodes[currNodeIndex].inputPins[2]);
                 switch (graph->variableTypes[graph->pins[i].pickedOption])
                 {
                 case NODE_NUM: // 38, 38, 38
                     varTypeColor = (Color){24, 119, 149, 255};
+                    graph->pins[associatedPinIndex].type = PIN_NUM;
                     break;
                 case NODE_STRING:
                     varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                    graph->pins[associatedPinIndex].type = PIN_STRING;
                     break;
                 case NODE_BOOL:
                     varTypeColor = (Color){27, 64, 121, 255};
+                    graph->pins[associatedPinIndex].type = PIN_BOOL;
                     break;
                 case NODE_COLOR:
                     varTypeColor = (Color){217, 3, 104, 255};
+                    graph->pins[associatedPinIndex].type = PIN_COLOR;
                     break;
                 case NODE_SPRITE:
                     varTypeColor = (Color){3, 206, 164, 255};
+                    graph->pins[associatedPinIndex].type = PIN_SPRITE;
                     break;
                 default:
                     varTypeColor = LIGHTGRAY;

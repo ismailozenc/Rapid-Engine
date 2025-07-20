@@ -83,6 +83,8 @@ void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2);
 
 void DeleteNode(GraphContext *graph, int nodeID);
 
+int FindPinIndexByID(GraphContext *graph, int id);
+
 void RemoveConnections(GraphContext *graph, int pinID);
 
 #endif

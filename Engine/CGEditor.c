@@ -854,7 +854,7 @@ bool CheckNodeCollisions(EditorContext *editor, GraphContext *graph)
     return false;
 }
 
-const char *DrawNodeMenu(EditorContext *editor)
+const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
 {
     Color MenuColor = {50, 50, 50, 255};
     Color ScrollIndicatorColor = {150, 150, 150, 255};
@@ -1035,7 +1035,7 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
     if (editor->menuOpen)
     {
         char createdNode[MAX_TYPE_LENGTH];
-        strcpy(createdNode, DrawNodeMenu(editor));
+        strcpy(createdNode, DrawNodeMenu(editor, view));
         if (strcmp(createdNode, "NULL") != 0)
         {
             NodeType newNodeType = StringToNodeType(createdNode);

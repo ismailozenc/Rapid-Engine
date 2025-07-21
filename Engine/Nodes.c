@@ -1,29 +1,5 @@
 #include "Nodes.h"
 
-const char *InputsByNodeTypes[][5] = {
-    {"name", "value"},
-    {"name", "value"},
-    {"a", "b", "c", "d", "e"},
-    {"Sub 4-1"},
-    {"Sub 5-1", "Sub 5-2"},
-    {"Sub 6-1", "Sub 6-2", "Sub 6-3", "Sub 6-4"},
-    {"Sub 7-1"},
-    {"Sub 8-1", "Sub 8-2"},
-    {"Sub 9-1", "Sub 9-2", "Sub 9-3"},
-    {"Sub 10-1"}};
-
-const char *OutputsByNodeTypes[][5] = {
-    {NULL},
-    {NULL},
-    {"a", "b", "c", "d", "e"},
-    {"Sub 4-1"},
-    {"Sub 5-1", "Sub 5-2"},
-    {"Sub 6-1", "Sub 6-2", "Sub 6-3", "Sub 6-4"},
-    {"Sub 7-1"},
-    {"Sub 8-1", "Sub 8-2"},
-    {"Sub 9-1", "Sub 9-2", "Sub 9-3"},
-    {"Sub 10-1"}};
-
 GraphContext InitGraphContext()
 {
     GraphContext graph;
@@ -348,6 +324,7 @@ void DeleteNode(GraphContext *graph, int nodeID)
         if (graph->nodes[i].id == nodeID)
         {
             nodeIndex = i;
+            break;
         }
     }
     if (nodeIndex == -1)
@@ -365,6 +342,11 @@ void DeleteNode(GraphContext *graph, int nodeID)
             }
         }
 
+        if (variableToDeleteIndex == -1)
+        {
+            return; // Error
+        }
+
         free(graph->variables[variableToDeleteIndex]);
 
         for (int i = variableToDeleteIndex; i < graph->variablesCount - 1; i++)
@@ -375,7 +357,17 @@ void DeleteNode(GraphContext *graph, int nodeID)
 
         graph->variablesCount--;
 
-        graph->variables = realloc(graph->variables, graph->variablesCount * sizeof(char *));
+        if (graph->variablesCount == 0)
+        {
+            free(graph->variables);
+            graph->variables = NULL;
+        }
+        else
+        {
+            char **resized = realloc(graph->variables, graph->variablesCount * sizeof(char *));
+            if (resized)
+                graph->variables = resized;
+        }
         graph->variableTypes = realloc(graph->variableTypes, graph->variablesCount * sizeof(NodeType));
 
         for (int i = 0; i < graph->nodeCount; i++)
@@ -386,8 +378,9 @@ void DeleteNode(GraphContext *graph, int nodeID)
                 {
                     if (graph->pins[j].id == graph->nodes[i].inputPins[1])
                     {
-                        if (graph->pins[j].pickedOption > variableToDeleteIndex)
+                        if (graph->pins[j].pickedOption > variableToDeleteIndex && graph->pins[j].pickedOption != 0)
                         {
+                            printf("%d", graph->pins[j].pickedOption);
                             graph->pins[j].pickedOption--;
                         }
                     }

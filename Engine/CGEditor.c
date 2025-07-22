@@ -194,14 +194,24 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
     if (hasNameChanged)
     {
         graph->variables = NULL;
-        graph->variablesCount = 0;
+
+        graph->variables = malloc(sizeof(char *) * 1);
+        graph->variableTypes = malloc(sizeof(NodeType) * 1);
+        graph->variables[0] = strdup("NONE");
+        graph->variableTypes[0] = NODE_UNKNOWN;
+        graph->variablesCount = 1;
 
         for (int i = 0; i < graph->nodeCount; i++)
         {
             if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
             {
                 graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
-                graph->variables[graph->variablesCount++] = strdup(graph->nodes[i].name);
+                graph->variables[graph->variablesCount] = strdup(graph->nodes[i].name);
+
+                graph->variableTypes = realloc(graph->variableTypes, sizeof(int) * (graph->variablesCount + 1));
+                graph->variableTypes[graph->variablesCount] = graph->nodes[i].type;
+
+                graph->variablesCount++;
             }
         }
     }
@@ -651,7 +661,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     graph->pins[associatedPinIndex].type = PIN_NUM;
                     break;
                 case NODE_STRING:
-                    varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                    varTypeColor = (Color){180, 178, 40, 255};
                     graph->pins[associatedPinIndex].type = PIN_STRING;
                     break;
                 case NODE_BOOL:
@@ -723,7 +733,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                             varTypeColor = (Color){24, 119, 149, 255};
                             break;
                         case NODE_STRING:
-                            varTypeColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                            varTypeColor = (Color){180, 178, 40, 255};
                             break;
                         case NODE_BOOL:
                             varTypeColor = (Color){27, 64, 121, 255};

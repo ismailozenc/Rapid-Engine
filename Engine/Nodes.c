@@ -115,9 +115,14 @@ bool LoadGraphFromFile(const char *filename, GraphContext *graph)
     fclose(file);
 
     graph->variables = NULL;
-    graph->variablesCount = 0;
 
-    for (int i = 0; i < graph->nodeCount; i++)
+    graph->variables = malloc(sizeof(char *) * 1);
+    graph->variableTypes = malloc(sizeof(NodeType) * 1);
+    graph->variables[0] = strdup("NONE");
+    graph->variableTypes[0] = NODE_UNKNOWN;
+    graph->variablesCount = 1;
+
+    for (int i = 1; i < graph->nodeCount; i++)
     {
         if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
         {
@@ -344,10 +349,31 @@ void DeleteNode(GraphContext *graph, int nodeID)
 
         if (variableToDeleteIndex == -1)
         {
-            return; // Error
+            // Error
+            return;
         }
 
         free(graph->variables[variableToDeleteIndex]);
+
+        for (int i = 0; i < graph->nodeCount; i++)
+        {
+            if (graph->nodes[i].type == NODE_GET_VAR || graph->nodes[i].type == NODE_SET_VAR)
+            {
+                for (int j = 0; j < graph->pinCount; j++)
+                {
+                    if (graph->pins[j].id == graph->nodes[i].inputPins[1])
+                    {
+                        if (graph->pins[j].pickedOption > variableToDeleteIndex)
+                        {
+                            graph->pins[j].pickedOption--;
+                        }
+                        else if(graph->pins[j].pickedOption == variableToDeleteIndex){
+                            graph->pins[j].pickedOption = 0;
+                        }
+                    }
+                }
+            }
+        }
 
         for (int i = variableToDeleteIndex; i < graph->variablesCount - 1; i++)
         {
@@ -369,24 +395,6 @@ void DeleteNode(GraphContext *graph, int nodeID)
                 graph->variables = resized;
         }
         graph->variableTypes = realloc(graph->variableTypes, graph->variablesCount * sizeof(NodeType));
-
-        for (int i = 0; i < graph->nodeCount; i++)
-        {
-            if (graph->nodes[i].type == NODE_GET_VAR || graph->nodes[i].type == NODE_SET_VAR)
-            {
-                for (int j = 0; j < graph->pinCount; j++)
-                {
-                    if (graph->pins[j].id == graph->nodes[i].inputPins[1])
-                    {
-                        if (graph->pins[j].pickedOption > variableToDeleteIndex && graph->pins[j].pickedOption != 0)
-                        {
-                            printf("%d", graph->pins[j].pickedOption);
-                            graph->pins[j].pickedOption--;
-                        }
-                    }
-                }
-            }
-        }
     }
 
     graph->nodes[nodeIndex] = graph->nodes[graph->nodeCount - 1];

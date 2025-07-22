@@ -796,13 +796,13 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 varColor = (Color){24, 119, 149, 255};
                 break;
             case VAL_STRING:
-                varColor = (Color){219, 58, 52, 255}; // 179, 0, 27
+                varColor = (Color){180, 178, 40, 255};
                 break;
             case VAL_BOOL:
                 varColor = (Color){27, 64, 121, 255};
                 break;
             case VAL_COLOR:
-                varColor = (Color){217, 3, 104, 255};
+                varColor = (Color){217, 3, 104, 255};  // 219, 58, 52, 255
                 break;
             case VAL_SPRITE:
                 varColor = (Color){3, 206, 164, 255};

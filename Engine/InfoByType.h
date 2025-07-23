@@ -29,9 +29,11 @@ typedef enum
     NODE_COMPARISON,
     NODE_GATE,
     NODE_ARITHMETIC,
+    NODE_PROP_TEXTURE,
+    NODE_PROP_RECTANGLE,
+    NODE_PROP_CIRCLE,
     NODE_PRINT,
     NODE_DRAW_LINE,
-    NODE_EX,
     NODE_LITERAL_NUM,
     NODE_LITERAL_STRING,
     NODE_LITERAL_BOOL,
@@ -128,9 +130,11 @@ static InfoByType NodeInfoByType[] = {
     {NODE_COMPARISON, 4, 2, 210, 160, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Operator", "Value A", "Value B"}, {"Next", "Result"}},
     {NODE_GATE, 4, 2, 180, 160, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_GATE, PIN_BOOL, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Gate", "Condition A", "Condition B"}, {"Next", "Result"}},
     {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_ARITHMETIC, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_NUM}, {"Prev", "Arithmetic", "Number A", "Number B"}, {"Next", "Result"}},
+    {NODE_PROP_TEXTURE, 0, 0, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}}, //
+    {NODE_PROP_RECTANGLE, 6, 1, 230, 220, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Pos X", "Pos Y", "Width", "Height", "Color"}, {"Next"}},
+    {NODE_PROP_CIRCLE, 3, 3, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_PRINT, 2, 1, 140, 100, {200, 170, 50, 200}, false, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW}, {"Prev", "Print value"}, {"Next"}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {200, 170, 50, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Start X", "Start Y", "End X", "End Y", "Color"}, {"Next"}},
-    {NODE_EX, 5, 5, 240, 200, {0, 0, 0, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM}, {"Prev"}, {"Next"}},
     {NODE_LITERAL_NUM, 1, 1, 240, 70, {110, 85, 40, 200}, false, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {""}},
     {NODE_LITERAL_STRING, 1, 1, 240, 70, {110, 85, 40, 200}, false, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {""}},
     {NODE_LITERAL_BOOL, 1, 1, 180, 70, {110, 85, 40, 200}, false, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {""}},
@@ -317,12 +321,16 @@ static inline const char *NodeTypeToString(NodeType type)
         return "Gate";
     case NODE_ARITHMETIC:
         return "Arithmetic";
+    case NODE_PROP_TEXTURE:
+        return "Prop Texture";
+    case NODE_PROP_RECTANGLE:
+        return "Prop Rectangle";
+    case NODE_PROP_CIRCLE:
+        return "Prop Circle";
     case NODE_PRINT:
         return "Print";
     case NODE_DRAW_LINE:
         return "Draw Line";
-    case NODE_EX:
-        return "ex";
     case NODE_LITERAL_NUM:
         return "Literal num";
     case NODE_LITERAL_STRING:
@@ -380,12 +388,16 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
         return NODE_GATE;
     if (strcmp(strType, "Arithmetic") == 0)
         return NODE_ARITHMETIC;
+    if (strcmp(strType, "Prop Texture") == 0)
+        return NODE_PROP_TEXTURE;
+    if (strcmp(strType, "Prop Rectangle") == 0)
+        return NODE_PROP_RECTANGLE;
+    if (strcmp(strType, "Prop Circle") == 0)
+        return NODE_PROP_CIRCLE;
     if (strcmp(strType, "Print") == 0)
         return NODE_PRINT;
     if (strcmp(strType, "Draw Line") == 0)
         return NODE_DRAW_LINE;
-    if (strcmp(strType, "ex") == 0)
-        return NODE_EX;
     if (strcmp(strType, "Literal num") == 0)
         return NODE_LITERAL_NUM;
     if (strcmp(strType, "Literal string") == 0)

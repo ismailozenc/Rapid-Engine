@@ -16,10 +16,10 @@ typedef struct RuntimePin
     bool isInput;
     int valueIndex;
 
-    int nextNodeIndex; //Flow
-    int pickedOption; //Dropdown
-    char pickedVariableName[32]; //Vars dropdown
-    char textFieldValue[128]; //Field
+    int nextNodeIndex;           // Flow
+    int pickedOption;            // Dropdown
+    char pickedVariableName[32]; // Vars dropdown
+    char textFieldValue[128];    // Field
 } RuntimePin;
 
 typedef struct RuntimeNode
@@ -43,7 +43,8 @@ typedef struct RuntimeGraphContext
     int pinCount;
 } RuntimeGraphContext;
 
-typedef enum {
+typedef enum
+{
     VAL_NULL,
     VAL_NUMBER,
     VAL_STRING,
@@ -52,7 +53,8 @@ typedef enum {
     VAL_SPRITE
 } ValueType;
 
-typedef struct {
+typedef struct
+{
     Texture2D texture;
     Vector2 position;
     int width;
@@ -60,13 +62,59 @@ typedef struct {
     float rotation;
     bool visible;
     int layer;
-}Sprite;
+} Sprite;
 
-typedef struct {
+typedef enum {
+    PROP_TEXTURE,
+    PROP_RECTANGLE,
+    PROP_CIRCLE
+}PropType;
+
+typedef struct
+{
+    union
+    {
+        struct
+        {
+            Texture2D texture;
+            int width;
+            int height;
+        }texture;
+        struct
+        {
+            int width;
+            int height;
+        }rect;
+        struct
+        {
+            int radius;
+        }circle;
+    };
+    Vector2 position;
+    PropType propType;
+    Color color;
+    float rotation;
+    int layer;
+} Prop;
+
+typedef struct
+{
+    int id;
+    bool isSprite;
+    union
+    {
+        Sprite sprite;
+        Prop prop;
+    };
+} SceneComponent;
+
+typedef struct
+{
     char *name;
     ValueType type;
     bool isVariable;
-    union {
+    union
+    {
         float number;
         bool boolean;
         char *string;
@@ -76,9 +124,13 @@ typedef struct {
     };
 } Value;
 
-typedef struct {
+typedef struct
+{
     Value *values;
     int valueCount;
+
+    SceneComponent *components;
+    int componentCount;
 
     int loopNodeIndex;
 

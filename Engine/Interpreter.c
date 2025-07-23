@@ -647,11 +647,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         break;
     }
-
-    case NODE_EX:
-    {
-        break;
-    }
     }
 
     if (currNodeIndex != lastNodeIndex)

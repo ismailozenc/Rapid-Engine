@@ -443,6 +443,7 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
 
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
+
     if (graph->nodeCount == 0)
     {
         return;
@@ -871,17 +872,18 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     Color BorderColor = {200, 200, 200, 255};
     Color HighlightColor = {80, 80, 80, 255};
 
-    const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Logical", "Debug", "More"};
+    const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Draw Prop", "Logical", "Debug", "More"};
     const char *subMenuItems[][7] = {
         {"num", "string", "bool", "color", "sprite", "Get var", "Set var"},
         {"Start", "On Loop", "On Button", "Create custom", "Call custom"},
         {"Spawn", "Destroy", "Move To"},
         {"Branch", "Loop"},
+        {"Prop Texture", "Prop Rectangle", "Prop Circle"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
-        {"ex", "Literal num", "Literal string", "Literal bool", "Literal color"}};
+        {"Literal num", "Literal string", "Literal bool", "Literal color"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {7, 5, 3, 2, 3, 2, 5};
+    int subMenuCounts[] = {7, 5, 3, 2, 3, 3, 2, 4};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 

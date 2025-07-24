@@ -160,6 +160,9 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     case PIN_FIELD_COLOR:
         strcpy(pin.textFieldValue, "00000000");
         break;
+    case PIN_FIELD_KEY:
+        strcpy(pin.textFieldValue, "NONE");
+        break;
     default:
         break;
     }

@@ -53,6 +53,7 @@ typedef enum
     PIN_FIELD_STRING,
     PIN_FIELD_BOOL,
     PIN_FIELD_COLOR,
+    PIN_FIELD_KEY,
     PIN_COMPARISON_OPERATOR,
     PIN_GATE,
     PIN_ARITHMETIC,
@@ -117,9 +118,9 @@ static InfoByType NodeInfoByType[] = {
     {NODE_SPRITE, 3, 3, 200, 180, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Sprite"}, {"Next", "Sprite"}},
     {NODE_GET_VAR, 2, 2, 140, 100, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE}, {PIN_FLOW, PIN_UNKNOWN_VALUE}, {"Prev"}, {"Next", "Get value"}},
     {NODE_SET_VAR, 3, 2, 140, 130, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE, PIN_UNKNOWN_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
-    {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
-    {NODE_EVENT_LOOP_TICK, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
-    {NODE_EVENT_ON_BUTTON, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
+    {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {0}, {"Next"}},
+    {NODE_EVENT_LOOP_TICK, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {0}, {"Next"}},
+    {NODE_EVENT_ON_BUTTON, 1, 1, 150, 120, {148, 0, 0, 200}, false, {PIN_FIELD_KEY}, {PIN_FLOW}, {"Key"}, {"Next"}},
     {NODE_CREATE_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_CALL_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_SPAWN_SPRITE, 1, 2, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
@@ -407,4 +408,118 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
     if (strcmp(strType, "Literal color") == 0)
         return NODE_LITERAL_COLOR;
     return NODE_UNKNOWN;
+}
+
+static inline char *GetKeyName(KeyboardKey key)
+{
+    if (key >= 'a' && key <= 'z') key -= 32;
+    switch (key)
+    {
+    case KEY_APOSTROPHE: return "'";
+    case KEY_COMMA: return ",";
+    case KEY_MINUS: return "-";
+    case KEY_PERIOD: return ".";
+    case KEY_SLASH: return "/";
+    case KEY_ZERO: return "0";
+    case KEY_ONE: return "1";
+    case KEY_TWO: return "2";
+    case KEY_THREE: return "3";
+    case KEY_FOUR: return "4";
+    case KEY_FIVE: return "5";
+    case KEY_SIX: return "6";
+    case KEY_SEVEN: return "7";
+    case KEY_EIGHT: return "8";
+    case KEY_NINE: return "9";
+    case KEY_SEMICOLON: return ";";
+    case KEY_EQUAL: return "=";
+    case KEY_A: return "A";
+    case KEY_B: return "B";
+    case KEY_C: return "C";
+    case KEY_D: return "D";
+    case KEY_E: return "E";
+    case KEY_F: return "F";
+    case KEY_G: return "G";
+    case KEY_H: return "H";
+    case KEY_I: return "I";
+    case KEY_J: return "J";
+    case KEY_K: return "K";
+    case KEY_L: return "L";
+    case KEY_M: return "M";
+    case KEY_N: return "N";
+    case KEY_O: return "O";
+    case KEY_P: return "P";
+    case KEY_Q: return "Q";
+    case KEY_R: return "R";
+    case KEY_S: return "S";
+    case KEY_T: return "T";
+    case KEY_U: return "U";
+    case KEY_V: return "V";
+    case KEY_W: return "W";
+    case KEY_X: return "X";
+    case KEY_Y: return "Y";
+    case KEY_Z: return "Z";
+    case KEY_LEFT_BRACKET: return "[";
+    case KEY_BACKSLASH: return "\\";
+    case KEY_RIGHT_BRACKET: return "]";
+    case KEY_GRAVE: return "`";
+    case KEY_SPACE: return "Space";
+    case KEY_ESCAPE: return "Escape";
+    case KEY_ENTER: return "Enter";
+    case KEY_TAB: return "Tab";
+    case KEY_BACKSPACE: return "Backspace";
+    case KEY_INSERT: return "Insert";
+    case KEY_DELETE: return "Delete";
+    case KEY_RIGHT: return "Right";
+    case KEY_LEFT: return "Left";
+    case KEY_DOWN: return "Down";
+    case KEY_UP: return "Up";
+    case KEY_PAGE_UP: return "PageUp";
+    case KEY_PAGE_DOWN: return "PageDown";
+    case KEY_HOME: return "Home";
+    case KEY_END: return "End";
+    case KEY_CAPS_LOCK: return "CapsLock";
+    case KEY_SCROLL_LOCK: return "ScrollLock";
+    case KEY_NUM_LOCK: return "NumLock";
+    case KEY_PRINT_SCREEN: return "PrintScreen";
+    case KEY_PAUSE: return "Pause";
+    case KEY_F1: return "F1";
+    case KEY_F2: return "F2";
+    case KEY_F3: return "F3";
+    case KEY_F4: return "F4";
+    case KEY_F5: return "F5";
+    case KEY_F6: return "F6";
+    case KEY_F7: return "F7";
+    case KEY_F8: return "F8";
+    case KEY_F9: return "F9";
+    case KEY_F10: return "F10";
+    case KEY_F11: return "F11";
+    case KEY_F12: return "F12";
+    case KEY_LEFT_SHIFT: return "Shift";
+    case KEY_LEFT_CONTROL: return "Ctrl";
+    case KEY_LEFT_ALT: return "Alt";
+    case KEY_LEFT_SUPER: return "Super";
+    case KEY_RIGHT_SHIFT: return "RightShift";
+    case KEY_RIGHT_CONTROL: return "RightCtrl";
+    case KEY_RIGHT_ALT: return "RightAlt";
+    case KEY_RIGHT_SUPER: return "RightSuper";
+    case KEY_KB_MENU: return "Menu";
+    case KEY_KP_0: return "Keypad 0";
+    case KEY_KP_1: return "Keypad 1";
+    case KEY_KP_2: return "Keypad 2";
+    case KEY_KP_3: return "Keypad 3";
+    case KEY_KP_4: return "Keypad 4";
+    case KEY_KP_5: return "Keypad 5";
+    case KEY_KP_6: return "Keypad 6";
+    case KEY_KP_7: return "Keypad 7";
+    case KEY_KP_8: return "Keypad 8";
+    case KEY_KP_9: return "Keypad 9";
+    case KEY_KP_DECIMAL: return "Keypad .";
+    case KEY_KP_DIVIDE: return "Keypad /";
+    case KEY_KP_MULTIPLY: return "Keypad *";
+    case KEY_KP_SUBTRACT: return "Keypad -";
+    case KEY_KP_ADD: return "Keypad +";
+    case KEY_KP_ENTER: return "Keypad Enter";
+    case KEY_KP_EQUAL: return "Keypad =";
+    default: return "Unknown";
+    }
 }

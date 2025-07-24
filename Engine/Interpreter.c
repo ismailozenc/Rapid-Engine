@@ -725,7 +725,8 @@ void DrawComponents(InterpreterContext *interpreter)
     for (int i = 0; i < interpreter->componentCount; i++)
     {
         SceneComponent component = interpreter->components[i];
-        if(!component.isVisible){
+        if (!component.isVisible)
+        {
             continue;
         }
         if (component.isSprite)
@@ -774,18 +775,19 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
 
             interpreter->isFirstFrame = false;
         }
+    }
 
-        for (int i = 0; i < graph->nodeCount; i++)
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        switch (graph->nodes[i].type)
         {
-            switch (graph->nodes[i].type)
+        case NODE_EVENT_ON_BUTTON:
+            KeyboardKey key = GetKeyPressed();
+            if (key != 0 && key == graph->nodes[i].inputPins[0]->pickedOption)
             {
-            case NODE_EVENT_ON_BUTTON:
-                /*if(IsKeyPressed(KEY_K)){
-                    InterpretStringOfNodes(i, interpreter, &graph);
-                    printf("a\n\n");
-                }*/
-                break;
+                InterpretStringOfNodes(i, interpreter, graph, 0);
             }
+            break;
         }
     }
 

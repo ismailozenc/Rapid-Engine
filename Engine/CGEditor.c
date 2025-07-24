@@ -441,6 +441,83 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
     }
 }
 
+void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinIndex)
+{
+    Rectangle textbox = {
+        graph->pins[currPinIndex].position.x - 6,
+        graph->pins[currPinIndex].position.y - 12,
+        100,
+        26};
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        if (CheckCollisionPointRec(editor->mousePos, textbox))
+        {
+            editor->nodeFieldPinFocused = currPinIndex;
+        }
+        else if (editor->nodeFieldPinFocused == currPinIndex)
+        {
+            if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
+            {
+                strcpy(graph->pins[currPinIndex].textFieldValue, "NONE");
+                graph->pins[currPinIndex].pickedOption = -1;
+            }
+            editor->nodeFieldPinFocused = -1;
+        }
+    }
+
+    DrawRectangleRounded(textbox, 0.1f, 2, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
+    DrawRectangleRoundedLinesEx(textbox, 0.1f, 2, 1, WHITE);
+
+    const char *originalText = graph->pins[currPinIndex].textFieldValue;
+    const char *text = originalText;
+
+    static char truncated[256];
+
+    if (editor->nodeFieldPinFocused == currPinIndex)
+    {
+        static float blinkTime = 0;
+        blinkTime += GetFrameTime();
+        if (fmodf(blinkTime, 1.0f) < 0.5f)
+        {
+            char blinking[256];
+            snprintf(blinking, sizeof(blinking), "%s_", text);
+            DrawTextEx(editor->font, blinking, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+        }
+        else
+        {
+            DrawTextEx(editor->font, text, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+        }
+    }
+    else
+    {
+        DrawTextEx(editor->font, text, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
+    }
+
+    if (editor->nodeFieldPinFocused == currPinIndex)
+    {
+        for (int key = 0; key <= KEY_KB_MENU; key++)
+        {
+            if (IsKeyPressed(key))
+            {
+                strcpy(graph->pins[currPinIndex].textFieldValue, GetKeyName(key));
+                graph->pins[currPinIndex].pickedOption = key;
+                break;
+            }
+        }
+
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
+            {
+                strcpy(graph->pins[currPinIndex].textFieldValue, "NONE");
+                graph->pins[currPinIndex].pickedOption = -1;
+            }
+            editor->nodeFieldPinFocused = -1;
+        }
+    }
+}
+
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
 
@@ -765,6 +842,10 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         {
             HandleLiteralNodeField(editor, graph, i);
         }
+        else if (graph->pins[i].type == PIN_FIELD_KEY)
+        {
+            HandleKeyNodeField(editor, graph, i);
+        }
         else
         {
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
@@ -875,7 +956,7 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Draw Prop", "Logical", "Debug", "More"};
     const char *subMenuItems[][7] = {
         {"num", "string", "bool", "color", "sprite", "Get var", "Set var"},
-        {"Start", "On Loop", "On Button", "Create custom", "Call custom"},
+        {"Start", "Loop Tick", "On Button", "Create custom", "Call custom"},
         {"Spawn", "Destroy", "Move To"},
         {"Branch", "Loop"},
         {"Prop Texture", "Prop Rectangle", "Prop Circle"},

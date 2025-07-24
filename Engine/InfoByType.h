@@ -17,7 +17,7 @@ typedef enum
     NODE_GET_VAR,
     NODE_SET_VAR,
     NODE_EVENT_START,
-    NODE_EVENT_LOOP,
+    NODE_EVENT_LOOP_TICK,
     NODE_EVENT_ON_BUTTON,
     NODE_CREATE_CUSTOM_EVENT,
     NODE_CALL_CUSTOM_EVENT,
@@ -118,7 +118,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_GET_VAR, 2, 2, 140, 100, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE}, {PIN_FLOW, PIN_UNKNOWN_VALUE}, {"Prev"}, {"Next", "Get value"}},
     {NODE_SET_VAR, 3, 2, 140, 130, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE, PIN_UNKNOWN_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
     {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
-    {NODE_EVENT_LOOP, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
+    {NODE_EVENT_LOOP_TICK, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_EVENT_ON_BUTTON, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_CREATE_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_CALL_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
@@ -132,7 +132,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_ARITHMETIC, 4, 2, 240, 200, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_ARITHMETIC, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_NUM}, {"Prev", "Arithmetic", "Number A", "Number B"}, {"Next", "Result"}},
     {NODE_PROP_TEXTURE, 0, 0, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}}, //
     {NODE_PROP_RECTANGLE, 7, 1, 230, 250, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR, PIN_NUM}, {PIN_FLOW}, {"Prev", "Pos X", "Pos Y", "Width", "Height", "Color", "Layer"}, {"Next"}},
-    {NODE_PROP_CIRCLE, 3, 3, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
+    {NODE_PROP_CIRCLE, 6, 1, 230, 230, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR, PIN_NUM}, {PIN_FLOW}, {"Prev", "Pos X", "Pos Y", "Radius", "Color", "Layer"}, {"Next"}},
     {NODE_PRINT, 2, 1, 140, 100, {200, 170, 50, 200}, false, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW}, {"Prev", "Print value"}, {"Next"}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {200, 170, 50, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Start X", "Start Y", "End X", "End Y", "Color"}, {"Next"}},
     {NODE_LITERAL_NUM, 1, 1, 240, 70, {110, 85, 40, 200}, false, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {""}},
@@ -297,8 +297,8 @@ static inline const char *NodeTypeToString(NodeType type)
         return "Set var";
     case NODE_EVENT_START:
         return "Start";
-    case NODE_EVENT_LOOP:
-        return "On Loop";
+    case NODE_EVENT_LOOP_TICK:
+        return "Loop Tick";
     case NODE_EVENT_ON_BUTTON:
         return "On Button";
     case NODE_CREATE_CUSTOM_EVENT:
@@ -364,8 +364,8 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
         return NODE_SET_VAR;
     if (strcmp(strType, "Start") == 0)
         return NODE_EVENT_START;
-    if (strcmp(strType, "On Loop") == 0)
-        return NODE_EVENT_LOOP;
+    if (strcmp(strType, "Loop Tick") == 0)
+        return NODE_EVENT_LOOP_TICK;
     if (strcmp(strType, "On Button") == 0)
         return NODE_EVENT_ON_BUTTON;
     if (strcmp(strType, "Create custom") == 0)

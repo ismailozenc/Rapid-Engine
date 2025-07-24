@@ -86,7 +86,6 @@ typedef struct
 
 typedef struct
 {
-    int id;
     bool isSprite;
     union
     {

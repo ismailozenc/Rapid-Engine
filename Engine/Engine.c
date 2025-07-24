@@ -716,21 +716,34 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         char cutMessage[256];
         for (int i = engine->logs.count - 1; i >= 0 && logY > engine->sideBarMiddleY + 60 + engine->sideBarHalfSnap * 40; i--)
         {
-            if (engine->sideBarHalfSnap)
+            const char *msgNoTimestamp = engine->logs.entries[i].message + 9;
+
+            char finalMsg[256];
+            strncpy(finalMsg, engine->logs.entries[i].message, 255);
+            finalMsg[255] = '\0';
+
+            int repeatCount = 1;
+            while (i - repeatCount >= 0)
             {
-                strncpy(cutMessage, engine->logs.entries[i].message + 9, 255);
-                cutMessage[255] = '\0';
+                const char *prevMsgNoTimestamp = engine->logs.entries[i - repeatCount].message + 9;
+                if (strcmp(msgNoTimestamp, prevMsgNoTimestamp) != 0)
+                    break;
+                repeatCount++;
             }
-            else
+
+            if (repeatCount > 1)
             {
-                strncpy(cutMessage, engine->logs.entries[i].message, 255);
+                snprintf(finalMsg, sizeof(finalMsg), "[x%d] %s", repeatCount, engine->logs.entries[i].message);
+                i -= (repeatCount - 1);
             }
+
             int j;
-            for (j = 0; j < strlen(cutMessage); j++)
+            for (j = 0; j < (int)strlen(finalMsg); j++)
             {
                 char temp[256];
-                strncpy(temp, cutMessage, j);
+                strncpy(temp, finalMsg, j);
                 temp[j] = '\0';
+
                 if (MeasureTextEx(engine->font, temp, 20, 2).x < engine->sideBarWidth - 25)
                 {
                     continue;
@@ -740,7 +753,9 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                     break;
                 }
             }
+            strncpy(cutMessage, finalMsg, j);
             cutMessage[j] = '\0';
+
             Color logColor;
             switch (engine->logs.entries[i].level)
             {
@@ -763,14 +778,17 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 logColor = WHITE;
                 break;
             }
+
             AddUIElement(engine, (UIElement){
                                      .name = "LogText",
                                      .shape = UIText,
                                      .type = NO_COLLISION_ACTION,
                                      .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = logColor},
                                      .layer = 0});
+
             strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
-            engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
+            engine->uiElements[engine->uiElementCount - 1].text.string[127] = '\0';
+
             logY -= 25;
         }
 
@@ -804,7 +822,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 varColor = (Color){27, 64, 121, 255};
                 break;
             case VAL_COLOR:
-                varColor = (Color){217, 3, 104, 255};  // 219, 58, 52, 255
+                varColor = (Color){217, 3, 104, 255}; // 219, 58, 52, 255
                 break;
             case VAL_SPRITE:
                 varColor = (Color){3, 206, 164, 255};
@@ -1355,7 +1373,8 @@ int main()
 
             engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph);
 
-            if(!engine.isGameRunning){
+            if (!engine.isGameRunning)
+            {
                 engine.isEditorOpened = true;
                 editor.isFirstFrame = true;
                 engine.wasBuilt = false;
@@ -1399,7 +1418,8 @@ int main()
 
         // DrawFPS(engine.screenWidth / 2, 10);
 
-        if(engine.showSaveWarning == 1){
+        if (engine.showSaveWarning == 1)
+        {
             engine.showSaveWarning = DrawSaveWarning(&engine, &graph, &editor);
             if (engine.showSaveWarning == 2)
             {

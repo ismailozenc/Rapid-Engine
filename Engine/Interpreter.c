@@ -758,6 +758,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
 
     if (interpreter->isFirstFrame)
     {
+        interpreter->onButtonNodeIndexes = malloc(sizeof(int) * graph->nodeCount);
         for (int i = 0; i < graph->nodeCount; i++)
         {
             switch (graph->nodes[i].type)
@@ -771,21 +772,25 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
                     interpreter->loopNodeIndex = i;
                 }
                 break;
+            case NODE_EVENT_ON_BUTTON:
+                interpreter->onButtonNodeIndexes[interpreter->onButtonNodeIndexesCount++] = i;
+                break;
             }
-
-            interpreter->isFirstFrame = false;
         }
+        interpreter->onButtonNodeIndexes = realloc(interpreter->onButtonNodeIndexes, sizeof(int) * interpreter->onButtonNodeIndexesCount);
+
+        interpreter->isFirstFrame = false;
     }
 
-    for (int i = 0; i < graph->nodeCount; i++)
+    for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)
     {
-        switch (graph->nodes[i].type)
+        switch (graph->nodes[interpreter->onButtonNodeIndexes[i]].type)
         {
         case NODE_EVENT_ON_BUTTON:
             KeyboardKey key = GetKeyPressed();
-            if (key != 0 && key == graph->nodes[i].inputPins[0]->pickedOption)
+            if (key != 0 && key == graph->nodes[interpreter->onButtonNodeIndexes[i]].inputPins[0]->pickedOption)
             {
-                InterpretStringOfNodes(i, interpreter, graph, 0);
+                InterpretStringOfNodes(interpreter->onButtonNodeIndexes[i], interpreter, graph, 0);
             }
             break;
         }

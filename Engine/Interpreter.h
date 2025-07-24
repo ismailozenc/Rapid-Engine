@@ -129,6 +129,9 @@ typedef struct
     int logMessageLevels[MAX_LOG_MESSAGES];
     int logMessageCount;
 
+    int *onButtonNodeIndexes;
+    int onButtonNodeIndexesCount;
+
     bool isInfiniteLoopProtectionOn;
 
     bool buildFailed;

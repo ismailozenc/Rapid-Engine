@@ -408,6 +408,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             continue;
         case NODE_PROP_RECTANGLE:
             interpreter->components[interpreter->componentCount].isSprite = false;
+            interpreter->components[interpreter->componentCount].isVisible = false;
             interpreter->components[interpreter->componentCount].prop.propType = PROP_RECTANGLE;
             interpreter->components[interpreter->componentCount].prop.width = interpreter->values[node->inputPins[3]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.height = interpreter->values[node->inputPins[4]->valueIndex].number;
@@ -415,16 +416,19 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number - interpreter->components[interpreter->componentCount].prop.height / 2;
             interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[5]->valueIndex].color;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+            node->outputPins[1]->componentIndex = interpreter->componentCount;
             interpreter->componentCount++;
             continue;
         case NODE_PROP_CIRCLE:
             interpreter->components[interpreter->componentCount].isSprite = false;
+            interpreter->components[interpreter->componentCount].isVisible = false;
             interpreter->components[interpreter->componentCount].prop.propType = PROP_CIRCLE;
             interpreter->components[interpreter->componentCount].prop.position.x = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.radius = interpreter->values[node->inputPins[3]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[4]->valueIndex].color;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[5]->valueIndex].number;
+            node->outputPins[1]->componentIndex = interpreter->componentCount;
             interpreter->componentCount++;
             continue;
         default:
@@ -685,11 +689,13 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_PROP_RECTANGLE:
     {
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
     case NODE_PROP_CIRCLE:
     {
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
@@ -719,6 +725,9 @@ void DrawComponents(InterpreterContext *interpreter)
     for (int i = 0; i < interpreter->componentCount; i++)
     {
         SceneComponent component = interpreter->components[i];
+        if(!component.isVisible){
+            continue;
+        }
         if (component.isSprite)
         {
             continue; //

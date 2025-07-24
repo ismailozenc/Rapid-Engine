@@ -20,6 +20,7 @@ typedef struct RuntimePin
     int pickedOption;            // Dropdown
     char pickedVariableName[32]; // Vars dropdown
     char textFieldValue[128];    // Field
+    int componentIndex;          // Scene Component
 } RuntimePin;
 
 typedef struct RuntimeNode
@@ -86,6 +87,7 @@ typedef struct
 
 typedef struct
 {
+    bool isVisible;
     bool isSprite;
     union
     {

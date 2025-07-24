@@ -169,6 +169,28 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     return pin;
 }
 
+char *AssignAvailableVarName(GraphContext *graph, const char *baseName) {
+    char temp[64];
+    int suffix = 1;
+    bool exists;
+
+    do {
+        snprintf(temp, sizeof(temp), "%s %d", baseName, suffix);
+        exists = false;
+        for (int i = 0; i < graph->nodeCount; i++) {
+            if (strcmp(temp, graph->nodes[i].name) == 0) {
+                exists = true;
+                suffix++;
+                break;
+            }
+        }
+    } while (exists);
+
+    char *name = malloc(strlen(temp) + 1);
+    strcpy(name, temp);
+    return name;
+}
+
 Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
 {
     Node node = {0};
@@ -179,19 +201,19 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     switch (node.type)
     {
     case NODE_NUM:
-        sprintf(node.name, "Number");
+        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Number"));
         break;
     case NODE_STRING:
-        sprintf(node.name, "String");
+        sprintf(node.name, "%s", AssignAvailableVarName(graph, "String"));
         break;
     case NODE_BOOL:
-        sprintf(node.name, "Boolean");
+        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Boolean"));
         break;
     case NODE_COLOR:
-        sprintf(node.name, "Color");
+        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Color"));
         break;
     case NODE_SPRITE:
-        sprintf(node.name, "Sprite");
+        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Sprite"));
         break;
     case NODE_GET_VAR:
         sprintf(node.name, "");

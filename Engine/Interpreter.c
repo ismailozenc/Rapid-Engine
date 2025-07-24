@@ -61,7 +61,7 @@ char *ValueToString(Value value)
         sprintf(temp, "Error");
         break;
     case VAL_NUMBER:
-        sprintf(temp, "%d", value.number);
+        sprintf(temp, "%.2f", value.number);
         break;
     case VAL_STRING:
         sprintf(temp, "%s", value.string);

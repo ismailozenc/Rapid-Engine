@@ -551,8 +551,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
         case SHOW_VAR_INFO:
             char temp[256];
-            char *valueString = ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]);
-            sprintf(temp, "%s: %s", interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, valueString);
+            sprintf(temp, "%s: %s", interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
@@ -562,7 +561,6 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .layer = 1,
                                      .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
-            free(valueString);
             break;
         }
 
@@ -1363,7 +1361,6 @@ int main()
                 engine.wasBuilt = false;
                 FreeInterpreterContext(&interpreter);
             }
-
             if (interpreter.newLogMessage)
             {
                 for (int i = 0; i < interpreter.logMessageCount; i++)

@@ -388,6 +388,9 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 engine->isEditorOpened = true;
                 editor->isFirstFrame = true;
+                engine->isGameRunning = false;
+                engine->wasBuilt = false;
+                FreeInterpreterContext(interpreter);
             }
             break;
         case RUN_GAME:
@@ -560,6 +563,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
             free(valueString);
+            break;
         }
 
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
@@ -1277,7 +1281,7 @@ int main()
 
         if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph))
         {
-            if ((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON) || GetKeyPressed() > 0) && engine.showSaveWarning != 1)
+            if (((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && engine.showSaveWarning != 1) || engine.delayFrames)
             {
                 BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
                 engine.fps = 140;
@@ -1353,6 +1357,13 @@ int main()
 
             engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph);
 
+            if(!engine.isGameRunning){
+                engine.isEditorOpened = true;
+                editor.isFirstFrame = true;
+                engine.wasBuilt = false;
+                FreeInterpreterContext(&interpreter);
+            }
+
             if (interpreter.newLogMessage)
             {
                 for (int i = 0; i < interpreter.logMessageCount; i++)
@@ -1360,6 +1371,7 @@ int main()
 
                 interpreter.newLogMessage = false;
                 interpreter.logMessageCount = 0;
+                engine.delayFrames = true;
             }
             EndTextureMode();
         }

@@ -22,6 +22,11 @@ void FreeInterpreterContext(InterpreterContext *interpreter)
 {
     free(interpreter->values);
     interpreter->values = NULL;
+    interpreter->valueCount = 0;
+
+    free(interpreter->onButtonNodeIndexes);
+    interpreter->onButtonNodeIndexes = NULL;
+    interpreter->onButtonNodeIndexesCount = 0;
 }
 
 char *ValueTypeToString(ValueType type)

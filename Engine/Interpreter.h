@@ -64,32 +64,19 @@ typedef struct
     int layer;
 } Sprite;
 
-typedef enum {
+typedef enum
+{
     PROP_TEXTURE,
     PROP_RECTANGLE,
     PROP_CIRCLE
-}PropType;
+} PropType;
 
 typedef struct
 {
-    union
-    {
-        struct
-        {
-            Texture2D texture;
-            int width;
-            int height;
-        }texture;
-        struct
-        {
-            int width;
-            int height;
-        }rect;
-        struct
-        {
-            int radius;
-        }circle;
-    };
+    Texture2D texture;
+    int width;
+    int height;
+    int radius;
     Vector2 position;
     PropType propType;
     Color color;

@@ -83,21 +83,22 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
 
     char str[128];
 
-    switch(message.type){
-        case VAL_NUMBER:
-            sprintf(str, "%f", message.number);
-            break;
-        case VAL_STRING:
-            strncpy(str, message.string, 127);
-            break;
-        case VAL_BOOL:
-            strcpy(str, message.boolean ? "true" : "false");
-            break;
-        case VAL_COLOR:
-            sprintf(str, "%08X", (message.color.r << 24) | (message.color.g << 16) | (message.color.b << 8) | message.color.a);
-            break;
-        default:
-            strcpy(str, "Error");
+    switch (message.type)
+    {
+    case VAL_NUMBER:
+        sprintf(str, "%f", message.number);
+        break;
+    case VAL_STRING:
+        strncpy(str, message.string, 127);
+        break;
+    case VAL_BOOL:
+        strcpy(str, message.boolean ? "true" : "false");
+        break;
+    case VAL_COLOR:
+        sprintf(str, "%08X", (message.color.r << 24) | (message.color.g << 16) | (message.color.b << 8) | message.color.a);
+        break;
+    default:
+        strcpy(str, "Error");
     }
 
     str[127] = '\0';
@@ -188,6 +189,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     }
 
     int totalOutputPins = 0;
+    int totalComponents = 0;
     for (int i = 0; i < graph->nodeCount; i++)
     {
         RuntimeNode *node = &runtime.nodes[i];
@@ -196,11 +198,19 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (node->outputPins[j]->type != PIN_FLOW)
                 totalOutputPins++;
         }
+
+        if (node->type == NODE_PROP_TEXTURE || node->type == NODE_PROP_RECTANGLE || node->type == NODE_PROP_CIRCLE || node->type == NODE_SPRITE)
+        {
+            totalComponents++;
+        }
     }
 
     interpreter->values = malloc(sizeof(Value) * (totalOutputPins + 1));
     interpreter->values[0] = (Value){.type = VAL_STRING, .string = "Error value"};
     interpreter->valueCount = 1;
+
+    interpreter->components = malloc(sizeof(SceneComponent) * (totalComponents + 1));
+    interpreter->componentCount = 0;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -385,6 +395,33 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         if (inputPin->type == PIN_FLOW && outputPin->type == PIN_FLOW)
         {
             outputPin->nextNodeIndex = inputPin->nodeIndex;
+        }
+    }
+
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        RuntimeNode *node = &runtime.nodes[i];
+
+        switch (node->type)
+        {
+        case NODE_PROP_TEXTURE:
+            continue;
+        case NODE_PROP_RECTANGLE:
+            // id
+            interpreter->components[interpreter->componentCount].isSprite = false;
+            interpreter->components[interpreter->componentCount].prop.propType = PROP_RECTANGLE;
+            interpreter->components[interpreter->componentCount].prop.position.x = interpreter->values[node->inputPins[1]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.width = interpreter->values[node->inputPins[3]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.height = interpreter->values[node->inputPins[4]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[5]->valueIndex].color;
+            interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+            interpreter->componentCount++;
+            continue;
+        case NODE_PROP_CIRCLE:
+            continue;
+        default:
+            break;
         }
     }
 
@@ -634,6 +671,22 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
+    case NODE_PROP_TEXTURE:
+    {
+        break;
+    }
+
+    case NODE_PROP_RECTANGLE:
+    {
+        // AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex], 1);
+        break;
+    }
+
+    case NODE_PROP_CIRCLE:
+    {
+        break;
+    }
+
     case NODE_PRINT:
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
@@ -652,6 +705,34 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     if (currNodeIndex != lastNodeIndex)
     {
         InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
+    }
+}
+
+void DrawComponents(InterpreterContext *interpreter)
+{
+    for (int i = 0; i < interpreter->componentCount; i++)
+    {
+        SceneComponent component = interpreter->components[i];
+        if (component.isSprite)
+        {
+            continue; //
+        }
+        else
+        {
+            switch (component.prop.propType)
+            {
+            case PROP_TEXTURE:
+                break; //
+            case PROP_RECTANGLE:
+                DrawRectangle(component.prop.position.x, component.prop.position.y, component.prop.width, component.prop.height, component.prop.color);
+                break;
+            case PROP_CIRCLE:
+                DrawCircle(component.prop.position.x, component.prop.position.y, component.prop.radius, component.prop.color);
+                break;
+            default:
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Component error!"}, 2);
+            }
+        }
     }
 }
 
@@ -702,6 +783,8 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     {
         InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph, 0);
     }
+
+    DrawComponents(interpreter);
 
     return true;
 }

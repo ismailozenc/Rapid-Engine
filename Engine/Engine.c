@@ -159,10 +159,27 @@ void EmergencyExit(EngineContext *engine)
     {
         for (int i = 0; i < engine->logs.count; i++)
         {
-            fprintf(logFile, "[%s] %s\n",
-                    engine->logs.entries[i].level == 0 ? "INFO" : engine->logs.entries[i].level == 1 ? "WARN"
-                                                                                                     : "ERROR",
-                    engine->logs.entries[i].message);
+            char level[512];
+            switch(engine->logs.entries[i].level){
+                case LOG_LEVEL_NORMAL:
+                    strcpy(level, "INFO");
+                    break;
+                case LOG_LEVEL_WARNING:
+                    strcpy(level, "WARNING");
+                    break;
+                case LOG_LEVEL_ERROR:
+                    strcpy(level, "ERROR");
+                    break;
+                case LOG_LEVEL_SAVE:
+                    strcpy(level, "SAVE");
+                    break;
+                case LOG_LEVEL_DEBUG:
+                    strcpy(level, "DEBUG");
+                    break;
+                default:
+                    strcpy(level, "UNKNOWN");
+            }
+            fprintf(logFile, "[%s] %s\n", level, engine->logs.entries[i].message);
         }
         fclose(logFile);
     }

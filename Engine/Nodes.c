@@ -386,7 +386,7 @@ void DeleteNode(GraphContext *graph, int nodeID)
             {
                 for (int j = 0; j < graph->pinCount; j++)
                 {
-                    if (graph->pins[j].id == graph->nodes[i].inputPins[graph->nodes[i].type == NODE_GET_VAR ? 0 : 1]) //albert
+                    if (graph->pins[j].id == graph->nodes[i].inputPins[graph->nodes[i].type == NODE_GET_VAR ? 0 : 1])
                     {
                         if (graph->pins[j].pickedOption > variableToDeleteIndex)
                         {

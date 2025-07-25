@@ -731,7 +731,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             if (graph->pins[i].type == PIN_VARIABLE)
             {
                 Color varTypeColor;
-                int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[1] : graph->nodes[currNodeIndex].inputPins[2]);
+                int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[0] : graph->nodes[currNodeIndex].inputPins[2]);
                 switch (graph->variableTypes[graph->pins[i].pickedOption])
                 {
                 case NODE_NUM: // 38, 38, 38

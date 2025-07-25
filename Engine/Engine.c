@@ -571,7 +571,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             break;
 
         case VAR_TOOLTIP_RUNTIME:
-            sprintf(temp, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type),  interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
+            sprintf(temp, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type), interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
@@ -582,14 +582,16 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
             break;
-        
+
         case CHANGE_VARS_FILTER:
-                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
-                    engine->varsFilter++;
-                    if(engine->varsFilter > 5){
-                        engine->varsFilter = 0;
-                    }
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                engine->varsFilter++;
+                if (engine->varsFilter > 5)
+                {
+                    engine->varsFilter = 0;
                 }
+            }
         }
 
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
@@ -820,15 +822,18 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             logY -= 25;
         }
 
-        AddUIElement(engine, (UIElement){
+        if (engine->sideBarMiddleY > 45)
+        {
+            AddUIElement(engine, (UIElement){
                                      .name = "VarsFilterShowText",
                                      .shape = UIText,
                                      .type = NO_COLLISION_ACTION,
                                      .text = {.string = "Show:", .textPos = {engine->sideBarWidth - 155, 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                      .layer = 0});
-        char varsFilterText[10];
-        Color varFilterColor;
-        switch(engine->varsFilter){
+            char varsFilterText[10];
+            Color varFilterColor;
+            switch (engine->varsFilter)
+            {
             case VAR_FILTER_ALL:
                 strcpy(varsFilterText, "All");
                 varFilterColor = RAYWHITE;
@@ -858,8 +863,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 strcpy(varsFilterText, "All");
                 varFilterColor = RAYWHITE;
                 break;
-        }
-        AddUIElement(engine, (UIElement){
+            }
+            AddUIElement(engine, (UIElement){
                                      .name = "VarsFilterButton",
                                      .shape = UIRectangle,
                                      .type = CHANGE_VARS_FILTER,
@@ -868,19 +873,23 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .layer = 1,
                                      .text = {.textPos = {engine->sideBarWidth - 85 + (78 - MeasureTextEx(engine->font, varsFilterText, 20, 1).x) / 2, 20}, .textSize = 20, .textSpacing = 1, .textColor = varFilterColor},
                                  });
-        strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, varsFilterText);
+            strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, varsFilterText);
+        }
 
         int varsY = 60;
         for (int i = 0; i < (engine->isGameRunning ? interpreter->valueCount : graph->variablesCount) && varsY < engine->sideBarMiddleY - 40; i++)
         {
             if (engine->isGameRunning)
             {
-                if(!interpreter->values[i].isVariable){
+                if (!interpreter->values[i].isVariable)
+                {
                     continue;
                 }
             }
-            else{
-                if(i == 0){
+            else
+            {
+                if (i == 0)
+                {
                     continue;
                 }
             }
@@ -891,23 +900,38 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
             case VAL_NUMBER:
                 varColor = (Color){24, 119, 149, 255};
-                if(engine->varsFilter != VAR_FILTER_NUMBERS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                if (engine->varsFilter != VAR_FILTER_NUMBERS && engine->varsFilter != VAR_FILTER_ALL)
+                {
+                    continue;
+                }
                 break;
             case VAL_STRING:
                 varColor = (Color){180, 178, 40, 255};
-                if(engine->varsFilter != VAR_FILTER_STRINGS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                if (engine->varsFilter != VAR_FILTER_STRINGS && engine->varsFilter != VAR_FILTER_ALL)
+                {
+                    continue;
+                }
                 break;
             case VAL_BOOL:
                 varColor = (Color){27, 64, 121, 255};
-                if(engine->varsFilter != VAR_FILTER_BOOLS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                if (engine->varsFilter != VAR_FILTER_BOOLS && engine->varsFilter != VAR_FILTER_ALL)
+                {
+                    continue;
+                }
                 break;
             case VAL_COLOR:
                 varColor = (Color){217, 3, 104, 255};
-                if(engine->varsFilter != VAR_FILTER_COLORS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                if (engine->varsFilter != VAR_FILTER_COLORS && engine->varsFilter != VAR_FILTER_ALL)
+                {
+                    continue;
+                }
                 break;
             case VAL_SPRITE:
                 varColor = (Color){3, 206, 164, 255};
-                if(engine->varsFilter != VAR_FILTER_SPRITES && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                if (engine->varsFilter != VAR_FILTER_SPRITES && engine->varsFilter != VAR_FILTER_ALL)
+                {
+                    continue;
+                }
                 break;
             default:
                 varColor = LIGHTGRAY;

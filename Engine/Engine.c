@@ -160,24 +160,25 @@ void EmergencyExit(EngineContext *engine)
         for (int i = 0; i < engine->logs.count; i++)
         {
             char level[512];
-            switch(engine->logs.entries[i].level){
-                case LOG_LEVEL_NORMAL:
-                    strcpy(level, "INFO");
-                    break;
-                case LOG_LEVEL_WARNING:
-                    strcpy(level, "WARNING");
-                    break;
-                case LOG_LEVEL_ERROR:
-                    strcpy(level, "ERROR");
-                    break;
-                case LOG_LEVEL_SAVE:
-                    strcpy(level, "SAVE");
-                    break;
-                case LOG_LEVEL_DEBUG:
-                    strcpy(level, "DEBUG");
-                    break;
-                default:
-                    strcpy(level, "UNKNOWN");
+            switch (engine->logs.entries[i].level)
+            {
+            case LOG_LEVEL_NORMAL:
+                strcpy(level, "INFO");
+                break;
+            case LOG_LEVEL_WARNING:
+                strcpy(level, "WARNING");
+                break;
+            case LOG_LEVEL_ERROR:
+                strcpy(level, "ERROR");
+                break;
+            case LOG_LEVEL_SAVE:
+                strcpy(level, "SAVE");
+                break;
+            case LOG_LEVEL_DEBUG:
+                strcpy(level, "DEBUG");
+                break;
+            default:
+                strcpy(level, "UNKNOWN");
             }
             fprintf(logFile, "[%s] %s\n", level, engine->logs.entries[i].message);
         }
@@ -378,6 +379,7 @@ void CountingSortByLayer(EngineContext *engine)
 
 void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
+    char temp[256];
     if (engine->hoveredUIElementIndex != -1)
     {
         switch (engine->uiElements[engine->hoveredUIElementIndex].type)
@@ -566,13 +568,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
             break;
 
-        case SHOW_VAR_INFO:
-            char temp[256];
-            sprintf(temp, "%s: %s", interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
+        case VAR_TOOLTIP_RUNTIME:
+            sprintf(temp, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type),  interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
-                                     .type = VAR_TOOLTIP,
+                                     .type = NO_COLLISION_ACTION,
                                      .rect = {.pos = {engine->sideBarWidth, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {MeasureTextEx(engine->font, temp, 20, 0).x + 20, 40}, .roundness = 0.4f, .roundSegments = 8},
                                      .color = DARKGRAY,
                                      .layer = 1,
@@ -594,7 +595,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 AddUIElement(engine, (UIElement){
                                          .name = "HoverBlink",
                                          .shape = UIRectangle,
-                                         .type = VAR_TOOLTIP,
+                                         .type = NO_COLLISION_ACTION,
                                          .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
                                          .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
                                          .layer = 99});
@@ -810,24 +811,31 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         }
 
         int varsY = 40;
-        for (int i = 0; i < interpreter->valueCount && varsY < engine->sideBarMiddleY - 40; i++)
+        for (int i = 0; i < (engine->isGameRunning ? interpreter->valueCount : graph->variablesCount) && varsY < engine->sideBarMiddleY - 40; i++)
         {
-            if (!interpreter->values[i].isVariable)
+            if (engine->isGameRunning)
             {
-                continue;
+                if(!interpreter->values[i].isVariable){
+                    continue;
+                }
+            }
+            else{
+                if(i == 0){
+                    continue;
+                }
             }
             AddUIElement(engine, (UIElement){
                                      .name = "Variable Background",
                                      .shape = UIRectangle,
-                                     .type = SHOW_VAR_INFO,
+                                     .type = engine->isGameRunning ? VAR_TOOLTIP_RUNTIME : NO_COLLISION_ACTION,
                                      .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){59, 59, 59, 255},
                                      .layer = 1,
                                      .valueIndex = i});
 
             Color varColor;
-            sprintf(cutMessage, "%s", interpreter->values[i].name);
-            switch (interpreter->values[i].type)
+            sprintf(cutMessage, "%s", engine->isGameRunning ? interpreter->values[i].name : graph->variables[i]);
+            switch (engine->isGameRunning ? interpreter->values[i].type : graph->variableTypes[i])
             {
             case VAL_NUMBER: // 38, 38, 38
                 varColor = (Color){24, 119, 149, 255};

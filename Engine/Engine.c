@@ -82,6 +82,8 @@ EngineContext InitEngineContext()
 
     engine.showSaveWarning = 0;
 
+    engine.varsFilter = 0;
+
     return engine;
 }
 
@@ -580,6 +582,14 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
             break;
+        
+        case CHANGE_VARS_FILTER:
+                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                    engine->varsFilter++;
+                    if(engine->varsFilter > 5){
+                        engine->varsFilter = 0;
+                    }
+                }
         }
 
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
@@ -810,7 +820,57 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             logY -= 25;
         }
 
-        int varsY = 40;
+        AddUIElement(engine, (UIElement){
+                                     .name = "VarsFilterShowText",
+                                     .shape = UIText,
+                                     .type = NO_COLLISION_ACTION,
+                                     .text = {.string = "Show:", .textPos = {engine->sideBarWidth - 155, 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                     .layer = 0});
+        char varsFilterText[10];
+        Color varFilterColor;
+        switch(engine->varsFilter){
+            case VAR_FILTER_ALL:
+                strcpy(varsFilterText, "All");
+                varFilterColor = RAYWHITE;
+                break;
+            case VAR_FILTER_NUMBERS:
+                strcpy(varsFilterText, "Nums");
+                varFilterColor = (Color){24, 119, 149, 255};
+                break;
+            case VAR_FILTER_STRINGS:
+                strcpy(varsFilterText, "Strings");
+                varFilterColor = (Color){180, 178, 40, 255};
+                break;
+            case VAR_FILTER_BOOLS:
+                strcpy(varsFilterText, "Bools");
+                varFilterColor = (Color){27, 64, 121, 255};
+                break;
+            case VAR_FILTER_COLORS:
+                strcpy(varsFilterText, "Colors");
+                varFilterColor = (Color){217, 3, 104, 255};
+                break;
+            case VAR_FILTER_SPRITES:
+                strcpy(varsFilterText, "Sprites");
+                varFilterColor = (Color){3, 206, 164, 255};
+                break;
+            default:
+                engine->varsFilter = 0;
+                strcpy(varsFilterText, "All");
+                varFilterColor = RAYWHITE;
+                break;
+        }
+        AddUIElement(engine, (UIElement){
+                                     .name = "VarsFilterButton",
+                                     .shape = UIRectangle,
+                                     .type = CHANGE_VARS_FILTER,
+                                     .rect = {.pos = {engine->sideBarWidth - 85, 15}, .recSize = {78, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .color = (Color){70, 70, 70, 200},
+                                     .layer = 1,
+                                     .text = {.textPos = {engine->sideBarWidth - 85 + (78 - MeasureTextEx(engine->font, varsFilterText, 20, 1).x) / 2, 20}, .textSize = 20, .textSpacing = 1, .textColor = varFilterColor},
+                                 });
+        strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, varsFilterText);
+
+        int varsY = 60;
         for (int i = 0; i < (engine->isGameRunning ? interpreter->valueCount : graph->variablesCount) && varsY < engine->sideBarMiddleY - 40; i++)
         {
             if (engine->isGameRunning)
@@ -824,6 +884,35 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                     continue;
                 }
             }
+
+            Color varColor;
+            sprintf(cutMessage, "%s", engine->isGameRunning ? interpreter->values[i].name : graph->variables[i]);
+            switch (engine->isGameRunning ? interpreter->values[i].type : graph->variableTypes[i])
+            {
+            case VAL_NUMBER:
+                varColor = (Color){24, 119, 149, 255};
+                if(engine->varsFilter != VAR_FILTER_NUMBERS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                break;
+            case VAL_STRING:
+                varColor = (Color){180, 178, 40, 255};
+                if(engine->varsFilter != VAR_FILTER_STRINGS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                break;
+            case VAL_BOOL:
+                varColor = (Color){27, 64, 121, 255};
+                if(engine->varsFilter != VAR_FILTER_BOOLS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                break;
+            case VAL_COLOR:
+                varColor = (Color){217, 3, 104, 255};
+                if(engine->varsFilter != VAR_FILTER_COLORS && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                break;
+            case VAL_SPRITE:
+                varColor = (Color){3, 206, 164, 255};
+                if(engine->varsFilter != VAR_FILTER_SPRITES && engine->varsFilter != VAR_FILTER_ALL){continue;}
+                break;
+            default:
+                varColor = LIGHTGRAY;
+            }
+
             AddUIElement(engine, (UIElement){
                                      .name = "Variable Background",
                                      .shape = UIRectangle,
@@ -833,28 +922,6 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .layer = 1,
                                      .valueIndex = i});
 
-            Color varColor;
-            sprintf(cutMessage, "%s", engine->isGameRunning ? interpreter->values[i].name : graph->variables[i]);
-            switch (engine->isGameRunning ? interpreter->values[i].type : graph->variableTypes[i])
-            {
-            case VAL_NUMBER: // 38, 38, 38
-                varColor = (Color){24, 119, 149, 255};
-                break;
-            case VAL_STRING:
-                varColor = (Color){180, 178, 40, 255};
-                break;
-            case VAL_BOOL:
-                varColor = (Color){27, 64, 121, 255};
-                break;
-            case VAL_COLOR:
-                varColor = (Color){217, 3, 104, 255}; // 219, 58, 52, 255
-                break;
-            case VAL_SPRITE:
-                varColor = (Color){3, 206, 164, 255};
-                break;
-            default:
-                varColor = LIGHTGRAY;
-            }
             float dotsWidth = MeasureTextEx(engine->font, "...", 24, 2).x;
             int j;
             bool wasCut = false;
@@ -890,7 +957,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .name = "Variable",
                                      .shape = UICircle,
                                      .type = NO_COLLISION_ACTION,
-                                     .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
+                                     .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 + 3 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
                                      .color = varColor,
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
                                      .layer = 2});

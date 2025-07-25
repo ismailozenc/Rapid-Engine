@@ -30,6 +30,7 @@ typedef enum
     RESIZE_SIDE_BAR,
     RESIZE_SIDE_BAR_MIDDLE,
     OPEN_FILE,
+    CHANGE_VARS_FILTER,
     VAR_TOOLTIP_RUNTIME
 } UIElementCollisionType;
 
@@ -40,6 +41,16 @@ typedef enum
     UILine,
     UIText
 } UIElementShape;
+
+typedef enum
+{
+    VAR_FILTER_ALL,
+    VAR_FILTER_NUMBERS,
+    VAR_FILTER_STRINGS,
+    VAR_FILTER_BOOLS,
+    VAR_FILTER_COLORS,
+    VAR_FILTER_SPRITES
+}VarFilter;
 
 typedef struct LogEntry
 {
@@ -128,6 +139,7 @@ typedef struct EngineContext
     float editorZoom;
     bool wasBuilt;
     int showSaveWarning;
+    VarFilter varsFilter;
 } EngineContext;
 
 typedef enum

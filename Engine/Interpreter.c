@@ -344,16 +344,16 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_GET_VAR:
             for (int j = 0; j < graph->nodeCount; j++)
             {
-                if (j != i && strcmp(graph->variables[runtime.nodes[i].inputPins[1]->pickedOption], graph->nodes[j].name) == 0)
+                if (j != i && strcmp(graph->variables[runtime.nodes[i].inputPins[0]->pickedOption], graph->nodes[j].name) == 0)
                 {
-                    node->outputPins[1]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
+                    node->outputPins[0]->valueIndex = runtime.nodes[j].outputPins[1]->valueIndex;
                     valueFound = true;
                     break;
                 }
             }
             if (!valueFound)
             {
-                node->outputPins[1]->valueIndex = 0;
+                node->outputPins[0]->valueIndex = 0;
             }
             continue;
         case NODE_SET_VAR:

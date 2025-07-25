@@ -116,7 +116,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_BOOL, 2, 2, 120, 100, {100, 60, 120, 200}, true, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Set value"}, {"Next", "Get value"}},
     {NODE_COLOR, 2, 2, 120, 100, {100, 60, 120, 200}, true, {PIN_FLOW, PIN_COLOR}, {PIN_FLOW, PIN_COLOR}, {"Prev", "Set value"}, {"Next", "Get value"}},
     {NODE_SPRITE, 3, 3, 200, 180, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_SPRITE}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Sprite"}, {"Next", "Sprite"}},
-    {NODE_GET_VAR, 2, 2, 140, 100, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE}, {PIN_FLOW, PIN_UNKNOWN_VALUE}, {"Prev"}, {"Next", "Get value"}},
+    {NODE_GET_VAR, 1, 1, 140, 70, {60, 100, 159, 200}, false, {PIN_VARIABLE}, {PIN_UNKNOWN_VALUE}, {"Variable"}, {"Get value"}},
     {NODE_SET_VAR, 3, 2, 140, 130, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE, PIN_UNKNOWN_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
     {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {0}, {"Next"}},
     {NODE_EVENT_LOOP_TICK, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {0}, {"Next"}},

@@ -848,6 +848,9 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else
         {
+            /*if(graph->pins[i].isInput){
+                DrawRectangleRounded((Rectangle){nodePos.x - 20, nodePos.y + yOffset - 10, 40, 20}, 0.6f, 8, (Color){110, 85, 40, 255});
+            }*/ // Merge literal node to input pin
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
             if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 12))
             {

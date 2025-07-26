@@ -1407,6 +1407,11 @@ int main()
 
     while (!WindowShouldClose())
     {
+        if (!IsWindowReady())
+        {
+            EmergencyExit(&engine);
+        }
+
         ContextChangePerFrame(&engine);
 
         int prevHoveredUIIndex = engine.hoveredUIElementIndex;

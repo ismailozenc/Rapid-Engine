@@ -61,7 +61,7 @@ typedef struct
     int width;
     int height;
     float rotation;
-    bool visible;
+    bool isVisible;
     int layer;
 } Sprite;
 

@@ -409,6 +409,18 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
         switch (node->type)
         {
+        case NODE_SPRITE:
+            interpreter->components[interpreter->componentCount].isSprite = true;
+            interpreter->components[interpreter->componentCount].isVisible = false;
+            interpreter->components[interpreter->componentCount].sprite.texture = LoadTexture(interpreter->values[node->inputPins[1]->valueIndex].string);
+            interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[node->inputPins[1]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[node->inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].sprite.position.x = interpreter->values[node->inputPins[3]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.width / 2;
+            interpreter->components[interpreter->componentCount].sprite.position.y = interpreter->values[node->inputPins[4]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.height / 2;
+            interpreter->components[interpreter->componentCount].sprite.rotation = interpreter->values[node->inputPins[5]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+            node->outputPins[1]->componentIndex = interpreter->componentCount;
+            interpreter->componentCount++;
         case NODE_PROP_TEXTURE:
             continue;
         case NODE_PROP_RECTANGLE:
@@ -504,6 +516,15 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SPRITE:
     {
+        Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
+        if(graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1){
+            sprite->position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+        }
+        if(graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1){
+            sprite->position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+        }
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true; //
         break;
     }
 
@@ -736,7 +757,10 @@ void DrawComponents(InterpreterContext *interpreter)
         }
         if (component.isSprite)
         {
-            continue; //
+            DrawRectangle(component.sprite.position.x, component.sprite.position.y, 100, 100, RED);
+            //DrawRectangle(GetScreenWidth(), GetScreenHeight(), 100, 100, RED);
+            printf("%f %f\n", component.sprite.position.x, component.sprite.position.y);
+            continue;
         }
         else
         {

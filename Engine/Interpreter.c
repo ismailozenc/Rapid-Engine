@@ -412,7 +412,24 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_SPRITE:
             interpreter->components[interpreter->componentCount].isSprite = true;
             interpreter->components[interpreter->componentCount].isVisible = false;
-            interpreter->components[interpreter->componentCount].sprite.texture = LoadTexture(interpreter->values[node->inputPins[1]->valueIndex].string);
+            int fileIndex = node->inputPins[1]->valueIndex;
+            if (fileIndex != -1 && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
+            {
+                const char *path = interpreter->values[fileIndex].string;
+                Texture2D tex = LoadTexture(path);
+                if (tex.id == 0)
+                {
+                    printf("FAILED to load texture: %s\n", path);
+                }
+                else
+                {
+                    interpreter->components[interpreter->componentCount].sprite.texture = tex;
+                }
+            }
+            else
+            {
+                printf("Invalid texture input\n");
+            }
             interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[node->inputPins[2]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.position.x = interpreter->values[node->inputPins[3]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.width / 2;
@@ -517,13 +534,33 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_SPRITE:
     {
         Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
-        if(graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1){
+        if (graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1)
+        {
             sprite->position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
         }
-        if(graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1){
+        if (graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1)
+        {
             sprite->position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
         }
+        if (graph->nodes[currNodeIndex].inputPins[4]->valueIndex != -1)
+        {
+            sprite->width = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[5]->valueIndex != -1)
+        {
+            sprite->height = interpreter->values[graph->nodes[currNodeIndex].inputPins[5]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[6]->valueIndex != -1)
+        {
+            sprite->rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[6]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[7]->valueIndex != -1)
+        {
+            sprite->layer = interpreter->values[graph->nodes[currNodeIndex].inputPins[7]->valueIndex].number;
+        }
+        Texture2D temp = interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture;
         interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture = temp;
         interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true; //
         break;
     }
@@ -757,9 +794,17 @@ void DrawComponents(InterpreterContext *interpreter)
         }
         if (component.isSprite)
         {
-            DrawRectangle(component.sprite.position.x, component.sprite.position.y, 100, 100, RED);
-            //DrawRectangle(GetScreenWidth(), GetScreenHeight(), 100, 100, RED);
-            printf("%f %f\n", component.sprite.position.x, component.sprite.position.y);
+            DrawTexturePro(
+                component.sprite.texture,
+                (Rectangle){0, 0, (float)component.sprite.texture.width, (float)component.sprite.texture.height},
+                (Rectangle){
+                    component.sprite.position.x - component.sprite.width / 2.0f,
+                    component.sprite.position.y - component.sprite.height / 2.0f,
+                    (float)component.sprite.width,
+                    (float)component.sprite.height},
+                (Vector2){component.sprite.width / 2.0f, component.sprite.height / 2.0f},
+                component.sprite.rotation,
+                WHITE);
             continue;
         }
         else

@@ -414,7 +414,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         {
         case NODE_SPRITE:
             interpreter->components[interpreter->componentCount].isSprite = true;
-            interpreter->components[interpreter->componentCount].isVisible = false;
+            interpreter->components[interpreter->componentCount].isVisible = false;;
             int fileIndex = node->inputPins[1]->valueIndex;
             if (fileIndex != -1 && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
             {
@@ -564,7 +564,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         Texture2D temp = interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture;
         interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
         interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture = temp;
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true; //
         break;
     }
 
@@ -611,6 +610,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SPAWN_SPRITE:
     {
+        printf("%d", interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible);
+        interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible = true;
         break;
     }
 

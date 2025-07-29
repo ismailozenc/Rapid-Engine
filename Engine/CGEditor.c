@@ -518,6 +518,148 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
     }
 }
 
+void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIndex, int currNodeIndex, EditorContext *editor)
+{
+    DropdownOptionsByPinType options;
+    if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
+    {
+        options.boxWidth = 100;
+        options.optionsCount = graph->variablesCount;
+        options.options = graph->variables;
+
+        if (options.optionsCount == 0)
+        {
+            static char *noVars[] = {"No variables"};
+            options.options = noVars;
+            options.optionsCount = 1;
+        }
+    }
+    else
+    {
+        options = getPinDropdownOptionsByType(graph->pins[currPinIndex].type);
+    }
+
+    Rectangle dropdown = {graph->pins[currPinIndex].position.x - 6, graph->pins[currPinIndex].position.y - 12, options.boxWidth, 24};
+
+    DrawRectangleRec(dropdown, GRAY);
+    DrawTextEx(editor->font, options.options[graph->pins[currPinIndex].pickedOption], (Vector2){(graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE) ? dropdown.x + 20 : dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
+    DrawRectangleLinesEx(dropdown, 1, WHITE);
+    if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
+    {
+        Color varTypeColor;
+        int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[0] : graph->nodes[currNodeIndex].inputPins[2]);
+        switch (graph->variableTypes[graph->pins[currPinIndex].pickedOption])
+        {
+        case NODE_NUM: // 38, 38, 38
+            varTypeColor = (Color){24, 119, 149, 255};
+            graph->pins[associatedPinIndex].type = PIN_NUM;
+            break;
+        case NODE_STRING:
+            varTypeColor = (Color){180, 178, 40, 255};
+            graph->pins[associatedPinIndex].type = PIN_STRING;
+            break;
+        case NODE_BOOL:
+            varTypeColor = (Color){27, 64, 121, 255};
+            graph->pins[associatedPinIndex].type = PIN_BOOL;
+            break;
+        case NODE_COLOR:
+            varTypeColor = (Color){217, 3, 104, 255};
+            graph->pins[associatedPinIndex].type = PIN_COLOR;
+            break;
+        case NODE_SPRITE:
+            varTypeColor = (Color){3, 206, 164, 255};
+            graph->pins[associatedPinIndex].type = PIN_SPRITE;
+            break;
+        default:
+            varTypeColor = LIGHTGRAY;
+        }
+        DrawCircle(graph->pins[currPinIndex].position.x + 4, graph->pins[currPinIndex].position.y, 6, varTypeColor);
+    }
+
+    bool mouseOnDropdown = CheckCollisionPointRec(editor->mousePos, dropdown);
+    bool mouseOnOptions = false;
+    if (editor->nodeDropdownFocused == currPinIndex)
+    {
+        for (int j = 0; j < options.optionsCount; j++)
+        {
+            Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
+            if (CheckCollisionPointRec(editor->mousePos, option))
+            {
+                mouseOnOptions = true;
+                break;
+            }
+        }
+    }
+
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
+        if (editor->nodeDropdownFocused == currPinIndex)
+        {
+            if (mouseOnDropdown)
+                editor->nodeDropdownFocused = -1;
+            else if (!mouseOnOptions)
+                editor->nodeDropdownFocused = -1;
+        }
+        else if (mouseOnDropdown)
+        {
+            editor->nodeDropdownFocused = currPinIndex;
+        }
+    }
+
+    if (editor->nodeDropdownFocused == currPinIndex)
+    {
+        editor->delayFrames = true;
+        hoveredNodeIndex = -1;
+        int displayedVarsCounter = 0;
+        for (int j = 0; j < options.optionsCount; j++)
+        {
+            displayedVarsCounter++;
+            if((graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE && graph->variableTypes[j] != NODE_SPRITE) && j != 0){
+                displayedVarsCounter--;
+                continue;
+            }
+            Rectangle option = {dropdown.x, dropdown.y - displayedVarsCounter * 30, dropdown.width, 30};
+            DrawRectangleRec(option, RAYWHITE);
+            DrawTextEx(editor->font, options.options[j], (Vector2){(graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE) ? option.x + 20 : option.x + 3, option.y + 3}, 20, 0, BLACK);
+            DrawRectangleLinesEx(option, 1, DARKGRAY);
+
+            if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
+            {
+                Color varTypeColor;
+                switch (graph->variableTypes[j])
+                {
+                case NODE_NUM: // 38, 38, 38
+                    varTypeColor = (Color){24, 119, 149, 255};
+                    break;
+                case NODE_STRING:
+                    varTypeColor = (Color){180, 178, 40, 255};
+                    break;
+                case NODE_BOOL:
+                    varTypeColor = (Color){27, 64, 121, 255};
+                    break;
+                case NODE_COLOR:
+                    varTypeColor = (Color){217, 3, 104, 255};
+                    break;
+                case NODE_SPRITE:
+                    varTypeColor = (Color){3, 206, 164, 255};
+                    break;
+                default:
+                    varTypeColor = LIGHTGRAY;
+                }
+                DrawCircle(option.x + 10, option.y + 12, 6, varTypeColor);
+            }
+
+            if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                graph->pins[currPinIndex].pickedOption = j;
+                editor->nodeDropdownFocused = -1;
+                editor->hasChanged = true;
+                editor->hasChangedInLastFrame = true;
+            }
+        }
+    }
+}
+
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
 
@@ -702,141 +844,9 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                 hoveredPinIndex = i;
             }
         }
-        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE || graph->pins[i].type == PIN_ARITHMETIC || graph->pins[i].type == PIN_VARIABLE)
+        else if (graph->pins[i].type == PIN_COMPARISON_OPERATOR || graph->pins[i].type == PIN_GATE || graph->pins[i].type == PIN_ARITHMETIC || graph->pins[i].type == PIN_VARIABLE || graph->pins[i].type == PIN_SPRITE_VARIABLE)
         {
-            DropdownOptionsByPinType options;
-            if (graph->pins[i].type == PIN_VARIABLE)
-            {
-                options.boxWidth = 100;
-                options.optionsCount = graph->variablesCount;
-                options.options = graph->variables;
-
-                if (options.optionsCount == 0)
-                {
-                    static char *noVars[] = {"No variables"};
-                    options.options = noVars;
-                    options.optionsCount = 1;
-                }
-            }
-            else
-            {
-                options = getPinDropdownOptionsByType(graph->pins[i].type);
-            }
-
-            Rectangle dropdown = {graph->pins[i].position.x - 6, graph->pins[i].position.y - 12, options.boxWidth, 24};
-
-            DrawRectangleRec(dropdown, GRAY);
-            DrawTextEx(editor->font, options.options[graph->pins[i].pickedOption], (Vector2){graph->pins[i].type == PIN_VARIABLE ? dropdown.x + 20 : dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
-            DrawRectangleLinesEx(dropdown, 1, WHITE);
-            if (graph->pins[i].type == PIN_VARIABLE)
-            {
-                Color varTypeColor;
-                int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[0] : graph->nodes[currNodeIndex].inputPins[2]);
-                switch (graph->variableTypes[graph->pins[i].pickedOption])
-                {
-                case NODE_NUM: // 38, 38, 38
-                    varTypeColor = (Color){24, 119, 149, 255};
-                    graph->pins[associatedPinIndex].type = PIN_NUM;
-                    break;
-                case NODE_STRING:
-                    varTypeColor = (Color){180, 178, 40, 255};
-                    graph->pins[associatedPinIndex].type = PIN_STRING;
-                    break;
-                case NODE_BOOL:
-                    varTypeColor = (Color){27, 64, 121, 255};
-                    graph->pins[associatedPinIndex].type = PIN_BOOL;
-                    break;
-                case NODE_COLOR:
-                    varTypeColor = (Color){217, 3, 104, 255};
-                    graph->pins[associatedPinIndex].type = PIN_COLOR;
-                    break;
-                case NODE_SPRITE:
-                    varTypeColor = (Color){3, 206, 164, 255};
-                    graph->pins[associatedPinIndex].type = PIN_SPRITE;
-                    break;
-                default:
-                    varTypeColor = LIGHTGRAY;
-                }
-                DrawCircle(graph->pins[i].position.x + 4, graph->pins[i].position.y, 6, varTypeColor);
-            }
-
-            bool mouseOnDropdown = CheckCollisionPointRec(editor->mousePos, dropdown);
-            bool mouseOnOptions = false;
-            if (editor->nodeDropdownFocused == i)
-            {
-                for (int j = 0; j < options.optionsCount; j++)
-                {
-                    Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
-                    if (CheckCollisionPointRec(editor->mousePos, option))
-                    {
-                        mouseOnOptions = true;
-                        break;
-                    }
-                }
-            }
-
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                if (editor->nodeDropdownFocused == i)
-                {
-                    if (mouseOnDropdown)
-                        editor->nodeDropdownFocused = -1;
-                    else if (!mouseOnOptions)
-                        editor->nodeDropdownFocused = -1;
-                }
-                else if (mouseOnDropdown)
-                {
-                    editor->nodeDropdownFocused = i;
-                }
-            }
-
-            if (editor->nodeDropdownFocused == i)
-            {
-                editor->delayFrames = true;
-                hoveredNodeIndex = -1;
-
-                for (int j = 0; j < options.optionsCount; j++)
-                {
-                    Rectangle option = {dropdown.x, dropdown.y - (j + 1) * 30, dropdown.width, 30};
-                    DrawRectangleRec(option, RAYWHITE);
-                    DrawTextEx(editor->font, options.options[j], (Vector2){graph->pins[i].type == PIN_VARIABLE ? option.x + 20 : option.x + 3, option.y + 3}, 20, 0, BLACK);
-                    DrawRectangleLinesEx(option, 1, DARKGRAY);
-
-                    if (graph->pins[i].type == PIN_VARIABLE)
-                    {
-                        Color varTypeColor;
-                        switch (graph->variableTypes[j])
-                        {
-                        case NODE_NUM: // 38, 38, 38
-                            varTypeColor = (Color){24, 119, 149, 255};
-                            break;
-                        case NODE_STRING:
-                            varTypeColor = (Color){180, 178, 40, 255};
-                            break;
-                        case NODE_BOOL:
-                            varTypeColor = (Color){27, 64, 121, 255};
-                            break;
-                        case NODE_COLOR:
-                            varTypeColor = (Color){217, 3, 104, 255};
-                            break;
-                        case NODE_SPRITE:
-                            varTypeColor = (Color){3, 206, 164, 255};
-                            break;
-                        default:
-                            varTypeColor = LIGHTGRAY;
-                        }
-                        DrawCircle(option.x + 10, option.y + 12, 6, varTypeColor);
-                    }
-
-                    if (CheckCollisionPointRec(editor->mousePos, option) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-                    {
-                        graph->pins[i].pickedOption = j;
-                        editor->nodeDropdownFocused = -1;
-                        editor->hasChanged = true;
-                        editor->hasChangedInLastFrame = true;
-                    }
-                }
-            }
+            HandleDropdownMenu(graph, i, hoveredNodeIndex, currNodeIndex, editor);
         }
         else if (graph->pins[i].type == PIN_FIELD_NUM || graph->pins[i].type == PIN_FIELD_STRING || graph->pins[i].type == PIN_FIELD_BOOL || graph->pins[i].type == PIN_FIELD_COLOR)
         {
@@ -850,7 +860,8 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         {
             /*if(graph->pins[i].isInput){
                 DrawRectangleRounded((Rectangle){nodePos.x - 20, nodePos.y + yOffset - 10, 40, 20}, 0.6f, 8, (Color){110, 85, 40, 255});
-            }*/ // Merge literal node to input pin
+            }*/
+            // Merge literal node to input pin
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
             if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 12))
             {

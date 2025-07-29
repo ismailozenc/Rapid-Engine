@@ -91,7 +91,7 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
     switch (message.type)
     {
     case VAL_NUMBER:
-        sprintf(str, "%f", message.number);
+        sprintf(str, "%.3f", message.number);
         break;
     case VAL_STRING:
         strncpy(str, message.string, 127);
@@ -101,6 +101,9 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
         break;
     case VAL_COLOR:
         sprintf(str, "%08X", (message.color.r << 24) | (message.color.g << 16) | (message.color.b << 8) | message.color.a);
+        break;
+    case 5:
+        sprintf(str, "Name: %s, Pos X: %.3f, Pos Y: %.3f, Width: %d, Height: %d, Rotation: %.3f, Layer: %d", message.name, message.sprite.position.x, message.sprite.position.y, message.sprite.width, message.sprite.height, message.sprite.rotation, message.sprite.layer);
         break;
     default:
         strcpy(str, "Error");

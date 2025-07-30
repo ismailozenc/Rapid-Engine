@@ -662,14 +662,13 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
 
 void DrawNodes(EditorContext *editor, GraphContext *graph)
 {
-
     if (graph->nodeCount == 0)
     {
         return;
     }
 
     for (int i = 0; i < graph->linkCount; i++)
-    {
+    {printf("%f\n", graph->nodes[i].position.x);
         Vector2 inputPinPosition = (Vector2){-1};
         Vector2 outputPinPosition = (Vector2){-1};
         bool isFlowConnection = false;

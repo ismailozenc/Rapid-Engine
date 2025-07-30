@@ -610,8 +610,16 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SPAWN_SPRITE:
     {
-        printf("%d", interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible);
-        interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible = true;
+        interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible = true; // use interpreter->components
+        int j = -1;
+        for(int i = 0; i < interpreter->valueCount; i++){
+            if(interpreter->values[i].type == VAL_SPRITE){
+                j++;
+            }
+        }
+        if(j != -1){
+            interpreter->components[j].isVisible = true;
+        }
         break;
     }
 

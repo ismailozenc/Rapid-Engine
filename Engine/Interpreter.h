@@ -18,7 +18,6 @@ typedef struct RuntimePin
 
     int nextNodeIndex;           // Flow
     int pickedOption;            // Dropdown
-    char pickedVariableName[32]; // Vars dropdown
     char textFieldValue[128];    // Field
     int componentIndex;          // Scene Component
 } RuntimePin;
@@ -110,6 +109,7 @@ typedef struct
         Color color;
         Sprite sprite;
     };
+    int componentIndex;
 } Value;
 
 typedef struct

@@ -217,6 +217,51 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
     }
 }
 
+const char *AddEllipsis(Font font, const char *text, float fontSize, float maxWidth, bool showEnd)
+{
+    static char result[256];
+    float fullWidth = MeasureTextEx(font, text, fontSize, 0).x;
+    if (fullWidth <= maxWidth)
+        return text;
+
+    int len = strlen(text);
+    int maxChars = 0;
+    char temp[256];
+
+    for (int c = 1; c <= len; c++)
+    {
+        if (showEnd)
+            strncpy(temp, text + len - c, c);
+        else
+            strncpy(temp, text, c);
+
+        temp[c] = '\0';
+
+        float width = MeasureTextEx(font, temp, fontSize, 0).x +
+                      MeasureTextEx(font, "...", fontSize, 0).x;
+
+        if (width > maxWidth)
+            break;
+
+        maxChars = c;
+    }
+
+    if (showEnd)
+    {
+        strncpy(temp, text + len - maxChars, maxChars);
+        temp[maxChars] = '\0';
+        snprintf(result, sizeof(result), "...%s", temp);
+    }
+    else
+    {
+        strncpy(result, text, maxChars);
+        result[maxChars] = '\0';
+        strcat(result, "...");
+    }
+
+    return result;
+}
+
 void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int currPinIndex)
 {
     PinType type = graph->pins[currPinIndex].type;
@@ -310,34 +355,7 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
 
     if (boxWidth == limit)
     {
-        int len = strlen(originalText);
-        int maxChars = 0;
-        char temp[256];
-
-        for (int c = 1; c <= len; c++)
-        {
-            if (editor->nodeFieldPinFocused == currPinIndex)
-                strncpy(temp, originalText + (len - c), c);
-            else
-                strncpy(temp, originalText, c);
-
-            temp[c] = '\0';
-            float cursorPadding = (editor->nodeFieldPinFocused == currPinIndex) ? MeasureTextEx(editor->font, "_", 20, 0).x : 0;
-            float w = MeasureTextEx(editor->font, temp, 20, 0).x + 10 + cursorPadding;
-            if (w > limit)
-                break;
-            maxChars = c;
-        }
-
-        if (maxChars < len)
-        {
-            if (editor->nodeFieldPinFocused == currPinIndex)
-                strncpy(truncated, originalText + (len - maxChars), maxChars);
-            else
-                strncpy(truncated, originalText, maxChars);
-            truncated[maxChars] = '\0';
-            text = truncated;
-        }
+        text = AddEllipsis(editor->font, originalText, 20, limit - 10, editor->nodeFieldPinFocused == currPinIndex);
     }
 
     if (editor->nodeFieldPinFocused == currPinIndex)
@@ -542,7 +560,8 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
     Rectangle dropdown = {graph->pins[currPinIndex].position.x - 6, graph->pins[currPinIndex].position.y - 12, options.boxWidth, 24};
 
     DrawRectangleRec(dropdown, GRAY);
-    DrawTextEx(editor->font, options.options[graph->pins[currPinIndex].pickedOption], (Vector2){(graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE) ? dropdown.x + 20 : dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
+    const char *text = AddEllipsis(editor->font, options.options[graph->pins[currPinIndex].pickedOption], 20, options.boxWidth - 20, false);
+    DrawTextEx(editor->font, text, (Vector2){(graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE) ? dropdown.x + 20 : dropdown.x + 3, dropdown.y + 3}, 20, 0, BLACK);
     DrawRectangleLinesEx(dropdown, 1, WHITE);
     if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
     {
@@ -550,7 +569,7 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[0] : graph->nodes[currNodeIndex].inputPins[2]);
         switch (graph->variableTypes[graph->pins[currPinIndex].pickedOption])
         {
-        case NODE_NUM: // 38, 38, 38
+        case NODE_NUM:
             varTypeColor = (Color){24, 119, 149, 255};
             graph->pins[associatedPinIndex].type = PIN_NUM;
             break;
@@ -614,13 +633,15 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         for (int j = 0; j < options.optionsCount; j++)
         {
             displayedVarsCounter++;
-            if((graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE && graph->variableTypes[j] != NODE_SPRITE) && j != 0){
+            if ((graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE && graph->variableTypes[j] != NODE_SPRITE) && j != 0)
+            {
                 displayedVarsCounter--;
                 continue;
             }
             Rectangle option = {dropdown.x, dropdown.y - displayedVarsCounter * 30, dropdown.width, 30};
             DrawRectangleRec(option, RAYWHITE);
-            DrawTextEx(editor->font, options.options[j], (Vector2){(graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE) ? option.x + 20 : option.x + 3, option.y + 3}, 20, 0, BLACK);
+            const char *text = AddEllipsis(editor->font, options.options[j], 20, options.boxWidth - 20, false);
+            DrawTextEx(editor->font, text, (Vector2){(graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE) ? option.x + 20 : option.x + 3, option.y + 3}, 20, 0, BLACK);
             DrawRectangleLinesEx(option, 1, DARKGRAY);
 
             if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
@@ -668,7 +689,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
     }
 
     for (int i = 0; i < graph->linkCount; i++)
-    {printf("%f\n", graph->nodes[i].position.x);
+    {
         Vector2 inputPinPosition = (Vector2){-1};
         Vector2 outputPinPosition = (Vector2){-1};
         bool isFlowConnection = false;

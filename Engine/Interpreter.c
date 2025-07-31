@@ -213,12 +213,15 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         }
     }
 
-    interpreter->values = malloc(sizeof(Value) * (totalOutputPins + 1));
-    interpreter->values[0] = (Value){.type = VAL_STRING, .string = "Error value"};
+    interpreter->values = calloc(totalOutputPins + 1, sizeof(Value));;
+    interpreter->values[0] = (Value){.type = VAL_STRING, .string = "Error value", .name = "Error value"};
     interpreter->valueCount = 1;
 
     interpreter->components = malloc(sizeof(SceneComponent) * (totalComponents + 1));
     interpreter->componentCount = 0;
+
+    interpreter->varIndexes = malloc(sizeof(int) * (totalOutputPins + 1));
+    interpreter->varCount = 0;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -330,10 +333,17 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 break;
             }
 
+            if(isVariable){
+                interpreter->varIndexes[interpreter->varCount] = idx;
+                interpreter->varCount++;
+            }
+
             pin->valueIndex = idx;
             interpreter->valueCount++;
         }
     }
+
+    interpreter->varIndexes = realloc(interpreter->varIndexes, sizeof(int) * (interpreter->varCount + 1));
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -414,7 +424,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         {
         case NODE_SPRITE:
             interpreter->components[interpreter->componentCount].isSprite = true;
-            interpreter->components[interpreter->componentCount].isVisible = false;;
+            interpreter->components[interpreter->componentCount].isVisible = false;
+            ;
             int fileIndex = node->inputPins[1]->valueIndex;
             if (fileIndex != -1 && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
             {
@@ -439,7 +450,34 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].sprite.position.y = interpreter->values[node->inputPins[4]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.height / 2;
             interpreter->components[interpreter->componentCount].sprite.rotation = interpreter->values[node->inputPins[5]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
-            node->outputPins[1]->componentIndex = interpreter->componentCount;
+            node->outputPins[1]->componentIndex = interpreter->componentCount; // possibly unneeded
+            interpreter->values[node->outputPins[1]->valueIndex].componentIndex = interpreter->componentCount;
+            for (int j = 0; j < runtime.pinCount; j++)
+            {
+                if (runtime.pins[j].type == PIN_SPRITE_VARIABLE)
+                {
+                    printf("%s %s", graph->variables[runtime.pins[j].pickedOption], interpreter->values[runtime.pins[j].pickedOption].name);
+                    if (strcmp(graph->variables[runtime.pins[j].pickedOption], interpreter->values[runtime.pins[j].pickedOption].name) == 0)
+                    {
+                        printf("a");
+                        interpreter->values[runtime.pins[j].pickedOption].componentIndex = interpreter->componentCount;
+                        printf("%d\n", interpreter->values[runtime.pins[j].pickedOption].componentIndex);
+                    }
+                }
+            }
+            printf("Vars\n");for(int j = 1; j < graph->variablesCount; j++){
+                printf("%d %s\n", j, graph->variables[j]);
+            }
+            printf("------\nVals\n");
+            for(int j = 0; j < interpreter->valueCount; j++){
+                if(interpreter->values[j].isVariable){
+                    printf("%d %s %d\n", j, interpreter->values[j].name, interpreter->values[j].type);
+                }
+            }
+            printf("------\nVars\n");
+            for(int j = 0; j < interpreter->varCount; j++){
+                printf("%d %s\n", j, interpreter->values[interpreter->varIndexes[j]].name);
+            }
             interpreter->componentCount++;
         case NODE_PROP_TEXTURE:
             continue;
@@ -610,14 +648,17 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SPAWN_SPRITE:
     {
-        interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible = true; // use interpreter->components
+        interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->pickedOption].sprite.isVisible = true;
         int j = -1;
-        for(int i = 0; i < interpreter->valueCount; i++){
-            if(interpreter->values[i].type == VAL_SPRITE){
+        for (int i = 0; i < interpreter->valueCount; i++)
+        {
+            if (interpreter->values[i].type == VAL_SPRITE)
+            {
                 j++;
             }
         }
-        if(j != -1){
+        if (j != -1)
+        {
             interpreter->components[j].isVisible = true;
         }
         break;

@@ -117,6 +117,9 @@ typedef struct
     Value *values;
     int valueCount;
 
+    int *varIndexes;
+    int varCount;
+
     SceneComponent *components;
     int componentCount;
 

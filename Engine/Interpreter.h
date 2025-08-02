@@ -114,11 +114,21 @@ typedef struct
 
 typedef struct
 {
+    int pixelsPerSecond;
+    int directionDegrees;
+    float time;
+}Force;
+
+typedef struct
+{
     Value *values;
     int valueCount;
 
     int *varIndexes;
     int varCount;
+    
+    Force *forces;
+    int forcesCount;
 
     SceneComponent *components;
     int componentCount;

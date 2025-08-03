@@ -63,7 +63,7 @@
 
 - Spawning and interacting with sprites
 - Helper function nodes
-- Force object used for moving sprites
+- Force node used for moving sprites
 - Ongoing CoreGraph improvements and optimizations
 
 

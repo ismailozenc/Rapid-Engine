@@ -152,6 +152,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         dst->valueIndex = -1;
         dst->pickedOption = src->pickedOption;
         dst->nextNodeIndex = -1;
+        dst->componentIndex = -1;
         strcpy(dst->textFieldValue, src->textFieldValue);
     }
 
@@ -459,8 +460,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             {
                 if (runtime.nodes[j].inputCount > 1 && runtime.nodes[j].inputPins[1]->type == PIN_SPRITE_VARIABLE && runtime.nodes[j].inputPins[1]->pickedOption != 0)
                 {
-                    const char *varPtr = graph->variables[runtime.nodes[j].inputPins[1]->pickedOption];
-                    const char *valPtr = interpreter->values[runtime.nodes[j].inputPins[1]->valueIndex].name;
+                    const char *varPtr = graph->nodes[i].name;//graph->variables[runtime.nodes[j].inputPins[1]->pickedOption];
+                    const char *valPtr = interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].name;
 
                     if (varPtr && valPtr)
                     {
@@ -473,12 +474,11 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
                         if (strcmp(varName, valName) == 0)
                         {
-                            printf("%d %s;%s\n\n", runtime.nodes[j].inputCount, varName, valName);
-                            printf("mmmmmmmmmmmmmmmm");
+                            interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].componentIndex = interpreter->componentCount;
+                            runtime.nodes[j].inputPins[1]->valueIndex = interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1];
                         }
                     }
-                    interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].componentIndex = interpreter->componentCount;
-                    runtime.nodes[j].inputPins[1]->valueIndex = interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1];
+                    
                     /*printf("Graph Variables:\n");
                     for (int t = 0; t < graph->variablesCount; t++)
                     {
@@ -671,8 +671,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SPAWN_SPRITE:
     {
-        interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
-        printf("kkkkkkkkk%dkkkkkkkkkk", interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex);
+        if(interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount){
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
+        }
         break;
     }
 
@@ -853,7 +854,6 @@ void DrawComponents(InterpreterContext *interpreter)
     for (int i = 0; i < interpreter->componentCount; i++)
     {
         SceneComponent component = interpreter->components[i];
-        printf("a %d %d %d %d a\n", i, (int)component.sprite.texture.id, (int)component.sprite.height, (int)component.isVisible);
         if (!component.isVisible)
         {
             continue;

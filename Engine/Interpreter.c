@@ -460,7 +460,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             {
                 if (runtime.nodes[j].inputCount > 1 && runtime.nodes[j].inputPins[1]->type == PIN_SPRITE_VARIABLE && runtime.nodes[j].inputPins[1]->pickedOption != 0)
                 {
-                    const char *varPtr = graph->nodes[i].name;//graph->variables[runtime.nodes[j].inputPins[1]->pickedOption];
+                    const char *varPtr = graph->nodes[i].name;
                     const char *valPtr = interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].name;
 
                     if (varPtr && valPtr)
@@ -478,25 +478,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                             runtime.nodes[j].inputPins[1]->valueIndex = interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1];
                         }
                     }
-                    
-                    /*printf("Graph Variables:\n");
-                    for (int t = 0; t < graph->variablesCount; t++)
-                    {
-                        printf("  [%d] %s\n", t, graph->variables[t]);
-                    }
-
-                    printf("\nInterpreter Values:\n");
-                    for (int t = 0; t < interpreter->valueCount; t++)
-                    {
-                        printf("  [%d] %s\n", t, interpreter->values[t].name);
-                    }
-
-                    printf("\nInterpreter Variables (By Index):\n");
-                    for (int t = 0; t < interpreter->varCount; t++)
-                    {
-                        int index = interpreter->varIndexes[t];
-                        printf("  [%d] %s (index %d)\n", t, interpreter->values[index].name, index);
-                    }*/
                 }
             }
             // addtologfrominterpreter not working here
@@ -671,7 +652,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SPAWN_SPRITE:
     {
-        if(interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount){
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
             interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
         }
         break;
@@ -679,6 +661,10 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_DESTROY_SPRITE:
     {
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = false;
+        }
         break;
     }
 
@@ -899,6 +885,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     if (interpreter->isFirstFrame)
     {
         interpreter->onButtonNodeIndexes = malloc(sizeof(int) * graph->nodeCount);
+        interpreter->onButtonNodeIndexesCount = 0;
         for (int i = 0; i < graph->nodeCount; i++)
         {
             switch (graph->nodes[i].type)
@@ -922,17 +909,12 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
         interpreter->isFirstFrame = false;
     }
 
+    KeyboardKey key = GetKeyPressed();
     for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)
     {
-        switch (graph->nodes[interpreter->onButtonNodeIndexes[i]].type)
+        if (key != 0 && key == graph->nodes[interpreter->onButtonNodeIndexes[i]].inputPins[0]->pickedOption)
         {
-        case NODE_EVENT_ON_BUTTON:
-            KeyboardKey key = GetKeyPressed();
-            if (key != 0 && key == graph->nodes[interpreter->onButtonNodeIndexes[i]].inputPins[0]->pickedOption)
-            {
-                InterpretStringOfNodes(interpreter->onButtonNodeIndexes[i], interpreter, graph, 0);
-            }
-            break;
+            InterpretStringOfNodes(interpreter->onButtonNodeIndexes[i], interpreter, graph, 0);
         }
     }
 

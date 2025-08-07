@@ -122,13 +122,13 @@ static InfoByType NodeInfoByType[] = {
     {NODE_SET_VAR, 3, 2, 140, 130, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE, PIN_UNKNOWN_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Variable", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
     {NODE_EVENT_START, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {0}, {"Next"}},
     {NODE_EVENT_LOOP_TICK, 0, 1, 150, 120, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {0}, {"Next"}},
-    {NODE_EVENT_ON_BUTTON, 1, 1, 150, 120, {148, 0, 0, 200}, false, {PIN_FIELD_KEY}, {PIN_FLOW}, {"Key"}, {"Next"}},
+    {NODE_EVENT_ON_BUTTON, 1, 1, 160, 120, {148, 0, 0, 200}, false, {PIN_FIELD_KEY}, {PIN_FLOW}, {"Key"}, {"Next"}},
     {NODE_CREATE_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {0}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_CALL_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
     {NODE_SPAWN_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
     {NODE_DESTROY_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
     {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
-    {NODE_FORCE_SPRITE, 5, 1, 120, 190, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev","Sprite", "Pixels per second", "Direction degrees", "Time"}, {"Next"}},
+    {NODE_FORCE_SPRITE, 5, 1, 160, 190, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev","Sprite", "Pixels / second", "Angle", "Time"}, {"Next"}},
     {NODE_BRANCH, 2, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"True", "False"}},
     {NODE_LOOP, 2, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"Next", "Loop body"}},
     {NODE_COMPARISON, 4, 2, 210, 160, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Operator", "Value A", "Value B"}, {"Next", "Result"}},
@@ -139,10 +139,10 @@ static InfoByType NodeInfoByType[] = {
     {NODE_PROP_CIRCLE, 6, 2, 230, 230, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR, PIN_NUM}, {PIN_FLOW, PIN_NONE}, {"Prev", "Pos X", "Pos Y", "Radius", "Color", "Layer"}, {"Next"}},
     {NODE_PRINT, 2, 1, 140, 100, {200, 170, 50, 200}, false, {PIN_FLOW, PIN_ANY_VALUE}, {PIN_FLOW}, {"Prev", "Print value"}, {"Next"}},
     {NODE_DRAW_LINE, 6, 1, 240, 200, {200, 170, 50, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Start X", "Start Y", "End X", "End Y", "Color"}, {"Next"}},
-    {NODE_LITERAL_NUM, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {""}},
-    {NODE_LITERAL_STRING, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {""}},
-    {NODE_LITERAL_BOOL, 1, 1, 180, 70, {110, 85, 40, 200}, false, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {""}},
-    {NODE_LITERAL_COLOR, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {""}}};
+    {NODE_LITERAL_NUM, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {"number"}},
+    {NODE_LITERAL_STRING, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {"string"}},
+    {NODE_LITERAL_BOOL, 1, 1, 180, 70, {110, 85, 40, 200}, false, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {"bool"}},
+    {NODE_LITERAL_COLOR, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {"color"}}};
 
 typedef struct DropdownOptionsByPinType
 {

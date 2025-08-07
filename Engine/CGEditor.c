@@ -41,7 +41,7 @@ EditorContext InitEditorContext()
     editor.nodeDropdownFocused = -1;
     editor.nodeFieldPinFocused = -1;
 
-    editor.font = LoadFontEx("fonts//arialbd.ttf", 128, NULL, 0);
+    editor.font = LoadFontEx("fonts//arialbd.ttf", 512, NULL, 0);
     if (editor.font.texture.id == 0)
     {
         AddToLogFromEditor(&editor, "Couldn't load font", 1);
@@ -109,7 +109,7 @@ void DrawBackgroundGrid(EditorContext *editor, int gridSpacing, RenderTexture2D 
             float screenX = (drawX - offset.x) * editor->zoom;
             float screenY = (drawY - offset.y) * editor->zoom;
 
-            DrawTextureRec(dot.texture, (Rectangle){0, 0, (float)dot.texture.width, (float)-dot.texture.height}, (Vector2){screenX, screenY}, (Color){255, 255, 255, 10});
+            DrawTextureRec(dot.texture, (Rectangle){0, 0, (float)dot.texture.width, (float)-dot.texture.height}, (Vector2){screenX, screenY}, (Color){255, 255, 255, 15});
         }
     }
 }
@@ -464,7 +464,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
     Rectangle textbox = {
         graph->pins[currPinIndex].position.x - 6,
         graph->pins[currPinIndex].position.y - 12,
-        100,
+        editor->nodeFieldPinFocused == currPinIndex ? 110 : MeasureTextEx(editor->font, graph->pins[currPinIndex].textFieldValue, 20, 0).x + 10,
         26};
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -496,15 +496,11 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
     {
         static float blinkTime = 0;
         blinkTime += GetFrameTime();
-        if (fmodf(blinkTime, 1.0f) < 0.5f)
+        if (fmodf(blinkTime, 1.0f) < 0.6f)
         {
             char blinking[256];
-            snprintf(blinking, sizeof(blinking), "%s_", text);
+            snprintf(blinking, sizeof(blinking), "Press a key");
             DrawTextEx(editor->font, blinking, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
-        }
-        else
-        {
-            DrawTextEx(editor->font, text, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
         }
     }
     else
@@ -520,6 +516,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
             {
                 strcpy(graph->pins[currPinIndex].textFieldValue, GetKeyName(key));
                 graph->pins[currPinIndex].pickedOption = key;
+                editor->nodeFieldPinFocused = -1;
                 break;
             }
         }

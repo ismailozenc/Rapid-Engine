@@ -566,7 +566,7 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
     if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
     {
         Color varTypeColor;
-        PinType varType;
+        PinType varType = PIN_UNKNOWN_VALUE;
         switch (graph->variableTypes[graph->pins[currPinIndex].pickedOption])
         {
         case NODE_NUM:

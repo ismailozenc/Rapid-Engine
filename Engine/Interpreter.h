@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "raylib.h"
 #include "Nodes.h"
 
@@ -117,7 +118,7 @@ typedef struct
     int componentIndex;
     int pixelsPerSecond;
     int directionDegrees;
-    float time;
+    float duration;
 }Force;
 
 typedef struct

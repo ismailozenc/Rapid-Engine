@@ -1,5 +1,7 @@
 #include "Interpreter.h"
 
+#define MAX_FORCES 99
+
 InterpreterContext InitInterpreterContext()
 {
     InterpreterContext interpreter = {0};
@@ -26,6 +28,10 @@ void FreeInterpreterContext(InterpreterContext *interpreter)
 
     free(interpreter->onButtonNodeIndexes);
     interpreter->onButtonNodeIndexes = NULL;
+    interpreter->onButtonNodeIndexesCount = 0;
+
+    free(interpreter->forces);
+    interpreter->forces = NULL;
     interpreter->onButtonNodeIndexesCount = 0;
 }
 
@@ -224,6 +230,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
     interpreter->varIndexes = malloc(sizeof(int) * (totalOutputPins + 1));
     interpreter->varCount = 0;
+
+    interpreter->forces = calloc(MAX_FORCES, sizeof(Force));
+    interpreter->forcesCount = 0;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -679,8 +688,13 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_FORCE_SPRITE:
     {
         SceneComponent *component = &interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex];
-        if(interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount){
-            
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex;
+            interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].directionDegrees = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].duration = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+            interpreter->forcesCount++;
         }
         break;
     }
@@ -890,6 +904,29 @@ void DrawComponents(InterpreterContext *interpreter)
     }
 }
 
+void HandleForces(InterpreterContext *interpreter)
+{
+    for (int i = 0; i < interpreter->forcesCount; i++)
+    {
+        float speed = interpreter->forces[i].pixelsPerSecond;
+        float angle = interpreter->forces[i].directionDegrees * (PI / 180.0f);
+        float vx = cosf(angle) * speed;
+        float vy = -sinf(angle) * speed;
+        float deltaTime = GetFrameTime();
+        interpreter->forces[i].duration -= GetFrameTime();
+        if (interpreter->forces[i].duration <= 0)
+        {
+            for (int j = i; j < interpreter->forcesCount - 1; j++)
+            {
+                interpreter->forces[j] = interpreter->forces[j + 1];
+            }
+            interpreter->forcesCount--;
+        }
+        interpreter->components[interpreter->forces[i].componentIndex].sprite.position.x += vx * deltaTime;
+        interpreter->components[interpreter->forces[i].componentIndex].sprite.position.y += vy * deltaTime;
+    }
+}
+
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph)
 {
     interpreter->newLogMessage = false;
@@ -897,7 +934,6 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     if (interpreter->isFirstFrame)
     {
         interpreter->onButtonNodeIndexes = malloc(sizeof(int) * graph->nodeCount);
-        interpreter->onButtonNodeIndexesCount = 0;
         for (int i = 0; i < graph->nodeCount; i++)
         {
             switch (graph->nodes[i].type)
@@ -939,6 +975,8 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     {
         InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph, 0);
     }
+
+    HandleForces(interpreter);
 
     DrawComponents(interpreter);
 

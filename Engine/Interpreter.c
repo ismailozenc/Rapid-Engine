@@ -458,24 +458,27 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->values[node->outputPins[1]->valueIndex].componentIndex = interpreter->componentCount; // possibly unneeded
             for (int j = 0; j < runtime.nodeCount; j++)
             {
-                if (runtime.nodes[j].inputCount > 1 && runtime.nodes[j].inputPins[1]->type == PIN_SPRITE_VARIABLE && runtime.nodes[j].inputPins[1]->pickedOption != 0)
+                for (int k = 0; k < runtime.nodes[j].inputCount; k++)
                 {
-                    const char *varPtr = graph->nodes[i].name;
-                    const char *valPtr = interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].name;
-
-                    if (varPtr && valPtr)
+                    if (runtime.nodes[j].inputPins[k]->type == PIN_SPRITE_VARIABLE && runtime.nodes[j].inputPins[k]->pickedOption != 0)
                     {
-                        char varName[32];
-                        char valName[32];
-                        strncpy(varName, varPtr, sizeof(varName) - 1);
-                        strncpy(valName, valPtr, sizeof(valName) - 1);
-                        varName[31] = '\0';
-                        valName[31] = '\0';
+                        const char *varPtr = graph->nodes[i].name;
+                        const char *valPtr = interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].name;
 
-                        if (strcmp(varName, valName) == 0)
+                        if (varPtr && valPtr)
                         {
-                            interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1]].componentIndex = interpreter->componentCount;
-                            runtime.nodes[j].inputPins[1]->valueIndex = interpreter->varIndexes[runtime.nodes[j].inputPins[1]->pickedOption - 1];
+                            char varName[32];
+                            char valName[32];
+                            strncpy(varName, varPtr, sizeof(varName) - 1);
+                            strncpy(valName, valPtr, sizeof(valName) - 1);
+                            varName[31] = '\0';
+                            valName[31] = '\0';
+
+                            if (strcmp(varName, valName) == 0)
+                            {
+                                interpreter->values[interpreter->varIndexes[runtime.nodes[j].inputPins[k]->pickedOption - 1]].componentIndex = interpreter->componentCount;
+                                runtime.nodes[j].inputPins[k]->valueIndex = interpreter->varIndexes[runtime.nodes[j].inputPins[k]->pickedOption - 1];
+                            }
                         }
                     }
                 }
@@ -670,6 +673,15 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_MOVE_TO_SPRITE:
     {
+        break;
+    }
+
+    case NODE_FORCE_SPRITE:
+    {
+        SceneComponent *component = &interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex];
+        if(interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount){
+            
+        }
         break;
     }
 

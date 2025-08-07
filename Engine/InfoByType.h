@@ -24,6 +24,7 @@ typedef enum
     NODE_SPAWN_SPRITE,
     NODE_DESTROY_SPRITE,
     NODE_MOVE_TO_SPRITE,
+    NODE_FORCE_SPRITE,
     NODE_BRANCH,
     NODE_LOOP,
     NODE_COMPARISON,
@@ -127,6 +128,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_SPAWN_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
     {NODE_DESTROY_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
     {NODE_MOVE_TO_SPRITE, 3, 3, 240, 200, {40, 110, 70, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}},
+    {NODE_FORCE_SPRITE, 5, 1, 120, 190, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev","Sprite", "Pixels per second", "Direction degrees", "Time"}, {"Next"}},
     {NODE_BRANCH, 2, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"True", "False"}},
     {NODE_LOOP, 2, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"Next", "Loop body"}},
     {NODE_COMPARISON, 4, 2, 210, 160, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_COMPARISON_OPERATOR, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_BOOL}, {"Prev", "Operator", "Value A", "Value B"}, {"Next", "Result"}},
@@ -313,6 +315,8 @@ static inline const char *NodeTypeToString(NodeType type)
         return "Destroy";
     case NODE_MOVE_TO_SPRITE:
         return "Move To";
+    case NODE_FORCE_SPRITE:
+        return "Force";
     case NODE_BRANCH:
         return "Branch";
     case NODE_LOOP:
@@ -380,6 +384,8 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
         return NODE_DESTROY_SPRITE;
     if (strcmp(strType, "Move To") == 0)
         return NODE_MOVE_TO_SPRITE;
+    if (strcmp(strType, "Force") == 0)
+        return NODE_FORCE_SPRITE;
     if (strcmp(strType, "Branch") == 0)
         return NODE_BRANCH;
     if (strcmp(strType, "Loop") == 0)

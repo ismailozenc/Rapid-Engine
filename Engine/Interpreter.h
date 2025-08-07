@@ -114,6 +114,7 @@ typedef struct
 
 typedef struct
 {
+    int componentIndex;
     int pixelsPerSecond;
     int directionDegrees;
     float time;

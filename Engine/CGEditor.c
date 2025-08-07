@@ -566,31 +566,37 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
     if (graph->pins[currPinIndex].type == PIN_VARIABLE || graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE)
     {
         Color varTypeColor;
-        int associatedPinIndex = FindPinIndexByID(graph, graph->nodes[currNodeIndex].type == NODE_GET_VAR ? graph->nodes[currNodeIndex].outputPins[0] : graph->nodes[currNodeIndex].inputPins[2]);
+        PinType varType;
         switch (graph->variableTypes[graph->pins[currPinIndex].pickedOption])
         {
         case NODE_NUM:
             varTypeColor = (Color){24, 119, 149, 255};
-            graph->pins[associatedPinIndex].type = PIN_NUM;
+            varType = PIN_NUM;
             break;
         case NODE_STRING:
             varTypeColor = (Color){180, 178, 40, 255};
-            graph->pins[associatedPinIndex].type = PIN_STRING;
+            varType = PIN_STRING;
             break;
         case NODE_BOOL:
             varTypeColor = (Color){27, 64, 121, 255};
-            graph->pins[associatedPinIndex].type = PIN_BOOL;
+            varType = PIN_BOOL;
             break;
         case NODE_COLOR:
             varTypeColor = (Color){217, 3, 104, 255};
-            graph->pins[associatedPinIndex].type = PIN_COLOR;
+            varType = PIN_COLOR;
             break;
         case NODE_SPRITE:
             varTypeColor = (Color){3, 206, 164, 255};
-            graph->pins[associatedPinIndex].type = PIN_SPRITE;
+            varType = PIN_SPRITE;
             break;
         default:
             varTypeColor = LIGHTGRAY;
+        }
+        if(graph->nodes[currNodeIndex].type == NODE_GET_VAR){
+            graph->pins[FindPinIndexByID(graph, graph->nodes[currNodeIndex].outputPins[0])].type = varType;
+        }
+        else if(graph->nodes[currNodeIndex].type == NODE_SET_VAR){
+            graph->pins[FindPinIndexByID(graph, graph->nodes[currNodeIndex].inputPins[2])].type = varType;
         }
         DrawCircle(graph->pins[currPinIndex].position.x + 4, graph->pins[currPinIndex].position.y, 6, varTypeColor);
     }
@@ -880,8 +886,8 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         {
             /*if(graph->pins[i].isInput){
                 DrawRectangleRounded((Rectangle){nodePos.x - 20, nodePos.y + yOffset - 10, 40, 20}, 0.6f, 8, (Color){110, 85, 40, 255});
-            }*/
-            // Merge literal node to input pin
+            }
+            // Merge literal node to input pin*/
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
             if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 12))
             {
@@ -991,14 +997,14 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     const char *subMenuItems[][7] = {
         {"num", "string", "bool", "color", "sprite", "Get var", "Set var"},
         {"Start", "Loop Tick", "On Button", "Create custom", "Call custom"},
-        {"Spawn", "Destroy", "Move To"},
+        {"Spawn", "Destroy", "Move To", "Force"},
         {"Branch", "Loop"},
         {"Prop Texture", "Prop Rectangle", "Prop Circle"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
         {"Literal num", "Literal string", "Literal bool", "Literal color"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {7, 5, 3, 2, 3, 3, 2, 4};
+    int subMenuCounts[] = {7, 5, 4, 2, 3, 3, 2, 4};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 
@@ -1167,6 +1173,7 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
         {
             NodeType newNodeType = StringToNodeType(createdNode);
             CreateNode(graph, newNodeType, editor->rightClickPos);
+            editor->rightClickPos = (Vector2){0, 0};
             if (newNodeType == NODE_NUM || newNodeType == NODE_STRING || newNodeType == NODE_BOOL || newNodeType == NODE_COLOR || newNodeType == NODE_SPRITE)
             {
                 graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));

@@ -1098,7 +1098,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .shape = UIRectangle,
                                  .type = NO_COLLISION_ACTION,
                                  .rect = {.pos = {xOffset - 1, yOffset - 1}, .recSize = {152, 62}, .roundness = 0.5f, .roundSegments = 8},
-                                 .color = fileOutlineColor, //(Color){0, 80, 120, 255}
+                                 .color = fileOutlineColor,
                                  .layer = 0});
 
         AddUIElement(engine, (UIElement){

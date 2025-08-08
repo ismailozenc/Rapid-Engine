@@ -87,6 +87,8 @@ EngineContext InitEngineContext()
 
     engine.isGameFullscreen = false;
 
+    engine.isSaveButtonHovered = false;
+
     return engine;
 }
 
@@ -385,6 +387,7 @@ void CountingSortByLayer(EngineContext *engine)
 
 void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
 {
+    engine->isSaveButtonHovered = false;
     char temp[256];
     if (engine->hoveredUIElementIndex != -1)
     {
@@ -393,6 +396,10 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
         case NO_COLLISION_ACTION:
             break;
         case SAVE_CG:
+            engine->isSaveButtonHovered = true;
+            if(engine->isGameRunning){
+                break;
+            }
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 if (engine->isSoundOn)
@@ -1180,8 +1187,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .name = "ViewportFullscreenButton",
                                  .shape = UIRectangle,
                                  .type = VIEWPORT_FULLSCREEN,
-                                 .rect = {.pos = {engine->sideBarWidth + 8, 10}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
-                                 .color = (Color){200, 200, 200, 100},
+                                 .rect = {.pos = {engine->sideBarWidth + 8, 10}, .recSize = {50, 50}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = GRAY},
+                                 .color = (Color){60, 60, 60, 255},
                                  .layer = 1,
                              });
     }
@@ -1215,7 +1222,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
 bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
 {
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT))
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT) && !engine->isGameRunning)
     {
         if (engine->isSoundOn)
         {
@@ -1280,7 +1287,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
             }
         }
     }
-    else if ((IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_SHIFT)) || IsKeyPressed(KEY_ESCAPE))
+    else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_SHIFT))
     {
         editor->delayFrames = true;
         engine->delayFrames = true;
@@ -1290,6 +1297,9 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         engine->wasBuilt = false;
         engine->isGameFullscreen = false;
         FreeInterpreterContext(interpreter);
+    }
+    else if(IsKeyPressed(KEY_ESCAPE)){
+        engine->isGameFullscreen = false;
     }
 
     if (engine->draggingResizeButtonID != 0)
@@ -1410,6 +1420,10 @@ int GetMouseCursor(EngineContext *engine, EditorContext *editor)
         return editor->cursor;
     }
 
+    if(engine->isSaveButtonHovered && engine->isGameRunning){
+        return MOUSE_CURSOR_NOT_ALLOWED;
+    }
+
     if (engine->hoveredUIElementIndex != -1)
     {
         return MOUSE_CURSOR_POINTING_HAND;
@@ -1463,7 +1477,7 @@ int main()
 
         int prevHoveredUIIndex = engine.hoveredUIElementIndex;
 
-        if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph))
+        if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph) && !engine.isGameFullscreen)
         {
             if (((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && engine.showSaveWarning != 1) || engine.delayFrames)
             {
@@ -1472,7 +1486,7 @@ int main()
             }
             engine.delayFrames = true;
         }
-        else if (engine.delayFrames)
+        else if (engine.delayFrames && !engine.isGameFullscreen)
         {
             BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
             engine.fps = 60;

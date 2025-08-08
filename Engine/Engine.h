@@ -151,6 +151,7 @@ typedef struct EngineContext
     int showSaveWarning;
     bool isGameFullscreen;
     VarFilter varsFilter;
+    bool isSaveButtonHovered;
 } EngineContext;
 
 typedef enum

@@ -286,9 +286,9 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
 
     Rectangle textbox = {
         graph->pins[currPinIndex].position.x - 6,
-        graph->pins[currPinIndex].position.y - 12,
+        graph->pins[currPinIndex].position.y - 10,
         limit,
-        26};
+        24};
 
     float textWidth = MeasureTextEx(editor->font, graph->pins[currPinIndex].textFieldValue, 20, 0).x;
     if (editor->nodeFieldPinFocused == currPinIndex)
@@ -345,8 +345,8 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
         }
     }
 
-    DrawRectangleRounded(textbox, 0.1f, 2, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
-    DrawRectangleRoundedLinesEx(textbox, 0.1f, 2, 1, WHITE);
+    DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
+    DrawRectangleLinesEx(textbox, 1, WHITE);
 
     const char *originalText = graph->pins[currPinIndex].textFieldValue;
     const char *text = originalText;
@@ -463,9 +463,9 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
 {
     Rectangle textbox = {
         graph->pins[currPinIndex].position.x - 6,
-        graph->pins[currPinIndex].position.y - 12,
+        graph->pins[currPinIndex].position.y - 10,
         editor->nodeFieldPinFocused == currPinIndex ? 110 : MeasureTextEx(editor->font, graph->pins[currPinIndex].textFieldValue, 20, 0).x + 10,
-        26};
+        24};
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
@@ -484,8 +484,8 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
         }
     }
 
-    DrawRectangleRounded(textbox, 0.1f, 2, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
-    DrawRectangleRoundedLinesEx(textbox, 0.1f, 2, 1, WHITE);
+    DrawRectangleRec(textbox, (editor->nodeFieldPinFocused == currPinIndex) ? LIGHTGRAY : GRAY);
+    DrawRectangleLinesEx(textbox, 1, WHITE);
 
     const char *originalText = graph->pins[currPinIndex].textFieldValue;
     const char *text = originalText;
@@ -554,7 +554,7 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         options = getPinDropdownOptionsByType(graph->pins[currPinIndex].type);
     }
 
-    Rectangle dropdown = {graph->pins[currPinIndex].position.x - 6, graph->pins[currPinIndex].position.y - 12, options.boxWidth, 24};
+    Rectangle dropdown = {graph->pins[currPinIndex].position.x - 6, graph->pins[currPinIndex].position.y - 10, options.boxWidth, 24};
 
     DrawRectangleRec(dropdown, GRAY);
     const char *text = AddEllipsis(editor->font, options.options[graph->pins[currPinIndex].pickedOption], 20, options.boxWidth - 20, false);

@@ -32,7 +32,7 @@ void FreeInterpreterContext(InterpreterContext *interpreter)
 
     free(interpreter->forces);
     interpreter->forces = NULL;
-    interpreter->onButtonNodeIndexesCount = 0;
+    interpreter->forces = 0;
 }
 
 char *ValueTypeToString(ValueType type)
@@ -442,11 +442,13 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             int fileIndex = node->inputPins[1]->valueIndex;
             if (fileIndex != -1 && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
             {
-                const char *path = interpreter->values[fileIndex].string;
+                char path[512];
+                snprintf(path, sizeof(path), "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[fileIndex].string);
                 Texture2D tex = LoadTexture(path);
                 if (tex.id == 0)
                 {
-                    printf("FAILED to load texture: %s\n", path);
+                    //printf("FAILED to load texture: %s\n", path);
+                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Failed to load texture"}, 2);
                 }
                 else
                 {
@@ -924,6 +926,8 @@ void HandleForces(InterpreterContext *interpreter)
         float vy = -sinf(angle) * speed;
         float deltaTime = GetFrameTime();
         interpreter->forces[i].duration -= deltaTime;
+        interpreter->components[interpreter->forces[i].componentIndex].sprite.position.x += vx * deltaTime;
+        interpreter->components[interpreter->forces[i].componentIndex].sprite.position.y += vy * deltaTime;
         if (interpreter->forces[i].duration <= 0)
         {
             for (int j = i; j < interpreter->forcesCount - 1; j++)
@@ -931,9 +935,8 @@ void HandleForces(InterpreterContext *interpreter)
                 interpreter->forces[j] = interpreter->forces[j + 1];
             }
             interpreter->forcesCount--;
+            i--;
         }
-        interpreter->components[interpreter->forces[i].componentIndex].sprite.position.x += vx * deltaTime;
-        interpreter->components[interpreter->forces[i].componentIndex].sprite.position.y += vy * deltaTime;
     }
 }
 

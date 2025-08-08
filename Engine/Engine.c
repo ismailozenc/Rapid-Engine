@@ -1401,6 +1401,8 @@ int main()
 
     PrepareCGFilePath(&engine, fileName);
 
+    interpreter.projectPath = strdup(engine.currentPath);
+
     LoadGraphFromFile(engine.CGFilePath, &graph);
 
     AddToLog(&engine, "All resources loaded. Welcome!", 0);
@@ -1556,6 +1558,9 @@ int main()
     FreeEditorContext(&editor);
     FreeGraphContext(&graph);
     FreeInterpreterContext(&interpreter);
+
+    free(interpreter.projectPath);
+    interpreter.projectPath = NULL;
 
     CloseAudioDevice();
 

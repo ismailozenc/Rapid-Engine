@@ -5,6 +5,12 @@
 #include "raylib.h"
 #include "Nodes.h"
 
+#ifdef _WIN32
+#define PATH_SEPARATOR '\\'
+#else
+#define PATH_SEPARATOR '/'
+#endif
+
 #define MAX_LINKS_PER_PIN 8
 
 #define MAX_LOG_MESSAGES 32
@@ -135,6 +141,8 @@ typedef struct
 
     SceneComponent *components;
     int componentCount;
+
+    char *projectPath;
 
     int loopNodeIndex;
 

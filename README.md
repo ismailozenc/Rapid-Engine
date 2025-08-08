@@ -11,6 +11,7 @@
 - 🖼️ Custom UI with the Raylib library
 - 🎯 Real-time interaction and graph editing
 - ⚙️ Basic language constructs such as variables, arithmetic, logic, conditionals, and loops
+- 🎮 Spawning and moving sprites
 - 💾 Save, build and run systems
 ---
 
@@ -43,6 +44,7 @@
 - Spawn
 - Destroy
 - Move To
+- Force
 - Branch
 - Loop
 - Comparison
@@ -61,9 +63,10 @@
 
 ## 🧪 In Development
 
-- Spawning and interacting with sprites
+- Interacting with sprites
+- Sprite collision
 - Helper function nodes
-- Force node used for moving sprites
+- Exporting game as .exe
 - Ongoing CoreGraph improvements and optimizations
 
 

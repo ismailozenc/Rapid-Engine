@@ -115,9 +115,10 @@ typedef struct
 
 typedef struct
 {
+    int id;
     int componentIndex;
     int pixelsPerSecond;
-    int directionDegrees;
+    int angle;
     float duration;
 }Force;
 

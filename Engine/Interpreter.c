@@ -530,6 +530,15 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     return runtime;
 }
 
+bool DoesForceExist(InterpreterContext *interpreter, int id)
+{
+    for (int i = 0; i < interpreter->forcesCount; i++)
+    {
+        if (interpreter->forces[i].id == id) return true;
+    }
+    return false;
+}
+
 void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph, int outFlowPinIndexInNode)
 {
     if (lastNodeIndex < 0 || lastNodeIndex >= graph->nodeCount)
@@ -688,11 +697,12 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_FORCE_SPRITE:
     {
         SceneComponent *component = &interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex];
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount && !DoesForceExist(interpreter, graph->nodes[currNodeIndex].index))
         {
+            interpreter->forces[interpreter->forcesCount].id = graph->nodes[currNodeIndex].index;
             interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex;
             interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].directionDegrees = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].angle = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
             interpreter->forces[interpreter->forcesCount].duration = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
             interpreter->forcesCount++;
         }
@@ -909,11 +919,11 @@ void HandleForces(InterpreterContext *interpreter)
     for (int i = 0; i < interpreter->forcesCount; i++)
     {
         float speed = interpreter->forces[i].pixelsPerSecond;
-        float angle = interpreter->forces[i].directionDegrees * (PI / 180.0f);
+        float angle = interpreter->forces[i].angle * (PI / 180.0f);
         float vx = cosf(angle) * speed;
         float vy = -sinf(angle) * speed;
         float deltaTime = GetFrameTime();
-        interpreter->forces[i].duration -= GetFrameTime();
+        interpreter->forces[i].duration -= deltaTime;
         if (interpreter->forces[i].duration <= 0)
         {
             for (int j = i; j < interpreter->forcesCount - 1; j++)
@@ -957,12 +967,32 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
         interpreter->isFirstFrame = false;
     }
 
-    KeyboardKey key = GetKeyPressed();
     for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)
     {
-        if (key != 0 && key == graph->nodes[interpreter->onButtonNodeIndexes[i]].inputPins[0]->pickedOption)
+        int nodeIndex = interpreter->onButtonNodeIndexes[i];
+        KeyboardKey key = graph->nodes[nodeIndex].inputPins[0]->pickedOption;
+        KeyAction action = graph->nodes[nodeIndex].inputPins[1]->pickedOption; // You need to store this
+
+        bool triggered = false;
+        switch (action)
         {
-            InterpretStringOfNodes(interpreter->onButtonNodeIndexes[i], interpreter, graph, 0);
+        case KEY_ACTION_PRESSED:
+            triggered = IsKeyPressed(key);
+            break;
+        case KEY_ACTION_RELEASED:
+            triggered = IsKeyReleased(key);
+            break;
+        case KEY_ACTION_DOWN:
+            triggered = IsKeyDown(key);
+            break;
+        case KEY_ACTION_NOT_DOWN:
+            triggered = IsKeyUp(key);
+            break;
+        }
+
+        if (triggered)
+        {
+            InterpretStringOfNodes(nodeIndex, interpreter, graph, 0);
         }
     }
 

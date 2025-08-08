@@ -38,7 +38,8 @@ typedef enum
     NODE_LITERAL_NUM,
     NODE_LITERAL_STRING,
     NODE_LITERAL_BOOL,
-    NODE_LITERAL_COLOR
+    NODE_LITERAL_COLOR,
+    NODE_SET_BACKGROUND
 } NodeType;
 
 typedef enum
@@ -151,7 +152,8 @@ static InfoByType NodeInfoByType[] = {
     {NODE_LITERAL_NUM, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_NUM}, {PIN_NUM}, {""}, {"number"}},
     {NODE_LITERAL_STRING, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_STRING}, {PIN_STRING}, {""}, {"string"}},
     {NODE_LITERAL_BOOL, 1, 1, 180, 70, {110, 85, 40, 200}, false, {PIN_FIELD_BOOL}, {PIN_BOOL}, {""}, {"bool"}},
-    {NODE_LITERAL_COLOR, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {"color"}}};
+    {NODE_LITERAL_COLOR, 1, 1, 200, 70, {110, 85, 40, 200}, false, {PIN_FIELD_COLOR}, {PIN_COLOR}, {""}, {"color"}},
+    {NODE_SET_BACKGROUND, 2, 1, 240, 100, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Color"}, {"Next"}}};
 
 typedef struct DropdownOptionsByPinType
 {
@@ -356,6 +358,8 @@ static inline const char *NodeTypeToString(NodeType type)
         return "Literal bool";
     case NODE_LITERAL_COLOR:
         return "Literal color";
+    case NODE_SET_BACKGROUND:
+        return "Set Background";
     default:
         return "invalid";
     }
@@ -425,6 +429,8 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
         return NODE_LITERAL_BOOL;
     if (strcmp(strType, "Literal color") == 0)
         return NODE_LITERAL_COLOR;
+    if (strcmp(strType, "Set Background") == 0)
+        return NODE_SET_BACKGROUND;
     return NODE_UNKNOWN;
 }
 

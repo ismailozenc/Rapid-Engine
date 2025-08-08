@@ -999,9 +999,9 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
         {"Prop Texture", "Prop Rectangle", "Prop Circle"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
-        {"Literal num", "Literal string", "Literal bool", "Literal color"}};
+        {"Literal num", "Literal string", "Literal bool", "Literal color", "Set Background"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {7, 5, 4, 2, 3, 3, 2, 4};
+    int subMenuCounts[] = {7, 5, 4, 2, 3, 3, 2, 5};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 

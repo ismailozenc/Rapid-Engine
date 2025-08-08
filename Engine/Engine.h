@@ -52,10 +52,19 @@ typedef enum
     VAR_FILTER_SPRITES
 }VarFilter;
 
+typedef enum
+{
+    LOG_LEVEL_NORMAL,
+    LOG_LEVEL_WARNING,
+    LOG_LEVEL_ERROR,
+    LOG_LEVEL_SAVE,
+    LOG_LEVEL_DEBUG
+}LogLevel;
+
 typedef struct LogEntry
 {
     char message[256];
-    int level; // 0 = Info, 1 = Warning, 2 = Error
+    LogLevel level;
 } LogEntry;
 
 typedef struct Logs
@@ -139,6 +148,7 @@ typedef struct EngineContext
     float editorZoom;
     bool wasBuilt;
     int showSaveWarning;
+    bool isGameFullscreen;
     VarFilter varsFilter;
 } EngineContext;
 
@@ -149,12 +159,3 @@ typedef enum
     FILE_IMAGE,
     FILE_OTHER
 }FileType;
-
-typedef enum
-{
-    LOG_LEVEL_NORMAL,
-    LOG_LEVEL_WARNING,
-    LOG_LEVEL_ERROR,
-    LOG_LEVEL_SAVE,
-    LOG_LEVEL_DEBUG
-}LogLevel;

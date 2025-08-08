@@ -84,6 +84,8 @@ EngineContext InitEngineContext()
 
     engine.varsFilter = 0;
 
+    engine.isGameFullscreen = false;
+
     return engine;
 }
 
@@ -1407,7 +1409,7 @@ int main()
 
     AddToLog(&engine, "All resources loaded. Welcome!", 0);
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() || IsKeyDown(KEY_ESCAPE))
     {
         if (!IsWindowReady())
         {
@@ -1515,7 +1517,8 @@ int main()
             EndTextureMode();
         }
 
-        DrawTexturePro(
+        if(!engine.isGameRunning || !engine.isGameFullscreen){
+            DrawTexturePro(
             engine.viewport.texture,
             (Rectangle){
                 (engine.viewport.texture.width - srcW) / 2.0f,
@@ -1530,6 +1533,7 @@ int main()
             (Vector2){0, 0},
             0.0f,
             WHITE);
+        }
 
         if (engine.CGFilePath[0] != '\0' && engine.isEditorOpened)
         {
@@ -1538,6 +1542,24 @@ int main()
         }
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+
+        if(engine.isGameRunning && engine.isGameFullscreen){
+            DrawTexturePro(
+            engine.viewport.texture,
+            (Rectangle){
+                (engine.viewport.texture.width - engine.screenWidth) / 2.0f,
+                (engine.viewport.texture.height - engine.screenHeight) / 2.0f,
+                engine.screenWidth,
+                -engine.screenHeight},
+            (Rectangle){
+                0,
+                0,
+                engine.screenWidth,
+                engine.screenHeight},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
+        }
 
         // DrawFPS(engine.screenWidth / 2, 10);
 

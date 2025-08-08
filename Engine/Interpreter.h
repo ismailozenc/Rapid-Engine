@@ -156,6 +156,8 @@ typedef struct
     int *onButtonNodeIndexes;
     int onButtonNodeIndexesCount;
 
+    Color backgroundColor;
+
     bool isInfiniteLoopProtectionOn;
 
     bool buildFailed;

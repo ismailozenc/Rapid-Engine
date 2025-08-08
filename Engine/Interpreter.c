@@ -33,6 +33,8 @@ void FreeInterpreterContext(InterpreterContext *interpreter)
     free(interpreter->forces);
     interpreter->forces = NULL;
     interpreter->forces = 0;
+
+    interpreter->backgroundColor = (Color){0, 0, 0, 0};
 }
 
 char *ValueTypeToString(ValueType type)
@@ -79,7 +81,7 @@ char *ValueToString(Value value)
         sprintf(temp, "%d %d %d %d", value.color.r, value.color.g, value.color.b, value.color.a);
         break;
     case VAL_SPRITE:
-        sprintf(temp, "");
+        sprintf(temp, "%s, PosX: %.0f, PosY: %.0f, Rotation: %.2f", value.sprite.isVisible ? "Visible" : "Not visible", value.sprite.position.x, value.sprite.position.y, value.sprite.rotation);
         break;
     default:
         sprintf(temp, "Error");
@@ -865,6 +867,13 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         break;
     }
+
+    case NODE_SET_BACKGROUND:
+    {
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1){
+            interpreter->backgroundColor = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].color;
+        }
+    }
     }
 
     if (currNodeIndex != lastNodeIndex)
@@ -875,6 +884,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
 void DrawComponents(InterpreterContext *interpreter)
 {
+    ClearBackground(interpreter->backgroundColor);
+
     for (int i = 0; i < interpreter->componentCount; i++)
     {
         SceneComponent component = interpreter->components[i];
@@ -888,8 +899,8 @@ void DrawComponents(InterpreterContext *interpreter)
                 component.sprite.texture,
                 (Rectangle){0, 0, (float)component.sprite.texture.width, (float)component.sprite.texture.height},
                 (Rectangle){
-                    component.sprite.position.x - component.sprite.width / 2.0f,
-                    component.sprite.position.y - component.sprite.height / 2.0f,
+                    component.sprite.position.x,
+                    component.sprite.position.y,
                     (float)component.sprite.width,
                     (float)component.sprite.height},
                 (Vector2){component.sprite.width / 2.0f, component.sprite.height / 2.0f},
@@ -1012,6 +1023,13 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     HandleForces(interpreter);
 
     DrawComponents(interpreter);
+
+    for(int i = 0; i < interpreter->valueCount; i++){
+        if(interpreter->values[i].type == VAL_SPRITE){
+            interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
+            interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
+        }
+    }
 
     return true;
 }

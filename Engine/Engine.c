@@ -46,7 +46,8 @@ EngineContext InitEngineContext()
     engine.viewport = LoadRenderTexture(engine.screenWidth * 2, engine.screenHeight * 2);
     engine.UI = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
     engine.resizeButton = LoadTexture("textures//resize_btn.png");
-    if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0)
+    engine.viewportFullscreenButton = LoadTexture("textures//viewport_fullscreen.png");
+    if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
         EmergencyExit(&engine);
@@ -111,6 +112,7 @@ void FreeEngineContext(EngineContext *engine)
     UnloadRenderTexture(engine->viewport);
     UnloadRenderTexture(engine->UI);
     UnloadTexture(engine->resizeButton);
+    UnloadTexture(engine->viewportFullscreenButton);
 
     UnloadFont(engine->font);
 
@@ -593,6 +595,13 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 {
                     engine->varsFilter = 0;
                 }
+            }
+            break;
+        case VIEWPORT_FULLSCREEN:
+            engine->isViewportFocused = false;
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                engine->isGameFullscreen = true;
             }
         }
 
@@ -1165,6 +1174,18 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                              .layer = 1,
                          });
 
+    if (engine->isGameRunning)
+    {
+        AddUIElement(engine, (UIElement){
+                                 .name = "ViewportFullscreenButton",
+                                 .shape = UIRectangle,
+                                 .type = VIEWPORT_FULLSCREEN,
+                                 .rect = {.pos = {engine->sideBarWidth + 8, 10}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
+                                 .color = (Color){200, 200, 200, 100},
+                                 .layer = 1,
+                             });
+    }
+
     CountingSortByLayer(engine);
 
     DrawUIElements(engine, graph, editor, interpreter, runtimeGraph);
@@ -1184,12 +1205,17 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         DrawTexture(engine->resizeButton, engine->sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
     }
 
+    if (engine->isGameRunning)
+    {
+        DrawTexturePro(engine->viewportFullscreenButton, (Rectangle){0, 0, engine->viewportFullscreenButton.width, engine->viewportFullscreenButton.height}, (Rectangle){engine->sideBarWidth + 8, 10, 50, 50}, (Vector2){0, 0}, 0, WHITE);
+    }
+
     EndTextureMode();
 }
 
 bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
 {
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT))
     {
         if (engine->isSoundOn)
         {
@@ -1224,8 +1250,14 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_E))
     {
-        engine->isEditorOpened = true;
         editor->delayFrames = true;
+        engine->delayFrames = true;
+        engine->isEditorOpened = true;
+        editor->isFirstFrame = true;
+        engine->isGameRunning = false;
+        engine->wasBuilt = false;
+        engine->isGameFullscreen = false;
+        FreeInterpreterContext(interpreter);
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_B))
     {
@@ -1247,6 +1279,17 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
                 AddToLog(engine, "Build failed", 0);
             }
         }
+    }
+    else if ((IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_SHIFT)) || IsKeyPressed(KEY_ESCAPE))
+    {
+        editor->delayFrames = true;
+        engine->delayFrames = true;
+        engine->isEditorOpened = true;
+        editor->isFirstFrame = true;
+        engine->isGameRunning = false;
+        engine->wasBuilt = false;
+        engine->isGameFullscreen = false;
+        FreeInterpreterContext(interpreter);
     }
 
     if (engine->draggingResizeButtonID != 0)
@@ -1517,22 +1560,23 @@ int main()
             EndTextureMode();
         }
 
-        if(!engine.isGameRunning || !engine.isGameFullscreen){
+        if (!engine.isGameRunning || !engine.isGameFullscreen)
+        {
             DrawTexturePro(
-            engine.viewport.texture,
-            (Rectangle){
-                (engine.viewport.texture.width - srcW) / 2.0f,
-                (engine.viewport.texture.height - srcH) / 2.0f,
-                srcW,
-                -srcH},
-            (Rectangle){
-                engine.sideBarWidth,
-                0,
-                engine.screenWidth - engine.sideBarWidth,
-                engine.screenHeight - engine.bottomBarHeight},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE);
+                engine.viewport.texture,
+                (Rectangle){
+                    (engine.viewport.texture.width - srcW) / 2.0f,
+                    (engine.viewport.texture.height - srcH) / 2.0f,
+                    srcW,
+                    -srcH},
+                (Rectangle){
+                    engine.sideBarWidth,
+                    0,
+                    engine.screenWidth - engine.sideBarWidth,
+                    engine.screenHeight - engine.bottomBarHeight},
+                (Vector2){0, 0},
+                0.0f,
+                WHITE);
         }
 
         if (engine.CGFilePath[0] != '\0' && engine.isEditorOpened)
@@ -1543,22 +1587,23 @@ int main()
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
 
-        if(engine.isGameRunning && engine.isGameFullscreen){
+        if (engine.isGameRunning && engine.isGameFullscreen)
+        {
             DrawTexturePro(
-            engine.viewport.texture,
-            (Rectangle){
-                (engine.viewport.texture.width - engine.screenWidth) / 2.0f,
-                (engine.viewport.texture.height - engine.screenHeight) / 2.0f,
-                engine.screenWidth,
-                -engine.screenHeight},
-            (Rectangle){
-                0,
-                0,
-                engine.screenWidth,
-                engine.screenHeight},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE);
+                engine.viewport.texture,
+                (Rectangle){
+                    (engine.viewport.texture.width - engine.screenWidth) / 2.0f,
+                    (engine.viewport.texture.height - engine.screenHeight) / 2.0f,
+                    engine.screenWidth,
+                    -engine.screenHeight},
+                (Rectangle){
+                    0,
+                    0,
+                    engine.screenWidth,
+                    engine.screenHeight},
+                (Vector2){0, 0},
+                0.0f,
+                WHITE);
         }
 
         // DrawFPS(engine.screenWidth / 2, 10);

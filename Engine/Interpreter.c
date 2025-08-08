@@ -17,6 +17,8 @@ InterpreterContext InitInterpreterContext()
 
     interpreter.isInfiniteLoopProtectionOn = true;
 
+    interpreter.backgroundColor = (Color){0, 0, 0, 255};
+
     return interpreter;
 }
 
@@ -34,7 +36,7 @@ void FreeInterpreterContext(InterpreterContext *interpreter)
     interpreter->forces = NULL;
     interpreter->forces = 0;
 
-    interpreter->backgroundColor = (Color){0, 0, 0, 0};
+    interpreter->backgroundColor = (Color){0, 0, 0, 255};
 }
 
 char *ValueTypeToString(ValueType type)
@@ -449,7 +451,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 Texture2D tex = LoadTexture(path);
                 if (tex.id == 0)
                 {
-                    //printf("FAILED to load texture: %s\n", path);
                     AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Failed to load texture"}, 2);
                 }
                 else
@@ -459,7 +460,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             }
             else
             {
-                // printf("Invalid texture input\n");
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Invalid texture input"}, 2);
             }
             interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[node->inputPins[2]->valueIndex].number;
@@ -467,8 +468,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].sprite.position.y = interpreter->values[node->inputPins[4]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.height / 2;
             interpreter->components[interpreter->componentCount].sprite.rotation = interpreter->values[node->inputPins[5]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
-            node->outputPins[1]->componentIndex = interpreter->componentCount;                                 // possibly unneeded
-            interpreter->values[node->outputPins[1]->valueIndex].componentIndex = interpreter->componentCount; // possibly unneeded
+            node->outputPins[1]->componentIndex = interpreter->componentCount;
             for (int j = 0; j < runtime.nodeCount; j++)
             {
                 for (int k = 0; k < runtime.nodes[j].inputCount; k++)
@@ -496,7 +496,6 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                     }
                 }
             }
-            // addtologfrominterpreter not working here
             interpreter->componentCount++;
             break;
         case NODE_PROP_TEXTURE:
@@ -953,7 +952,6 @@ void HandleForces(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph)
 {
-    interpreter->newLogMessage = false;
 
     if (interpreter->isFirstFrame)
     {
@@ -979,6 +977,9 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
         interpreter->onButtonNodeIndexes = realloc(interpreter->onButtonNodeIndexes, sizeof(int) * interpreter->onButtonNodeIndexesCount);
 
         interpreter->isFirstFrame = false;
+    }
+    else{
+        interpreter->newLogMessage = false;
     }
 
     for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)

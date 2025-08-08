@@ -31,7 +31,8 @@ typedef enum
     RESIZE_SIDE_BAR_MIDDLE,
     OPEN_FILE,
     CHANGE_VARS_FILTER,
-    VAR_TOOLTIP_RUNTIME
+    VAR_TOOLTIP_RUNTIME,
+    VIEWPORT_FULLSCREEN
 } UIElementCollisionType;
 
 typedef enum
@@ -126,7 +127,7 @@ typedef struct EngineContext
     int viewportHeight;
     Vector2 mousePos;
     RenderTexture2D viewport, UI;
-    Texture2D resizeButton;
+    Texture2D resizeButton, viewportFullscreenButton;
     char *currentPath;
     char *CGFilePath;
     Font font;

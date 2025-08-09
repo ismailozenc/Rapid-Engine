@@ -990,18 +990,20 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     Color BorderColor = {200, 200, 200, 255};
     Color HighlightColor = {80, 80, 80, 255};
 
-    const char *menuItems[] = {"Variable", "Event", "Sprite", "Flow", "Draw Prop", "Logical", "Debug", "More"};
-    const char *subMenuItems[][7] = {
-        {"num", "string", "bool", "color", "sprite", "Get var", "Set var"},
+    const char *menuItems[] = {"Variable", "Event", "Get", "Set", "Flow", "Sprite", "Draw Prop", "Logical", "Debug", "More"};
+    const char *subMenuItems[][9] = {
+        {"num", "string", "bool", "color"},
         {"Start", "Loop Tick", "On Button", "Create custom", "Call custom"},
-        {"Spawn", "Destroy", "Move To", "Force"},
+        {"Get var", "Get Screen Width", "Get Screen Height", "Get Mouse X", "Get Mouse Y", "Get Random Number"},
+        {"Set var", "Set Background", "Set FPS"},
         {"Branch", "Loop"},
+        {"Create sprite", "Set Positon", "Set Rotation", "Set Texture", "Set Size", "Spawn", "Destroy", "Move To", "Force"},
         {"Prop Texture", "Prop Rectangle", "Prop Circle"},
         {"Comparison", "Gate", "Arithmetic"},
         {"Print", "Draw Line"},
-        {"Literal num", "Literal string", "Literal bool", "Literal color", "Set Background"}};
+        {"Literal num", "Literal string", "Literal bool", "Literal color"}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {7, 5, 4, 2, 3, 3, 2, 5};
+    int subMenuCounts[] = {4, 5, 6, 3, 2, 9, 3, 3, 2, 4};
 
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
 

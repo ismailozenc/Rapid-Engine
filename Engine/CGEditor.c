@@ -203,7 +203,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
 
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
+            if (graph->nodes[i].type == NODE_CREATE_NUMBER || graph->nodes[i].type == NODE_CREATE_STRING || graph->nodes[i].type == NODE_CREATE_BOOL || graph->nodes[i].type == NODE_CREATE_COLOR || graph->nodes[i].type == NODE_CREATE_SPRITE)
             {
                 graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
                 graph->variables[graph->variablesCount] = strdup(graph->nodes[i].name);
@@ -566,33 +566,35 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         PinType varType = PIN_UNKNOWN_VALUE;
         switch (graph->variableTypes[graph->pins[currPinIndex].pickedOption])
         {
-        case NODE_NUM:
+        case NODE_CREATE_NUMBER:
             varTypeColor = (Color){24, 119, 149, 255};
             varType = PIN_NUM;
             break;
-        case NODE_STRING:
+        case NODE_CREATE_STRING:
             varTypeColor = (Color){180, 178, 40, 255};
             varType = PIN_STRING;
             break;
-        case NODE_BOOL:
+        case NODE_CREATE_BOOL:
             varTypeColor = (Color){27, 64, 121, 255};
             varType = PIN_BOOL;
             break;
-        case NODE_COLOR:
+        case NODE_CREATE_COLOR:
             varTypeColor = (Color){217, 3, 104, 255};
             varType = PIN_COLOR;
             break;
-        case NODE_SPRITE:
+        case NODE_CREATE_SPRITE:
             varTypeColor = (Color){3, 206, 164, 255};
             varType = PIN_SPRITE;
             break;
         default:
             varTypeColor = LIGHTGRAY;
         }
-        if(graph->nodes[currNodeIndex].type == NODE_GET_VAR){
+        if (graph->nodes[currNodeIndex].type == NODE_GET_VARIABLE)
+        {
             graph->pins[FindPinIndexByID(graph, graph->nodes[currNodeIndex].outputPins[0])].type = varType;
         }
-        else if(graph->nodes[currNodeIndex].type == NODE_SET_VAR){
+        else if (graph->nodes[currNodeIndex].type == NODE_SET_VARIABLE)
+        {
             graph->pins[FindPinIndexByID(graph, graph->nodes[currNodeIndex].inputPins[2])].type = varType;
         }
         DrawCircle(graph->pins[currPinIndex].position.x + 4, graph->pins[currPinIndex].position.y, 6, varTypeColor);
@@ -636,7 +638,7 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         for (int j = 0; j < options.optionsCount; j++)
         {
             displayedVarsCounter++;
-            if ((graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE && graph->variableTypes[j] != NODE_SPRITE) && j != 0)
+            if ((graph->pins[currPinIndex].type == PIN_SPRITE_VARIABLE && graph->variableTypes[j] != NODE_CREATE_SPRITE) && j != 0)
             {
                 displayedVarsCounter--;
                 continue;
@@ -652,19 +654,19 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
                 Color varTypeColor;
                 switch (graph->variableTypes[j])
                 {
-                case NODE_NUM: // 38, 38, 38
+                case NODE_CREATE_NUMBER: // 38, 38, 38
                     varTypeColor = (Color){24, 119, 149, 255};
                     break;
-                case NODE_STRING:
+                case NODE_CREATE_STRING:
                     varTypeColor = (Color){180, 178, 40, 255};
                     break;
-                case NODE_BOOL:
+                case NODE_CREATE_BOOL:
                     varTypeColor = (Color){27, 64, 121, 255};
                     break;
-                case NODE_COLOR:
+                case NODE_CREATE_COLOR:
                     varTypeColor = (Color){217, 3, 104, 255};
                     break;
-                case NODE_SPRITE:
+                case NODE_CREATE_SPRITE:
                     varTypeColor = (Color){3, 206, 164, 255};
                     break;
                 default:
@@ -893,7 +895,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     DrawTextEx(editor->font, getNodeInputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], (Vector2){(2 * nodePos.x + getNodeInfoByType(graph->nodes[currNodeIndex].type, WIDTH)) / 2 - MeasureTextEx(editor->font, getNodeInputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], 18, 0).x / 2, nodePos.y + yOffset - 8}, 18, 0, WHITE);
                     DrawLine(graph->pins[i].position.x, graph->pins[i].position.y, (2 * nodePos.x + getNodeInfoByType(graph->nodes[currNodeIndex].type, WIDTH)) / 2 - MeasureTextEx(editor->font, getNodeInputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode], 18, 0).x / 2 - 5, graph->pins[i].position.y, WHITE);
                 }
-                else if (graph->nodes[currNodeIndex].type == NODE_COMPARISON || graph->nodes[currNodeIndex].type == NODE_GATE || graph->nodes[currNodeIndex].type == NODE_LITERAL_NUM || graph->nodes[currNodeIndex].type == NODE_LITERAL_STRING || graph->nodes[currNodeIndex].type == NODE_LITERAL_BOOL || graph->nodes[currNodeIndex].type == NODE_LITERAL_COLOR)
+                else if (graph->nodes[currNodeIndex].type == NODE_COMPARISON || graph->nodes[currNodeIndex].type == NODE_GATE || graph->nodes[currNodeIndex].type == NODE_LITERAL_NUMBER || graph->nodes[currNodeIndex].type == NODE_LITERAL_STRING || graph->nodes[currNodeIndex].type == NODE_LITERAL_BOOL || graph->nodes[currNodeIndex].type == NODE_LITERAL_COLOR)
                 {
                     const char *label = getNodeOutputNamesByType(graph->nodes[currNodeIndex].type)[graph->pins[i].posInNode];
                     Vector2 textSize = MeasureTextEx(editor->font, label, 18, 0);
@@ -992,16 +994,16 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
 
     const char *menuItems[] = {"Variable", "Event", "Get", "Set", "Flow", "Sprite", "Draw Prop", "Logical", "Debug", "More"};
     const char *subMenuItems[][9] = {
-        {"num", "string", "bool", "color"},
-        {"Start", "Loop Tick", "On Button", "Create custom", "Call custom"},
-        {"Get var", "Get Screen Width", "Get Screen Height", "Get Mouse X", "Get Mouse Y", "Get Random Number"},
-        {"Set var", "Set Background", "Set FPS"},
-        {"Branch", "Loop"},
-        {"Create sprite", "Set Positon", "Set Rotation", "Set Texture", "Set Size", "Spawn", "Destroy", "Move To", "Force"},
-        {"Prop Texture", "Prop Rectangle", "Prop Circle"},
-        {"Comparison", "Gate", "Arithmetic"},
-        {"Print", "Draw Line"},
-        {"Literal num", "Literal string", "Literal bool", "Literal color"}};
+        {"Create number", "Create string", "Create bool", "Create color", "", "", "", "", ""},
+        {"Event Start", "Event Tick", "Event On Button", "Create Custom Event", "Call Custom Event", "", "", "", ""},
+        {"Get variable", "Get Screen Width", "Get Screen Height", "Get Mouse X", "Get Mouse Y", "Get Random Number", "", "", ""},
+        {"Set variable", "Set Background", "Set FPS", "", "", "", "", "", ""},
+        {"Branch", "Loop", "", "", "", "", "", "", ""},
+        {"Create sprite", "Set Sprite Position", "Set Sprite Rotation", "Set Sprite Texture", "Set Sprite Size", "Spawn sprite", "Destroy sprite", "Move To", "Force"},
+        {"Draw Prop Texture", "Draw Prop Rectangle", "Draw Prop Circle", "", "", "", "", "", ""},
+        {"Comparison", "Gate", "Arithmetic", "", "", "", "", "", ""},
+        {"Print To Log", "Draw Debug Line", "", "", "", "", "", "", ""},
+        {"Literal number", "Literal string", "Literal bool", "Literal color", "", "", "", "", ""}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
     int subMenuCounts[] = {4, 5, 6, 3, 2, 9, 3, 3, 2, 4};
 
@@ -1173,7 +1175,7 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
             NodeType newNodeType = StringToNodeType(createdNode);
             CreateNode(graph, newNodeType, editor->rightClickPos);
             editor->rightClickPos = (Vector2){0, 0};
-            if (newNodeType == NODE_NUM || newNodeType == NODE_STRING || newNodeType == NODE_BOOL || newNodeType == NODE_COLOR || newNodeType == NODE_SPRITE)
+            if (newNodeType == NODE_CREATE_NUMBER || newNodeType == NODE_CREATE_STRING || newNodeType == NODE_CREATE_BOOL || newNodeType == NODE_CREATE_COLOR || newNodeType == NODE_CREATE_SPRITE)
             {
                 graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
                 graph->variables[graph->variablesCount] = strdup(graph->nodes[graph->nodeCount - 1].name);

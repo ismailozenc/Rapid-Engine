@@ -124,7 +124,7 @@ bool LoadGraphFromFile(const char *filename, GraphContext *graph)
 
     for (int i = 1; i < graph->nodeCount; i++)
     {
-        if (graph->nodes[i].type == NODE_NUM || graph->nodes[i].type == NODE_STRING || graph->nodes[i].type == NODE_BOOL || graph->nodes[i].type == NODE_COLOR || graph->nodes[i].type == NODE_SPRITE)
+        if (graph->nodes[i].type == NODE_CREATE_NUMBER || graph->nodes[i].type == NODE_CREATE_STRING || graph->nodes[i].type == NODE_CREATE_BOOL || graph->nodes[i].type == NODE_CREATE_COLOR || graph->nodes[i].type == NODE_CREATE_SPRITE)
         {
             graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
             graph->variables[graph->variablesCount] = strdup(graph->nodes[i].name);
@@ -200,25 +200,25 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
 
     switch (node.type)
     {
-    case NODE_NUM:
+    case NODE_CREATE_NUMBER:
         sprintf(node.name, "%s", AssignAvailableVarName(graph, "Number"));
         break;
-    case NODE_STRING:
+    case NODE_CREATE_STRING:
         sprintf(node.name, "%s", AssignAvailableVarName(graph, "String"));
         break;
-    case NODE_BOOL:
+    case NODE_CREATE_BOOL:
         sprintf(node.name, "%s", AssignAvailableVarName(graph, "Boolean"));
         break;
-    case NODE_COLOR:
+    case NODE_CREATE_COLOR:
         sprintf(node.name, "%s", AssignAvailableVarName(graph, "Color"));
         break;
-    case NODE_SPRITE:
+    case NODE_CREATE_SPRITE:
         sprintf(node.name, "%s", AssignAvailableVarName(graph, "Sprite"));
         break;
-    case NODE_GET_VAR:
+    case NODE_GET_VARIABLE:
         sprintf(node.name, "");
         break;
-    case NODE_SET_VAR:
+    case NODE_SET_VARIABLE:
         sprintf(node.name, "");
         break;
     default:
@@ -241,7 +241,7 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
 
     int newPinCapacity = graph->pinCount + inputCount + outputCount;
     Pin *newPins = realloc(graph->pins, sizeof(Pin) * newPinCapacity);
-    if (!newPins)
+    if (!newPins && newPinCapacity != 0)
     {
         TraceLog(LOG_ERROR, "CreateNode: Failed to realloc pins array");
         return node;
@@ -360,7 +360,7 @@ void DeleteNode(GraphContext *graph, int nodeID)
     if (nodeIndex == -1)
         return;
 
-    if (graph->nodes[nodeIndex].type == NODE_NUM || graph->nodes[nodeIndex].type == NODE_STRING || graph->nodes[nodeIndex].type == NODE_BOOL || graph->nodes[nodeIndex].type == NODE_COLOR || graph->nodes[nodeIndex].type == NODE_SPRITE)
+    if (graph->nodes[nodeIndex].type == NODE_CREATE_NUMBER || graph->nodes[nodeIndex].type == NODE_CREATE_STRING || graph->nodes[nodeIndex].type == NODE_CREATE_BOOL || graph->nodes[nodeIndex].type == NODE_CREATE_COLOR || graph->nodes[nodeIndex].type == NODE_CREATE_SPRITE)
     {
         int variableToDeleteIndex = -1;
         for (int i = 0; i < graph->variablesCount; i++)
@@ -382,11 +382,11 @@ void DeleteNode(GraphContext *graph, int nodeID)
 
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            if (graph->nodes[i].type == NODE_GET_VAR || graph->nodes[i].type == NODE_SET_VAR)
+            if (graph->nodes[i].type == NODE_GET_VARIABLE || graph->nodes[i].type == NODE_SET_VARIABLE)
             {
                 for (int j = 0; j < graph->pinCount; j++)
                 {
-                    if (graph->pins[j].id == graph->nodes[i].inputPins[graph->nodes[i].type == NODE_GET_VAR ? 0 : 1])
+                    if (graph->pins[j].id == graph->nodes[i].inputPins[graph->nodes[i].type == NODE_GET_VARIABLE ? 0 : 1])
                     {
                         if (graph->pins[j].pickedOption > variableToDeleteIndex)
                         {

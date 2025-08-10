@@ -9,7 +9,7 @@
 #define MENU_ITEM_HEIGHT 40
 #define MENU_VISIBLE_ITEMS 5.5
 #define MENU_BORDER_THICKNESS 3
-#define SUBMENU_WIDTH 200
+#define SUBMENU_WIDTH 250
 
 #define MAX_TYPE_LENGTH 16
 
@@ -66,6 +66,8 @@ typedef struct
     int fps;
 
     float zoom;
+
+    char nodeMenuSearch[64];
 } EditorContext;
 
 EditorContext InitEditorContext(void);

@@ -917,6 +917,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             switch (engine->isGameRunning ? interpreter->values[i].type : graph->variableTypes[i])
             {
             case VAL_NUMBER:
+            case NODE_CREATE_NUMBER:
                 varColor = (Color){24, 119, 149, 255};
                 if (engine->varsFilter != VAR_FILTER_NUMBERS && engine->varsFilter != VAR_FILTER_ALL)
                 {
@@ -924,6 +925,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
                 break;
             case VAL_STRING:
+            case NODE_CREATE_STRING:
                 varColor = (Color){180, 178, 40, 255};
                 if (engine->varsFilter != VAR_FILTER_STRINGS && engine->varsFilter != VAR_FILTER_ALL)
                 {
@@ -931,6 +933,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
                 break;
             case VAL_BOOL:
+            case NODE_CREATE_BOOL:
                 varColor = (Color){27, 64, 121, 255};
                 if (engine->varsFilter != VAR_FILTER_BOOLS && engine->varsFilter != VAR_FILTER_ALL)
                 {
@@ -938,6 +941,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
                 break;
             case VAL_COLOR:
+            case NODE_CREATE_COLOR:
                 varColor = (Color){217, 3, 104, 255};
                 if (engine->varsFilter != VAR_FILTER_COLORS && engine->varsFilter != VAR_FILTER_ALL)
                 {
@@ -945,6 +949,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
                 break;
             case VAL_SPRITE:
+            NODE_CREATE_SPRITE:
                 varColor = (Color){3, 206, 164, 255};
                 if (engine->varsFilter != VAR_FILTER_SPRITES && engine->varsFilter != VAR_FILTER_ALL)
                 {

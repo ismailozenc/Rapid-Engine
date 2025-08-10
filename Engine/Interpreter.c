@@ -218,7 +218,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 totalOutputPins++;
         }
 
-        if (node->type == NODE_PROP_TEXTURE || node->type == NODE_PROP_RECTANGLE || node->type == NODE_PROP_CIRCLE || node->type == NODE_SPRITE)
+        if (node->type == NODE_DRAW_PROP_TEXTURE || node->type == NODE_DRAW_PROP_RECTANGLE || node->type == NODE_DRAW_PROP_CIRCLE || node->type == NODE_CREATE_SPRITE)
         {
             totalComponents++;
         }
@@ -245,7 +245,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
         switch (node->type)
         {
-        case NODE_LITERAL_NUM:
+        case NODE_LITERAL_NUMBER:
             interpreter->values[interpreter->valueCount].number = strtof(node->inputPins[0]->textFieldValue, NULL);
             interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
             interpreter->values[interpreter->valueCount].isVariable = false;
@@ -306,7 +306,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             int idx = interpreter->valueCount;
 
             bool isVariable = false;
-            if (node->type == NODE_NUM || node->type == NODE_STRING || node->type == NODE_SPRITE || node->type == NODE_BOOL || node->type == NODE_COLOR)
+            if (node->type == NODE_CREATE_NUMBER || node->type == NODE_CREATE_STRING || node->type == NODE_CREATE_SPRITE || node->type == NODE_CREATE_BOOL || node->type == NODE_CREATE_COLOR)
             {
                 isVariable = true;
                 node->inputPins[1]->valueIndex = idx;
@@ -372,7 +372,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
         switch (graph->nodes[i].type)
         {
-        case NODE_GET_VAR:
+        case NODE_GET_VARIABLE:
             for (int j = 0; j < graph->nodeCount; j++)
             {
                 if (j != i && strcmp(graph->variables[runtime.nodes[i].inputPins[0]->pickedOption], graph->nodes[j].name) == 0)
@@ -387,7 +387,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 node->outputPins[0]->valueIndex = 0;
             }
             continue;
-        case NODE_SET_VAR:
+        case NODE_SET_VARIABLE:
             for (int j = 0; j < graph->nodeCount; j++)
             {
                 if (j != i && strcmp(graph->variables[runtime.nodes[i].inputPins[1]->pickedOption], graph->nodes[j].name) == 0)
@@ -440,7 +440,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
         switch (node->type)
         {
-        case NODE_SPRITE:
+        case NODE_CREATE_SPRITE:
             interpreter->components[interpreter->componentCount].isSprite = true;
             interpreter->components[interpreter->componentCount].isVisible = false;
             int fileIndex = node->inputPins[1]->valueIndex;
@@ -498,9 +498,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             }
             interpreter->componentCount++;
             break;
-        case NODE_PROP_TEXTURE:
+        case NODE_DRAW_PROP_TEXTURE:
             continue;
-        case NODE_PROP_RECTANGLE:
+        case NODE_DRAW_PROP_RECTANGLE:
             interpreter->components[interpreter->componentCount].isSprite = false;
             interpreter->components[interpreter->componentCount].isVisible = false;
             interpreter->components[interpreter->componentCount].prop.propType = PROP_RECTANGLE;
@@ -513,7 +513,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             interpreter->componentCount++;
             continue;
-        case NODE_PROP_CIRCLE:
+        case NODE_DRAW_PROP_CIRCLE:
             interpreter->components[interpreter->componentCount].isSprite = false;
             interpreter->components[interpreter->componentCount].isVisible = false;
             interpreter->components[interpreter->componentCount].prop.propType = PROP_CIRCLE;
@@ -564,7 +564,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_NUM:
+    case NODE_CREATE_NUMBER:
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
@@ -573,7 +573,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_STRING:
+    case NODE_CREATE_STRING:
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
@@ -582,7 +582,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_BOOL:
+    case NODE_CREATE_BOOL:
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
@@ -591,7 +591,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_COLOR:
+    case NODE_CREATE_COLOR:
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
@@ -600,7 +600,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_SPRITE:
+    case NODE_CREATE_SPRITE:
     {
         Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
         if (graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1)
@@ -633,12 +633,12 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_GET_VAR:
+    case NODE_GET_VARIABLE:
     {
         break;
     }
 
-    case NODE_SET_VAR:
+    case NODE_SET_VARIABLE:
     {
         if (graph->nodes[currNodeIndex].outputPins[1]->valueIndex == -1)
         {
@@ -836,24 +836,24 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_PROP_TEXTURE:
+    case NODE_DRAW_PROP_TEXTURE:
     {
         break;
     }
 
-    case NODE_PROP_RECTANGLE:
-    {
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
-        break;
-    }
-
-    case NODE_PROP_CIRCLE:
+    case NODE_DRAW_PROP_RECTANGLE:
     {
         interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
-    case NODE_PRINT:
+    case NODE_DRAW_PROP_CIRCLE:
+    {
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
+        break;
+    }
+
+    case NODE_PRINT_TO_LOG:
     {
         if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
@@ -862,7 +862,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_DRAW_LINE:
+    case NODE_DRAW_DEBUG_LINE:
     {
         break;
     }
@@ -963,7 +963,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
             case NODE_EVENT_START:
                 InterpretStringOfNodes(i, interpreter, graph, 0);
                 break;
-            case NODE_EVENT_LOOP_TICK:
+            case NODE_EVENT_TICK:
                 if (interpreter->loopNodeIndex == -1)
                 {
                     interpreter->loopNodeIndex = i;

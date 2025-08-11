@@ -985,6 +985,28 @@ bool CheckNodeCollisions(EditorContext *editor, GraphContext *graph)
     return false;
 }
 
+const char *Search(const char *haystack, const char *needle)
+{
+    if (!*needle)
+        return haystack;
+    for (; *haystack; haystack++)
+    {
+        if (tolower((unsigned char)*haystack) == tolower((unsigned char)*needle))
+        {
+            const char *h = haystack + 1;
+            const char *n = needle + 1;
+            while (*n && tolower((unsigned char)*h) == tolower((unsigned char)*n))
+            {
+                h++;
+                n++;
+            }
+            if (!*n)
+                return haystack;
+        }
+    }
+    return NULL;
+}
+
 const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
 {
     Color MenuColor = {50, 50, 50, 255};
@@ -1007,9 +1029,52 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
     int subMenuCounts[] = {4, 5, 6, 3, 2, 9, 3, 3, 2, 4};
 
-    float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS;
+    float searchBarHeight = 30.0f;
+    float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS + searchBarHeight + 10;
 
-    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < menuItemCount - 5)
+    int key = GetCharPressed();
+    while (key > 0)
+    {
+        int len = strlen(editor->nodeMenuSearch);
+        if (len < 63 && key >= 32 && key <= 125)
+        {
+            editor->nodeMenuSearch[len] = (char)key;
+            editor->nodeMenuSearch[len + 1] = '\0';
+        }
+        key = GetCharPressed();
+    }
+    if (IsKeyPressed(KEY_BACKSPACE))
+    {
+        int len = strlen(editor->nodeMenuSearch);
+        if (len > 0)
+            editor->nodeMenuSearch[len - 1] = '\0';
+    }
+
+    typedef struct
+    {
+        int parentIndex;
+        int subIndex;
+    } SearchResult;
+    SearchResult filtered[128];
+    int filteredCount = 0;
+
+    for (int i = 0; i < menuItemCount; i++)
+    {
+        for (int j = 0; j < subMenuCounts[i]; j++)
+        {
+            if (strlen(editor->nodeMenuSearch) == 0 ||
+                (subMenuItems[i][j][0] != '\0' && Search(subMenuItems[i][j], editor->nodeMenuSearch)))
+            {
+                if (filteredCount < menuItemCount)
+                    filtered[filteredCount++] = (SearchResult){i, j};
+            }
+        }
+    }
+
+    if (strlen(editor->nodeMenuSearch) == 0)
+        filteredCount = menuItemCount;
+
+    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < filteredCount - MENU_VISIBLE_ITEMS)
         editor->scrollIndexNodeMenu++;
     if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0)
         editor->scrollIndexNodeMenu--;
@@ -1020,7 +1085,7 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
         editor->submenuPosition.x = (editor->rightClickPos.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth)
                                         ? (editor->rightClickPos.x - SUBMENU_WIDTH)
                                         : (editor->rightClickPos.x + MENU_WIDTH - 15);
-        editor->submenuPosition.y = editor->rightClickPos.y + 2;
+        editor->submenuPosition.y = editor->rightClickPos.y + searchBarHeight + 7;
         editor->hoveredItem = 0;
     }
 
@@ -1028,61 +1093,89 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     editor->menuPosition.y = editor->rightClickPos.y;
 
     if (editor->menuPosition.x + MENU_WIDTH > editor->screenWidth)
-    {
         editor->menuPosition.x -= MENU_WIDTH;
-    }
 
     DrawRectangleRounded((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.1f, 8, MenuColor);
     DrawRectangleRoundedLinesEx((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.1f, 8, MENU_BORDER_THICKNESS, BorderColor);
 
-    for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
+    if (strlen(editor->nodeMenuSearch) > 0)
     {
-        int itemIndex = i + editor->scrollIndexNodeMenu;
-        if (itemIndex >= menuItemCount)
-            break;
-
-        Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 5, MENU_WIDTH, MENU_ITEM_HEIGHT};
-        if (CheckCollisionPointRec(editor->mousePos, itemRect))
+        for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
         {
-            editor->hoveredItem = itemIndex;
-            editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth) ? (editor->menuPosition.x - SUBMENU_WIDTH) : (editor->menuPosition.x + MENU_WIDTH - 15);
-            editor->submenuPosition.y = itemRect.y - 3;
-        }
+            int listIndex = i + editor->scrollIndexNodeMenu;
+            if (listIndex >= filteredCount)
+                break;
 
-        if (itemIndex == editor->hoveredItem)
-        {
-            DrawRectangleRec(itemRect, HighlightColor);
+            SearchResult res = filtered[listIndex];
+            Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + searchBarHeight + 10 + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
+
+            if (CheckCollisionPointRec(editor->mousePos, itemRect))
+            {
+                DrawRectangleRec(itemRect, HighlightColor);
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                {
+                    editor->delayFrames = true;
+                    editor->hasChanged = true;
+                    editor->hasChangedInLastFrame = true;
+                    return subMenuItems[res.parentIndex][res.subIndex];
+                }
+            }
+            DrawTextEx(editor->font, subMenuItems[res.parentIndex][res.subIndex], (Vector2){itemRect.x + 20, itemRect.y + 12}, 25, 1, WHITE);
+            DrawLine(itemRect.x, itemRect.y + MENU_ITEM_HEIGHT - 1, itemRect.x + MENU_WIDTH, itemRect.y + MENU_ITEM_HEIGHT - 1, DARKGRAY);
         }
-        DrawTextEx(editor->font, menuItems[itemIndex], (Vector2){editor->menuPosition.x + 20, editor->menuPosition.y + i * MENU_ITEM_HEIGHT + 12}, 25, 1, WHITE);
-        DrawLine(editor->menuPosition.x, itemRect.y + MENU_ITEM_HEIGHT - 1, editor->menuPosition.x + MENU_WIDTH, itemRect.y + MENU_ITEM_HEIGHT - 1, DARKGRAY);
+    }
+    else
+    {
+        for (int i = 0; i < (int)MENU_VISIBLE_ITEMS; i++)
+        {
+            int listIndex = i + editor->scrollIndexNodeMenu;
+            if (listIndex >= menuItemCount)
+                break;
+
+            Rectangle itemRect = {editor->menuPosition.x, editor->menuPosition.y + searchBarHeight + 10 + i * MENU_ITEM_HEIGHT, MENU_WIDTH, MENU_ITEM_HEIGHT};
+
+            if (CheckCollisionPointRec(editor->mousePos, itemRect))
+            {
+                editor->hoveredItem = listIndex;
+                editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth)
+                                                ? (editor->menuPosition.x - SUBMENU_WIDTH)
+                                                : (editor->menuPosition.x + MENU_WIDTH - 15);
+                editor->submenuPosition.y = itemRect.y - 3;
+            }
+
+            if (listIndex == editor->hoveredItem)
+                DrawRectangleRec(itemRect, HighlightColor);
+
+            DrawTextEx(editor->font, menuItems[listIndex], (Vector2){itemRect.x + 20, itemRect.y + 12}, 25, 1, WHITE);
+            DrawLine(itemRect.x, itemRect.y + MENU_ITEM_HEIGHT - 1, itemRect.x + MENU_WIDTH, itemRect.y + MENU_ITEM_HEIGHT - 1, DARKGRAY);
+        }
     }
 
-    // Scrollbar
-    float padding = 6.0f;
-    float scrollTrackY = editor->menuPosition.y + padding;
-    float scrollTrackHeight = menuHeight - 2 * padding - 40;
+    float scrollTrackY = editor->menuPosition.y + searchBarHeight + 10 + 6;
+    float scrollTrackHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS - 16;
 
-    int maxScroll = menuItemCount - MENU_VISIBLE_ITEMS;
+    int maxScroll = filteredCount - MENU_VISIBLE_ITEMS;
     if (maxScroll < 1)
         maxScroll = 1;
 
-    float scrollBarHeight = scrollTrackHeight * ((float)MENU_VISIBLE_ITEMS / menuItemCount);
+    float scrollBarHeight = scrollTrackHeight * ((float)MENU_VISIBLE_ITEMS / ((filteredCount > 5) ? filteredCount : 1));
     if (scrollBarHeight < 20.0f)
         scrollBarHeight = 20.0f;
     if (scrollBarHeight > scrollTrackHeight)
         scrollBarHeight = scrollTrackHeight;
 
-    float scrollStep = (scrollTrackHeight - scrollBarHeight) / maxScroll;
+    float scrollStep = (scrollTrackHeight - scrollBarHeight) / (maxScroll + 1);
     float scrollBarY = scrollTrackY + editor->scrollIndexNodeMenu * scrollStep;
 
     DrawRectangleRounded((Rectangle){editor->menuPosition.x + 2, scrollBarY, 8, scrollBarHeight}, 0.8f, 4, ScrollIndicatorColor);
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
+        editor->nodeMenuSearch[0] = '\0';
         editor->menuOpen = false;
     }
 
-    if (editor->hoveredItem >= 0 && editor->hoveredItem < menuItemCount)
+    if (strlen(editor->nodeMenuSearch) == 0 && editor->hoveredItem >= 0 && editor->hoveredItem < menuItemCount)
     {
         int subCount = subMenuCounts[editor->hoveredItem];
         float submenuHeight = subCount * MENU_ITEM_HEIGHT;
@@ -1106,6 +1199,15 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
             DrawTextEx(editor->font, subMenuItems[editor->hoveredItem][j], (Vector2){editor->submenuPosition.x + 20, editor->submenuPosition.y + j * MENU_ITEM_HEIGHT + 10}, 25, 0, WHITE);
         }
     }
+
+    Rectangle searchRect = {editor->menuPosition.x + 5, editor->menuPosition.y + 5, MENU_WIDTH - 10, searchBarHeight};
+    DrawRectangleRec(searchRect, DARKGRAY);
+    char buff[64];
+    if (editor->nodeMenuSearch[0] == '\0')
+        strcpy(buff, "Search");
+    else
+        strcpy(buff, editor->nodeMenuSearch);
+    DrawTextEx(editor->font, buff, (Vector2){searchRect.x + 5, searchRect.y + 5}, 20, 0, WHITE);
 
     return "NULL";
 }

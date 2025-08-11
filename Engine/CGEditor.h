@@ -5,7 +5,7 @@
 #include "raylib.h"
 #include "Nodes.h"
 
-#define MENU_WIDTH 180
+#define MENU_WIDTH 270
 #define MENU_ITEM_HEIGHT 40
 #define MENU_VISIBLE_ITEMS 5.5
 #define MENU_BORDER_THICKNESS 3

@@ -19,6 +19,8 @@ InterpreterContext InitInterpreterContext()
 
     interpreter.backgroundColor = (Color){0, 0, 0, 255};
 
+    interpreter.fps = 60;
+
     return interpreter;
 }
 
@@ -649,33 +651,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_GET_VARIABLE:
-    {
-        break;
-    }
-
-    case NODE_GET_SCREEN_WIDTH:
-    {
-        break;
-    }
-
-    case NODE_GET_SCREEN_HEIGHT:
-    {
-        break;
-    }
-
-    case NODE_GET_MOUSE_X:
-    {
-        interpreter->values[graph->nodes[currNodeIndex].outputPins[0]->valueIndex].number = GetMousePosition().x;
-        printf("%d\n", GetMousePosition().x);
-        break;
-    }
-
-    case NODE_GET_MOUSE_Y:
-    {
-        break;
-    }
-
     case NODE_GET_RANDOM_NUMBER:
     {
         break;
@@ -723,6 +698,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SET_FPS:
     {
+        interpreter->fps = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].number;
         break;
     }
 
@@ -1150,6 +1126,8 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }
     }
+
+    DrawFPS(2560, 1582);
 
     return true;
 }

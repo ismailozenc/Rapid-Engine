@@ -158,6 +158,8 @@ typedef struct
 
     Color backgroundColor;
 
+    int fps;
+
     bool isInfiniteLoopProtectionOn;
 
     bool buildFailed;

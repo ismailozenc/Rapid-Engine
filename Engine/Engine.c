@@ -1499,7 +1499,19 @@ int main()
         }
 
         SetMouseCursor(GetMouseCursor(&engine, &editor));
-        SetTargetFPS(engine.isViewportFocused ? editor.fps : engine.fps);
+        int fps;
+        if(engine.isViewportFocused){
+            if(engine.isGameRunning){
+                fps = interpreter.fps;
+            }
+            else{
+                fps = editor.fps;
+            }
+        }
+        else{
+            fps = engine.fps;
+        }
+        SetTargetFPS(fps);
 
         if (GetMouseWheelMove() != 0 && engine.isViewportFocused && !editor.menuOpen)
         {

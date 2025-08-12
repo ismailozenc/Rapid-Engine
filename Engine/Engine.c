@@ -1516,11 +1516,38 @@ int main()
         }
         editor.zoom = engine.editorZoom;
 
-        float srcW = engine.viewportWidth / engine.editorZoom;
-        float srcH = engine.viewportHeight / engine.editorZoom;
+        /*if(engine.isGameFullscreen){
+            engine.viewportWidth = engine.screenWidth;
+            engine.viewportHeight = engine.screenHeight;
+        }*/
 
-        int textureX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-        int textureY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
+        float srcW;
+        float srcH;
+
+        int textureX;
+        int textureY;
+
+        if(engine.isGameRunning){
+            srcW = engine.viewportWidth;
+            srcH = engine.viewportHeight;
+
+            textureX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
+            textureY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
+        }
+        else{
+            srcW = engine.viewportWidth / engine.editorZoom;
+            srcH = engine.viewportHeight / engine.editorZoom;
+
+            textureX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
+            textureY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
+        }
+
+        Rectangle viewportBoundaryTranslated = (Rectangle){
+            engine.sideBarWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
+            (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
+            engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
+            engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)
+        };
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -1561,7 +1588,7 @@ int main()
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph);
+            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureX, textureY}, viewportBoundaryTranslated);
 
             if (!engine.isGameRunning)
             {

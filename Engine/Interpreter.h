@@ -182,4 +182,4 @@ char *ValueToString(Value value);
 
 RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter);
 
-bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph);
+bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary);

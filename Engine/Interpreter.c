@@ -140,11 +140,11 @@ int GetPinIndexByID(int id, GraphContext *graph)
     return -1;
 }
 
-void UpdateSpecialValues(InterpreterContext *interpreter, Vector2 mousePos){
+void UpdateSpecialValues(InterpreterContext *interpreter, Vector2 mousePos, Rectangle screenBoundary){
     interpreter->values[SPECIAL_VALUE_MOUSE_X].number = mousePos.x;
     interpreter->values[SPECIAL_VALUE_MOUSE_Y].number = mousePos.y;
-    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH].number = GetScreenWidth();
-    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT].number = GetScreenHeight();
+    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH].number = screenBoundary.width;
+    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT].number = screenBoundary.height;
     //
 }
 
@@ -1067,7 +1067,7 @@ void HandleForces(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
 {
-    UpdateSpecialValues(interpreter, mousePos);
+    UpdateSpecialValues(interpreter, mousePos, screenBoundary);
 
     if (interpreter->isFirstFrame)
     {

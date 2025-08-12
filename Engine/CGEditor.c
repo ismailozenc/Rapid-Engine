@@ -1016,14 +1016,14 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     Color BorderColor = {200, 200, 200, 255};
     Color HighlightColor = {80, 80, 80, 255};
 
-    const char *menuItems[] = {"Variable", "Event", "Get", "Set", "Flow", "Sprite", "Draw Prop", "Logical", "Debug", "More"};
+    const char *menuItems[] = {"Variable", "Event", "Get", "Set", "Flow", "Sprite", "Draw Prop", "Logical", "Debug", "Literal"};
     const char *subMenuItems[][9] = {
         {"Create number", "Create string", "Create bool", "Create color", "", "", "", "", ""},
         {"Event Start", "Event Tick", "Event On Button", "Create Custom Event", "Call Custom Event", "", "", "", ""},
         {"Get variable", "Get Screen Width", "Get Screen Height", "Get Mouse X", "Get Mouse Y", "Get Random Number", "", "", ""},
         {"Set variable", "Set Background", "Set FPS", "", "", "", "", "", ""},
         {"Branch", "Loop", "", "", "", "", "", "", ""},
-        {"Create sprite", "Set Sprite Position", "Set Sprite Rotation", "Set Sprite Texture", "Set Sprite Size", "Spawn sprite", "Destroy sprite", "Move To", "Force"},
+        {"Create sprite", "Spawn sprite", "Destroy sprite", "Set Sprite Position", "Set Sprite Rotation", "Set Sprite Texture", "Set Sprite Size", "Move To", "Force"},
         {"Draw Prop Texture", "Draw Prop Rectangle", "Draw Prop Circle", "", "", "", "", "", ""},
         {"Comparison", "Gate", "Arithmetic", "", "", "", "", "", ""},
         {"Print To Log", "Draw Debug Line", "", "", "", "", "", "", ""},

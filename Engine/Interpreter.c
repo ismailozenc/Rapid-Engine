@@ -942,26 +942,13 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_DRAW_DEBUG_LINE:
     {
-        break;
-    }
-
-    case NODE_LITERAL_NUMBER:
-    {
-        break;
-    }
-
-    case NODE_LITERAL_STRING:
-    {
-        break;
-    }
-
-    case NODE_LITERAL_BOOL:
-    {
-        break;
-    }
-
-    case NODE_LITERAL_COLOR:
-    {
+        DrawLine(
+            interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].number,
+            interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number,
+            interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number,
+            interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number,
+            interpreter->values[graph->nodes[currNodeIndex].inputPins[5]->valueIndex].color
+        );
         break;
     }
     }

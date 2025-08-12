@@ -775,26 +775,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_SET_SPRITE_POSITION:
-    {
-        break;
-    }
-
-    case NODE_SET_SPRITE_ROTATION:
-    {
-        break;
-    }
-
-    case NODE_SET_SPRITE_TEXTURE:
-    {
-        break;
-    }
-
-    case NODE_SET_SPRITE_SIZE:
-    {
-        break;
-    }
-
     case NODE_SPAWN_SPRITE:
     {
         if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
@@ -809,6 +789,40 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
             interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = false;
+        }
+        break;
+    }
+
+    case NODE_SET_SPRITE_POSITION:
+    {
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+        }
+        break;
+    }
+
+    case NODE_SET_SPRITE_ROTATION:
+    {
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+        }
+        break;
+    }
+
+    case NODE_SET_SPRITE_TEXTURE:
+    {
+        break;
+    }
+
+    case NODE_SET_SPRITE_SIZE:
+    {
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.width = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.height = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
         }
         break;
     }

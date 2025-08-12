@@ -17,7 +17,7 @@ EditorContext InitEditorContext()
     editor.lastClickedPin = INVALID_PIN;
 
     editor.scrollIndexNodeMenu = 0;
-    editor.hoveredItem = -1;
+    editor.hoveredItem = 0;
 
     editor.mousePos = (Vector2){0, 0};
 
@@ -55,6 +55,8 @@ EditorContext InitEditorContext()
 
     editor.hasChanged = false;
     editor.hasChangedInLastFrame = false;
+
+    editor.createNodeMenuFirstFrame = true;
 
     return editor;
 }
@@ -1029,6 +1031,10 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
     int subMenuCounts[] = {4, 5, 6, 3, 2, 9, 3, 3, 2, 4};
 
+    if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
+        editor->createNodeMenuFirstFrame = true;
+    }
+
     float searchBarHeight = 30.0f;
     float menuHeight = MENU_ITEM_HEIGHT * MENU_VISIBLE_ITEMS + searchBarHeight + 10;
 
@@ -1074,26 +1080,34 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     if (strlen(editor->nodeMenuSearch) == 0)
         filteredCount = menuItemCount;
 
-    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < filteredCount - MENU_VISIBLE_ITEMS)
+    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < filteredCount - MENU_VISIBLE_ITEMS){
         editor->scrollIndexNodeMenu++;
-    if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0)
+    }
+    if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0){
         editor->scrollIndexNodeMenu--;
-
-    if (editor->menuPosition.x != editor->rightClickPos.x || editor->menuPosition.y != editor->rightClickPos.y)
-    {
-        editor->hoveredItem = editor->scrollIndexNodeMenu;
-        editor->submenuPosition.x = (editor->rightClickPos.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth)
-                                        ? (editor->rightClickPos.x - SUBMENU_WIDTH)
-                                        : (editor->rightClickPos.x + MENU_WIDTH - 15);
-        editor->submenuPosition.y = editor->rightClickPos.y + searchBarHeight + 7;
-        editor->hoveredItem = 0;
     }
 
-    editor->menuPosition.x = editor->rightClickPos.x;
-    editor->menuPosition.y = editor->rightClickPos.y;
-
-    if (editor->menuPosition.x + MENU_WIDTH > editor->screenWidth)
-        editor->menuPosition.x -= MENU_WIDTH;
+    if (editor->createNodeMenuFirstFrame)
+    {
+        editor->menuPosition.x = editor->rightClickPos.x;
+        editor->menuPosition.y = editor->rightClickPos.y;
+        if (editor->menuPosition.y + menuHeight > editor->bottomBorderLimit)
+        {
+            editor->menuPosition.y -= menuHeight;
+        }
+        if (editor->menuPosition.x + MENU_WIDTH > editor->rightBorderLimit)
+        {
+            editor->menuPosition.x -= MENU_WIDTH;
+        }
+        
+        Rectangle menuRect = {editor->menuPosition.x, editor->menuPosition.y + searchBarHeight + 10, MENU_WIDTH, menuHeight - searchBarHeight - 10};
+        editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth)
+                                        ? (editor->menuPosition.x - SUBMENU_WIDTH)
+                                        : (editor->menuPosition.x + MENU_WIDTH - 15);
+        editor->submenuPosition.y = editor->menuPosition.y + searchBarHeight + 7;
+        editor->hoveredItem = 0;
+        editor->createNodeMenuFirstFrame = false;
+    }
 
     DrawRectangleRounded((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.1f, 8, MenuColor);
     DrawRectangleRoundedLinesEx((Rectangle){editor->menuPosition.x, editor->menuPosition.y, MENU_WIDTH, menuHeight}, 0.1f, 8, MENU_BORDER_THICKNESS, BorderColor);
@@ -1117,6 +1131,8 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
                     editor->delayFrames = true;
                     editor->hasChanged = true;
                     editor->hasChangedInLastFrame = true;
+                    editor->menuOpen = false;
+                    editor->nodeMenuSearch[0] = '\0';
                     return subMenuItems[res.parentIndex][res.subIndex];
                 }
             }
@@ -1193,6 +1209,7 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
                     editor->delayFrames = true;
                     editor->hasChanged = true;
                     editor->hasChangedInLastFrame = true;
+                    editor->menuOpen = false;
                     return subMenuItems[editor->hoveredItem][j];
                 }
             }

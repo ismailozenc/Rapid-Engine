@@ -1534,6 +1534,9 @@ int main()
         {
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.isFirstFrame))
             {
+                editor.leftBorderLimit = (engine.viewport.texture.width - srcW) / 2.0f;
+                editor.bottomBorderLimit = (engine.screenHeight - engine.bottomBarHeight) / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
+                editor.rightBorderLimit = (engine.screenWidth - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
                 HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.draggingResizeButtonID != 0);
             }
 

@@ -67,6 +67,12 @@ typedef struct
 
     float zoom;
 
+    int leftBorderLimit;
+    int bottomBorderLimit;
+    int rightBorderLimit;
+
+    bool createNodeMenuFirstFrame;
+
     char nodeMenuSearch[64];
 } EditorContext;
 

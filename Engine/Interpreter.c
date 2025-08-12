@@ -555,14 +555,14 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     return runtime;
 }
 
-bool DoesForceExist(InterpreterContext *interpreter, int id)
+int DoesForceExist(InterpreterContext *interpreter, int id)
 {
     for (int i = 0; i < interpreter->forcesCount; i++)
     {
         if (interpreter->forces[i].id == id)
-            return true;
+            return i;
     }
-    return false;
+    return -1;
 }
 
 void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph, int outFlowPinIndexInNode)
@@ -579,7 +579,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     if (currNodeIndex < 0 || currNodeIndex >= graph->nodeCount)
         return;
 
-    switch (graph->nodes[currNodeIndex].type)
+    RuntimeNode *node = &graph->nodes[currNodeIndex];
+
+    switch (node->type)
     {
     case NODE_UNKNOWN:
     {
@@ -589,36 +591,36 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_CREATE_NUMBER:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].number = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].number;
+            interpreter->values[node->outputPins[1]->valueIndex].number = interpreter->values[node->inputPins[1]->valueIndex].number;
         }
         break;
     }
 
     case NODE_CREATE_STRING:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].string = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].string;
+            interpreter->values[node->outputPins[1]->valueIndex].string = interpreter->values[node->inputPins[1]->valueIndex].string;
         }
         break;
     }
 
     case NODE_CREATE_BOOL:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean;
+            interpreter->values[node->outputPins[1]->valueIndex].boolean = interpreter->values[node->inputPins[1]->valueIndex].boolean;
         }
         break;
     }
 
     case NODE_CREATE_COLOR:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].color = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].color;
+            interpreter->values[node->outputPins[1]->valueIndex].color = interpreter->values[node->inputPins[1]->valueIndex].color;
         }
         break;
     }
@@ -655,12 +657,12 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SET_VARIABLE:
     {
-        if (graph->nodes[currNodeIndex].outputPins[1]->valueIndex == -1)
+        if (node->outputPins[1]->valueIndex == -1)
         {
             break;
         }
-        Value *valToSet = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex];
-        Value newValue = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex];
+        Value *valToSet = &interpreter->values[node->outputPins[1]->valueIndex];
+        Value newValue = interpreter->values[node->inputPins[2]->valueIndex];
         switch (valToSet->type)
         {
         case VAL_NUMBER:
@@ -686,22 +688,22 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_SET_BACKGROUND:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->backgroundColor = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].color;
+            interpreter->backgroundColor = interpreter->values[node->inputPins[1]->valueIndex].color;
         }
         break;
     }
 
     case NODE_SET_FPS:
     {
-        interpreter->fps = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].number;
+        interpreter->fps = interpreter->values[node->inputPins[1]->valueIndex].number;
         break;
     }
 
     case NODE_BRANCH:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean)
+        if (interpreter->values[node->inputPins[1]->valueIndex].boolean)
         {
             InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
         }
@@ -716,7 +718,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_LOOP:
     {
         int steps = 1000;
-        while (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].boolean)
+        while (interpreter->values[node->inputPins[1]->valueIndex].boolean)
         {
             if (steps == 0)
             {
@@ -741,33 +743,33 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_CREATE_SPRITE:
     {
-        Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
-        if (graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1)
+        Sprite *sprite = &interpreter->values[node->outputPins[1]->valueIndex].sprite;
+        if (node->inputPins[2]->valueIndex != -1)
         {
-            sprite->width = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            sprite->width = interpreter->values[node->inputPins[2]->valueIndex].number;
         }
-        if (graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1)
+        if (node->inputPins[3]->valueIndex != -1)
         {
-            sprite->height = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            sprite->height = interpreter->values[node->inputPins[3]->valueIndex].number;
         }
-        if (graph->nodes[currNodeIndex].inputPins[4]->valueIndex != -1)
+        if (node->inputPins[4]->valueIndex != -1)
         {
-            sprite->layer = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+            sprite->layer = interpreter->values[node->inputPins[4]->valueIndex].number;
         }
-        Texture2D temp = interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture;
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture = temp;
+        Texture2D temp = interpreter->components[node->outputPins[1]->componentIndex].sprite.texture;
+        interpreter->components[node->outputPins[1]->componentIndex].sprite = *sprite;
+        interpreter->components[node->outputPins[1]->componentIndex].sprite.texture = temp;
         break;
     }
 
     case NODE_SPAWN_SPRITE:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = true;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[4]->valueIndex].number - 360);
         
         }
         break;
@@ -775,43 +777,50 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_DESTROY_SPRITE:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = false;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = false;
         }
         break;
     }
 
     case NODE_SET_SPRITE_POSITION:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
         }
         break;
     }
 
     case NODE_SET_SPRITE_ROTATION:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[2]->valueIndex].number - 360);
         }
         break;
     }
 
     case NODE_SET_SPRITE_TEXTURE:
     {
+        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            UnloadTexture(interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture);
+            char path[512];
+            snprintf(path, sizeof(path), "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[node->inputPins[2]->valueIndex].string);
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture = LoadTexture(path);
+        }
         break;
     }
 
     case NODE_SET_SPRITE_SIZE:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.width = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.height = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.width = interpreter->values[node->inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.height = interpreter->values[node->inputPins[3]->valueIndex].number;
         }
         break;
     }
@@ -823,14 +832,18 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_FORCE_SPRITE:
     {
-        SceneComponent *component = &interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex];
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount && !DoesForceExist(interpreter, graph->nodes[currNodeIndex].index))
+        SceneComponent *component = &interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex];
+        int forceIndex = DoesForceExist(interpreter, node->index);
+        if(forceIndex != -1){
+            interpreter->forces[forceIndex].duration = interpreter->values[node->inputPins[4]->valueIndex].number; 
+        }
+        else if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
-            interpreter->forces[interpreter->forcesCount].id = graph->nodes[currNodeIndex].index;
-            interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex;
-            interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].angle = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].duration = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].id = node->index;
+            interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[node->inputPins[1]->valueIndex].componentIndex;
+            interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[node->inputPins[2]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].angle = interpreter->values[node->inputPins[3]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].duration = interpreter->values[node->inputPins[4]->valueIndex].number;
             interpreter->forcesCount++;
         }
         break;
@@ -843,22 +856,22 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_DRAW_PROP_RECTANGLE:
     {
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
+        interpreter->components[node->outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
     case NODE_DRAW_PROP_CIRCLE:
     {
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
+        interpreter->components[node->outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
     case NODE_COMPARISON:
     {
-        float numA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-        float numB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-        bool *result = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean;
-        switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
+        float numA = interpreter->values[node->inputPins[2]->valueIndex].number;
+        float numB = interpreter->values[node->inputPins[3]->valueIndex].number;
+        bool *result = &interpreter->values[node->outputPins[1]->valueIndex].boolean;
+        switch (node->inputPins[1]->pickedOption)
         {
         case EQUAL_TO:
             *result = numA == numB;
@@ -877,10 +890,10 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_GATE:
     {
-        bool boolA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].boolean;
-        bool boolB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].boolean;
-        bool *result = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].boolean;
-        switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
+        bool boolA = interpreter->values[node->inputPins[2]->valueIndex].boolean;
+        bool boolB = interpreter->values[node->inputPins[3]->valueIndex].boolean;
+        bool *result = &interpreter->values[node->outputPins[1]->valueIndex].boolean;
+        switch (node->inputPins[1]->pickedOption)
         {
         case AND:
             *result = boolA && boolB;
@@ -908,10 +921,10 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_ARITHMETIC:
     {
-        float numA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-        float numB = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-        float *result = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].number;
-        switch (graph->nodes[currNodeIndex].inputPins[1]->pickedOption)
+        float numA = interpreter->values[node->inputPins[2]->valueIndex].number;
+        float numB = interpreter->values[node->inputPins[3]->valueIndex].number;
+        float *result = &interpreter->values[node->outputPins[1]->valueIndex].number;
+        switch (node->inputPins[1]->pickedOption)
         {
         case ADD:
             *result = numA + numB;
@@ -936,9 +949,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_PRINT_TO_LOG:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
+        if (node->inputPins[1]->valueIndex != -1)
         {
-            AddToLogFromInterpreter(interpreter, interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex], 4);
+            AddToLogFromInterpreter(interpreter, interpreter->values[node->inputPins[1]->valueIndex], 4);
         }
         break;
     }
@@ -946,11 +959,11 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_DRAW_DEBUG_LINE:
     {
         DrawLine(
-            interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].number,
-            interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number,
-            interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number,
-            interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number,
-            interpreter->values[graph->nodes[currNodeIndex].inputPins[5]->valueIndex].color
+            interpreter->values[node->inputPins[1]->valueIndex].number,
+            interpreter->values[node->inputPins[2]->valueIndex].number,
+            interpreter->values[node->inputPins[3]->valueIndex].number,
+            interpreter->values[node->inputPins[4]->valueIndex].number,
+            interpreter->values[node->inputPins[5]->valueIndex].color
         );
         break;
     }

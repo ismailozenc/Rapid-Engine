@@ -163,6 +163,15 @@ typedef struct
     bool buildFailed;
 } InterpreterContext;
 
+typedef enum{
+    SPECIAL_VALUE_ERROR,
+    SPECIAL_VALUE_MOUSE_X,
+    SPECIAL_VALUE_MOUSE_Y,
+    SPECIAL_VALUE_SCREEN_WIDTH,
+    SPECIAL_VALUE_SCREEN_HEIGHT,
+    SPECIAL_VALUES_COUNT
+}SpecialValuesInList;
+
 InterpreterContext InitInterpreterContext();
 
 void FreeInterpreterContext(InterpreterContext *interpreter);

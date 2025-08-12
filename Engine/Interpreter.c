@@ -140,6 +140,14 @@ int GetPinIndexByID(int id, GraphContext *graph)
     return -1;
 }
 
+void UpdateSpecialValues(InterpreterContext *interpreter){
+    interpreter->values[SPECIAL_VALUE_MOUSE_X].number = GetMousePosition().x;
+    interpreter->values[SPECIAL_VALUE_MOUSE_Y].number = GetMousePosition().y;
+    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH].number = GetScreenWidth();
+    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT].number = GetScreenHeight();
+    //
+}
+
 RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter)
 {
     RuntimeGraphContext runtime = {0};
@@ -224,10 +232,13 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         }
     }
 
-    interpreter->values = calloc(totalOutputPins + 1, sizeof(Value));
-    ;
-    interpreter->values[0] = (Value){.type = VAL_STRING, .string = "Error value", .name = "Error value"};
-    interpreter->valueCount = 1;
+    interpreter->values = calloc(totalOutputPins + SPECIAL_VALUES_COUNT, sizeof(Value));
+    interpreter->values[SPECIAL_VALUE_ERROR] = (Value){.type = VAL_STRING, .string = "Error value", .name = "Error value"};
+    interpreter->values[SPECIAL_VALUE_MOUSE_X] = (Value){.type = VAL_NUMBER, .number = 0, .name = "Mouse X"};
+    interpreter->values[SPECIAL_VALUE_MOUSE_Y] = (Value){.type = VAL_NUMBER, .number = 0, .name = "Mouse Y"};
+    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH] = (Value){.type = VAL_NUMBER, .number = 0, .name = "Screen Width"};
+    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT] = (Value){.type = VAL_NUMBER, .number = 0, .name = "Screen Height"};
+    interpreter->valueCount = SPECIAL_VALUES_COUNT;
 
     interpreter->components = malloc(sizeof(SceneComponent) * (totalComponents + 1));
     interpreter->componentCount = 0;
@@ -402,6 +413,18 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 node->outputPins[1]->valueIndex = 0;
             }
             continue;
+        case NODE_GET_SCREEN_WIDTH:
+            node->outputPins[0]->valueIndex = SPECIAL_VALUE_SCREEN_WIDTH;
+            continue;
+        case NODE_GET_SCREEN_HEIGHT:
+            node->outputPins[0]->valueIndex = SPECIAL_VALUE_SCREEN_HEIGHT;
+            continue;
+        case NODE_GET_MOUSE_X:
+            node->outputPins[0]->valueIndex = SPECIAL_VALUE_MOUSE_X;
+            continue;
+        case NODE_GET_MOUSE_Y:
+            node->outputPins[0]->valueIndex = SPECIAL_VALUE_MOUSE_Y;
+            continue;
         default:
             continue;
         }
@@ -537,7 +560,8 @@ bool DoesForceExist(InterpreterContext *interpreter, int id)
 {
     for (int i = 0; i < interpreter->forcesCount; i++)
     {
-        if (interpreter->forces[i].id == id) return true;
+        if (interpreter->forces[i].id == id)
+            return true;
     }
     return false;
 }
@@ -600,40 +624,59 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_CREATE_SPRITE:
+    case NODE_EVENT_START:
     {
-        Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
-        if (graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1)
-        {
-            sprite->position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1)
-        {
-            sprite->position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[4]->valueIndex != -1)
-        {
-            sprite->width = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[5]->valueIndex != -1)
-        {
-            sprite->height = interpreter->values[graph->nodes[currNodeIndex].inputPins[5]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[6]->valueIndex != -1)
-        {
-            sprite->rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[6]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[7]->valueIndex != -1)
-        {
-            sprite->layer = interpreter->values[graph->nodes[currNodeIndex].inputPins[7]->valueIndex].number;
-        }
-        Texture2D temp = interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture;
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture = temp;
+        break;
+    }
+
+    case NODE_EVENT_TICK:
+    {
+        break;
+    }
+
+    case NODE_EVENT_ON_BUTTON:
+    {
+        break;
+    }
+
+    case NODE_CREATE_CUSTOM_EVENT:
+    {
+        break;
+    }
+
+    case NODE_CALL_CUSTOM_EVENT:
+    {
         break;
     }
 
     case NODE_GET_VARIABLE:
+    {
+        break;
+    }
+
+    case NODE_GET_SCREEN_WIDTH:
+    {
+        break;
+    }
+
+    case NODE_GET_SCREEN_HEIGHT:
+    {
+        break;
+    }
+
+    case NODE_GET_MOUSE_X:
+    {
+        interpreter->values[graph->nodes[currNodeIndex].outputPins[0]->valueIndex].number = GetMousePosition().x;
+        printf("%d\n", GetMousePosition().x);
+        break;
+    }
+
+    case NODE_GET_MOUSE_Y:
+    {
+        break;
+    }
+
+    case NODE_GET_RANDOM_NUMBER:
     {
         break;
     }
@@ -669,46 +712,17 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_CALL_CUSTOM_EVENT:
+    case NODE_SET_BACKGROUND:
     {
-        break;
-    }
-
-    case NODE_SPAWN_SPRITE:
-    {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1)
         {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
+            interpreter->backgroundColor = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].color;
         }
         break;
     }
 
-    case NODE_DESTROY_SPRITE:
+    case NODE_SET_FPS:
     {
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
-        {
-            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = false;
-        }
-        break;
-    }
-
-    case NODE_MOVE_TO_SPRITE:
-    {
-        break;
-    }
-
-    case NODE_FORCE_SPRITE:
-    {
-        SceneComponent *component = &interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex];
-        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount && !DoesForceExist(interpreter, graph->nodes[currNodeIndex].index))
-        {
-            interpreter->forces[interpreter->forcesCount].id = graph->nodes[currNodeIndex].index;
-            interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex;
-            interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].angle = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].duration = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
-            interpreter->forcesCount++;
-        }
         break;
     }
 
@@ -752,6 +766,114 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
+    case NODE_CREATE_SPRITE:
+    {
+        Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
+        if (graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1)
+        {
+            sprite->position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1)
+        {
+            sprite->position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[4]->valueIndex != -1)
+        {
+            sprite->width = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[5]->valueIndex != -1)
+        {
+            sprite->height = interpreter->values[graph->nodes[currNodeIndex].inputPins[5]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[6]->valueIndex != -1)
+        {
+            sprite->rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[6]->valueIndex].number;
+        }
+        if (graph->nodes[currNodeIndex].inputPins[7]->valueIndex != -1)
+        {
+            sprite->layer = interpreter->values[graph->nodes[currNodeIndex].inputPins[7]->valueIndex].number;
+        }
+        Texture2D temp = interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture;
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture = temp;
+        break;
+    }
+
+    case NODE_SET_SPRITE_POSITION:
+    {
+        break;
+    }
+
+    case NODE_SET_SPRITE_ROTATION:
+    {
+        break;
+    }
+
+    case NODE_SET_SPRITE_TEXTURE:
+    {
+        break;
+    }
+
+    case NODE_SET_SPRITE_SIZE:
+    {
+        break;
+    }
+
+    case NODE_SPAWN_SPRITE:
+    {
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
+        }
+        break;
+    }
+
+    case NODE_DESTROY_SPRITE:
+    {
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        {
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = false;
+        }
+        break;
+    }
+
+    case NODE_MOVE_TO_SPRITE:
+    {
+        break;
+    }
+
+    case NODE_FORCE_SPRITE:
+    {
+        SceneComponent *component = &interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex];
+        if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount && !DoesForceExist(interpreter, graph->nodes[currNodeIndex].index))
+        {
+            interpreter->forces[interpreter->forcesCount].id = graph->nodes[currNodeIndex].index;
+            interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex;
+            interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].angle = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->forces[interpreter->forcesCount].duration = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+            interpreter->forcesCount++;
+        }
+        break;
+    }
+
+    case NODE_DRAW_PROP_TEXTURE:
+    {
+        break;
+    }
+
+    case NODE_DRAW_PROP_RECTANGLE:
+    {
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
+        break;
+    }
+
+    case NODE_DRAW_PROP_CIRCLE:
+    {
+        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
+        break;
+    }
+
     case NODE_COMPARISON:
     {
         float numA = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
@@ -769,7 +891,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             *result = numA < numB;
             break;
         default:
-            // Error
             break;
         }
         break;
@@ -801,7 +922,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             *result = !(boolA || boolB);
             break;
         default:
-            // Error
             break;
         }
         break;
@@ -830,26 +950,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             *result = (int)numA % (int)numB;
             break;
         default:
-            // Error
             break;
         }
-        break;
-    }
-
-    case NODE_DRAW_PROP_TEXTURE:
-    {
-        break;
-    }
-
-    case NODE_DRAW_PROP_RECTANGLE:
-    {
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
-        break;
-    }
-
-    case NODE_DRAW_PROP_CIRCLE:
-    {
-        interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
@@ -867,11 +969,24 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         break;
     }
 
-    case NODE_SET_BACKGROUND:
+    case NODE_LITERAL_NUMBER:
     {
-        if (graph->nodes[currNodeIndex].inputPins[1]->valueIndex != -1){
-            interpreter->backgroundColor = interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].color;
-        }
+        break;
+    }
+
+    case NODE_LITERAL_STRING:
+    {
+        break;
+    }
+
+    case NODE_LITERAL_BOOL:
+    {
+        break;
+    }
+
+    case NODE_LITERAL_COLOR:
+    {
+        break;
     }
     }
 
@@ -952,6 +1067,7 @@ void HandleForces(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph)
 {
+    UpdateSpecialValues(interpreter);
 
     if (interpreter->isFirstFrame)
     {
@@ -978,7 +1094,8 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
 
         interpreter->isFirstFrame = false;
     }
-    else{
+    else
+    {
         interpreter->newLogMessage = false;
     }
 
@@ -1025,8 +1142,10 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
 
     DrawComponents(interpreter);
 
-    for(int i = 0; i < interpreter->valueCount; i++){
-        if(interpreter->values[i].type == VAL_SPRITE){
+    for (int i = 0; i < interpreter->valueCount; i++)
+    {
+        if (interpreter->values[i].type == VAL_SPRITE)
+        {
             interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }

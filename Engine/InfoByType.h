@@ -158,11 +158,11 @@ static InfoByType NodeInfoByType[] = {
     {NODE_CALL_CUSTOM_EVENT, 0, 1, 240, 200, {148, 0, 0, 200}, false, {PIN_FLOW}, {PIN_FLOW}, {"Prev"}, {"Next"}, true}, // not implemented
 
     {NODE_GET_VARIABLE, 1, 1, 140, 70, {60, 100, 159, 200}, false, {PIN_VARIABLE}, {PIN_UNKNOWN_VALUE}, {"Variable"}, {"Get value"}},
-    {NODE_GET_SCREEN_WIDTH, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true},  // not implemented
-    {NODE_GET_SCREEN_HEIGHT, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true}, // not implemented
-    {NODE_GET_MOUSE_X, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true},       // not implemented
-    {NODE_GET_MOUSE_Y, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true},       // not implemented
-    {NODE_GET_RANDOM_NUMBER, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true}, // not implemented
+    {NODE_GET_SCREEN_WIDTH, 0, 1, 260, 80, {60, 100, 159, 200}, false, {0}, {PIN_NUM}, {0}, {"Screen Width"}},
+    {NODE_GET_SCREEN_HEIGHT, 0, 1, 260, 80, {60, 100, 159, 200}, false, {0}, {PIN_NUM}, {0}, {"Screen Height"}},
+    {NODE_GET_MOUSE_X, 0, 1, 260, 80, {60, 100, 159, 200}, false, {0}, {PIN_NUM}, {0}, {"Mouse X"}},
+    {NODE_GET_MOUSE_Y, 0, 1, 260, 80, {60, 100, 159, 200}, false, {0}, {PIN_NUM}, {0}, {"Mouse Y"}},       // not implemented
+    {NODE_GET_RANDOM_NUMBER, 0, 1, 260, 80, {60, 100, 159, 200}, false, {0}, {0}, {0}, {0}, true}, // not implemented
 
     {NODE_SET_VARIABLE, 3, 2, 140, 130, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_VARIABLE, PIN_UNKNOWN_VALUE}, {PIN_FLOW, PIN_NONE}, {"Prev", "Variable", "Set value"}, {"Next", ""}}, // shouldn't have PIN_NONE
     {NODE_SET_BACKGROUND, 2, 1, 240, 100, {60, 100, 159, 200}, false, {PIN_FLOW, PIN_COLOR}, {PIN_FLOW}, {"Prev", "Color"}, {"Next"}},

@@ -556,6 +556,10 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         options = getPinDropdownOptionsByType(graph->pins[currPinIndex].type);
     }
 
+    if(graph->pins[currPinIndex].pickedOption >= options.optionsCount){
+        graph->pins[currPinIndex].pickedOption = 0;
+    }
+
     Rectangle dropdown = {graph->pins[currPinIndex].position.x - 6, graph->pins[currPinIndex].position.y - 10, options.boxWidth, 24};
 
     DrawRectangleRec(dropdown, GRAY);
@@ -1022,14 +1026,14 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
         {"Event Start", "Event Tick", "Event On Button", "Create Custom Event", "Call Custom Event", "", "", "", ""},
         {"Get variable", "Get Screen Width", "Get Screen Height", "Get Mouse X", "Get Mouse Y", "Get Random Number", "", "", ""},
         {"Set variable", "Set Background", "Set FPS", "", "", "", "", "", ""},
-        {"Branch", "Loop", "", "", "", "", "", "", ""},
+        {"Branch", "Loop", "Delay", "Flip Flop", "Break", "Return", "", "", ""},
         {"Create sprite", "Spawn sprite", "Destroy sprite", "Set Sprite Position", "Set Sprite Rotation", "Set Sprite Texture", "Set Sprite Size", "Move To", "Force"},
         {"Draw Prop Texture", "Draw Prop Rectangle", "Draw Prop Circle", "", "", "", "", "", ""},
         {"Comparison", "Gate", "Arithmetic", "", "", "", "", "", ""},
         {"Print To Log", "Draw Debug Line", "", "", "", "", "", "", ""},
         {"Literal number", "Literal string", "Literal bool", "Literal color", "", "", "", "", ""}};
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
-    int subMenuCounts[] = {4, 5, 6, 3, 2, 9, 3, 3, 2, 4};
+    int subMenuCounts[] = {4, 5, 6, 3, 6, 9, 3, 3, 2, 4};
 
     if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
         editor->createNodeMenuFirstFrame = true;

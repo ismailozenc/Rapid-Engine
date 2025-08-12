@@ -489,10 +489,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             }
             interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->componentCount].sprite.position.x = interpreter->values[node->inputPins[3]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.width / 2;
-            interpreter->components[interpreter->componentCount].sprite.position.y = interpreter->values[node->inputPins[4]->valueIndex].number - interpreter->components[interpreter->componentCount].sprite.height / 2;
-            interpreter->components[interpreter->componentCount].sprite.rotation = interpreter->values[node->inputPins[5]->valueIndex].number;
-            interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[4]->valueIndex].number;
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             for (int j = 0; j < runtime.nodeCount; j++)
             {
@@ -747,27 +744,15 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         Sprite *sprite = &interpreter->values[graph->nodes[currNodeIndex].outputPins[1]->valueIndex].sprite;
         if (graph->nodes[currNodeIndex].inputPins[2]->valueIndex != -1)
         {
-            sprite->position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            sprite->width = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
         }
         if (graph->nodes[currNodeIndex].inputPins[3]->valueIndex != -1)
         {
-            sprite->position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            sprite->height = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
         }
         if (graph->nodes[currNodeIndex].inputPins[4]->valueIndex != -1)
         {
-            sprite->width = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[5]->valueIndex != -1)
-        {
-            sprite->height = interpreter->values[graph->nodes[currNodeIndex].inputPins[5]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[6]->valueIndex != -1)
-        {
-            sprite->rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[6]->valueIndex].number;
-        }
-        if (graph->nodes[currNodeIndex].inputPins[7]->valueIndex != -1)
-        {
-            sprite->layer = interpreter->values[graph->nodes[currNodeIndex].inputPins[7]->valueIndex].number;
+            sprite->layer = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
         }
         Texture2D temp = interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite.texture;
         interpreter->components[graph->nodes[currNodeIndex].outputPins[1]->componentIndex].sprite = *sprite;
@@ -780,6 +765,10 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         if (interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
             interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].isVisible = true;
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[graph->nodes[currNodeIndex].inputPins[2]->valueIndex].number;
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[graph->nodes[currNodeIndex].inputPins[3]->valueIndex].number;
+            interpreter->components[interpreter->values[graph->nodes[currNodeIndex].inputPins[1]->valueIndex].componentIndex].sprite.rotation = interpreter->values[graph->nodes[currNodeIndex].inputPins[4]->valueIndex].number;
+        
         }
         break;
     }
@@ -1127,8 +1116,6 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }
     }
-
-    DrawFPS(2560, 1582);
 
     return true;
 }

@@ -34,6 +34,10 @@ typedef enum
 
     NODE_BRANCH = 500,
     NODE_LOOP = 501,
+    NODE_DELAY = 502,
+    NODE_FLIP_FLOP = 503,
+    NODE_BREAK = 504,
+    NODE_RETURN = 505,
 
     NODE_CREATE_SPRITE = 600,
     NODE_SPAWN_SPRITE = 601,
@@ -170,18 +174,22 @@ static InfoByType NodeInfoByType[] = {
 
     {NODE_BRANCH, 2, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"True", "False"}},
     {NODE_LOOP, 2, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_BOOL}, {PIN_FLOW, PIN_FLOW}, {"Prev", "Condition"}, {"Next", "Loop body"}},
+    {NODE_DELAY, 2, 1, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_NUM}, {PIN_FLOW}, {"Prev", "Seconds"}, {"Next"}, true},     // not implemented
+    {NODE_FLIP_FLOP, 1, 2, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW}, {PIN_FLOW, PIN_FLOW}, {"Prev"}, {"Flip", "Flop"}, true},   // not implemented
+    {NODE_BREAK, 1, 0, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW}, {0}, {"Prev"}, {0}, true},                                     // not implemented
+    {NODE_RETURN, 2, 0, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_UNKNOWN_VALUE}, {0}, {"Prev", "Return value"}, {0}, true}, // not implemented
 
-    {NODE_CREATE_SPRITE, 8, 2, 220, 285, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_STRING, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Texture file name", "Pos X", "Pos Y", "Width", "Height", "Rotation", "Layer"}, {"Next", "Sprite"}},
-    {NODE_SPAWN_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
+    {NODE_CREATE_SPRITE, 5, 2, 220, 190, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_STRING, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Texture file name", "Width", "Height", "Layer"}, {"Next", "Sprite"}},
+    {NODE_SPAWN_SPRITE, 5, 1, 120, 190, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "Pos X", "Pos Y", "Rotation"}, {"Next"}},
     {NODE_DESTROY_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
     {NODE_SET_SPRITE_POSITION, 4, 1, 185, 160, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "X", "Y"}, {"Next"}},
     {NODE_SET_SPRITE_ROTATION, 3, 1, 180, 130, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "Rotation"}, {"Next"}},
-    {NODE_SET_SPRITE_TEXTURE, 0, 0, 180, 130, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true},  // not implemented
+    {NODE_SET_SPRITE_TEXTURE, 0, 0, 180, 130, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true}, // not implemented
     {NODE_SET_SPRITE_SIZE, 4, 1, 170, 160, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "Width", "Height"}, {"Next"}},
     {NODE_MOVE_TO_SPRITE, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true}, // not implemented
     {NODE_FORCE_SPRITE, 5, 1, 160, 190, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "Pixels / second", "Angle", "Time"}, {"Next"}},
 
-    {NODE_DRAW_PROP_TEXTURE, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true},                                                                                                                                                      // not implemented
+    {NODE_DRAW_PROP_TEXTURE, 0, 0, 260, 36, {0, 0, 0, 255}, false, {0}, {0}, {0}, {0}, true},                                                                                                                                                   // not implemented
     {NODE_DRAW_PROP_RECTANGLE, 7, 2, 230, 250, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR, PIN_NUM}, {PIN_FLOW, PIN_NONE}, {"Prev", "Pos X", "Pos Y", "Width", "Height", "Color", "Layer"}, {"Next"}}, // shouldn't have PIN_NONE
     {NODE_DRAW_PROP_CIRCLE, 6, 2, 230, 230, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_NUM, PIN_NUM, PIN_NUM, PIN_COLOR, PIN_NUM}, {PIN_FLOW, PIN_NONE}, {"Prev", "Pos X", "Pos Y", "Radius", "Color", "Layer"}, {"Next"}},                      // shouldn't have PIN_NONE
 
@@ -248,53 +256,61 @@ static inline int NodeTypeToIndex(NodeType type)
         return 19;
     case NODE_LOOP:
         return 20;
+    case NODE_DELAY:
+        return 21;
+    case NODE_FLIP_FLOP:
+        return 22;
+    case NODE_BREAK:
+        return 23;
+    case NODE_RETURN:
+        return 24;
 
     case NODE_CREATE_SPRITE:
-        return 21;
-    case NODE_SPAWN_SPRITE:
-        return 22;
-    case NODE_DESTROY_SPRITE:
-        return 23;
-    case NODE_SET_SPRITE_POSITION:
-        return 24;
-    case NODE_SET_SPRITE_ROTATION:
         return 25;
-    case NODE_SET_SPRITE_TEXTURE:
+    case NODE_SPAWN_SPRITE:
         return 26;
-    case NODE_SET_SPRITE_SIZE:
+    case NODE_DESTROY_SPRITE:
         return 27;
-    case NODE_MOVE_TO_SPRITE:
+    case NODE_SET_SPRITE_POSITION:
         return 28;
-    case NODE_FORCE_SPRITE:
+    case NODE_SET_SPRITE_ROTATION:
         return 29;
+    case NODE_SET_SPRITE_TEXTURE:
+        return 30;
+    case NODE_SET_SPRITE_SIZE:
+        return 31;
+    case NODE_MOVE_TO_SPRITE:
+        return 32;
+    case NODE_FORCE_SPRITE:
+        return 33;
 
     case NODE_DRAW_PROP_TEXTURE:
-        return 30;
+        return 34;
     case NODE_DRAW_PROP_RECTANGLE:
-        return 31;
+        return 35;
     case NODE_DRAW_PROP_CIRCLE:
-        return 32;
+        return 36;
 
     case NODE_COMPARISON:
-        return 33;
+        return 37;
     case NODE_GATE:
-        return 34;
+        return 38;
     case NODE_ARITHMETIC:
-        return 35;
+        return 39;
 
     case NODE_PRINT_TO_LOG:
-        return 36;
+        return 40;
     case NODE_DRAW_DEBUG_LINE:
-        return 37;
+        return 41;
 
     case NODE_LITERAL_NUMBER:
-        return 38;
+        return 42;
     case NODE_LITERAL_STRING:
-        return 39;
+        return 43;
     case NODE_LITERAL_BOOL:
-        return 40;
+        return 44;
     case NODE_LITERAL_COLOR:
-        return 41;
+        return 45;
 
     default:
         return -1;
@@ -505,6 +521,14 @@ static inline const char *NodeTypeToString(NodeType type)
         return "Branch";
     case NODE_LOOP:
         return "Loop";
+    case NODE_DELAY:
+        return "Delay";
+    case NODE_FLIP_FLOP:
+        return "Flip Flop";
+    case NODE_BREAK:
+        return "Break";
+    case NODE_RETURN:
+        return "Return";
 
     case NODE_CREATE_SPRITE:
         return "Create sprite";
@@ -607,6 +631,14 @@ static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
         return NODE_BRANCH;
     if (strcmp(strType, "Loop") == 0)
         return NODE_LOOP;
+    if (strcmp(strType, "Delay") == 0)
+        return NODE_DELAY;
+    if (strcmp(strType, "Flip Flop") == 0)
+        return NODE_FLIP_FLOP;
+    if (strcmp(strType, "Break") == 0)
+        return NODE_BREAK;
+    if (strcmp(strType, "Return") == 0)
+        return NODE_RETURN;
 
     if (strcmp(strType, "Create sprite") == 0)
         return NODE_CREATE_SPRITE;

@@ -949,7 +949,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
                 break;
             case VAL_SPRITE:
-            NODE_CREATE_SPRITE:
+            case NODE_CREATE_SPRITE:
                 varColor = (Color){3, 206, 164, 255};
                 if (engine->varsFilter != VAR_FILTER_SPRITES && engine->varsFilter != VAR_FILTER_ALL)
                 {

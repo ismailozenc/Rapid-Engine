@@ -796,7 +796,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             roundness, segments, 2.0f / editor->zoom, WHITE);
 
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
-                   (Vector2){x + 10, y + 3}, 30, 1, WHITE);
+                   (Vector2){x + 8/*10*/, y + 6 /*3*/}, 28, 1, WHITE);
 
         if (getIsEditableByType(graph->nodes[i].type))
         {

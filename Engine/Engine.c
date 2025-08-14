@@ -1069,24 +1069,30 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         const char *fileName = GetFileName(engine->files.paths[i]);
 
         Color fileOutlineColor;
+        Color fileTextColor;
 
         switch (GetFileType(fileName))
         {
         case FILE_FOLDER:
             fileOutlineColor = (Color){205, 205, 50, 200}; //(Color){200, 170, 50, 200}
+            fileTextColor    = (Color){240, 240, 120, 255};
             break;
         case FILE_CG:
             fileOutlineColor = (Color){220, 140, 240, 200};
+            fileTextColor    = (Color){245, 200, 255, 255};
             break;
         case FILE_IMAGE:
             fileOutlineColor = (Color){205, 30, 30, 200};
+            fileTextColor    = (Color){255, 60, 60, 255};
             break;
         case FILE_OTHER:
             fileOutlineColor = (Color){160, 160, 160, 255};
+            fileTextColor    = (Color){220, 220, 220, 255};
             break;
         default:
             AddToLog(engine, "File error", 2);
             fileOutlineColor = (Color){160, 160, 160, 255};
+            fileTextColor    = (Color){220, 220, 220, 255};
             break;
         }
 
@@ -1131,12 +1137,12 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .rect = {.pos = {xOffset, yOffset}, .recSize = {150, 60}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){40, 40, 40, 255},
                                  .layer = 1,
-                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = fileOutlineColor}});
+                                 .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = fileTextColor}});
         strncpy(engine->uiElements[engine->uiElementCount - 1].name, engine->files.paths[i], 256);
         strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
         engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
 
-        xOffset += 250;
+        xOffset += 200;
         if (xOffset + 100 >= engine->screenWidth)
         {
             xOffset = 50;

@@ -142,7 +142,8 @@ int GetPinIndexByID(int id, GraphContext *graph)
     return -1;
 }
 
-void UpdateSpecialValues(InterpreterContext *interpreter, Vector2 mousePos, Rectangle screenBoundary){
+void UpdateSpecialValues(InterpreterContext *interpreter, Vector2 mousePos, Rectangle screenBoundary)
+{
     interpreter->values[SPECIAL_VALUE_MOUSE_X].number = mousePos.x;
     interpreter->values[SPECIAL_VALUE_MOUSE_Y].number = mousePos.y;
     interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH].number = screenBoundary.width;
@@ -593,7 +594,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[node->outputPins[1]->valueIndex].number = interpreter->values[node->inputPins[1]->valueIndex].number;
+            float *numToSet = &interpreter->values[node->outputPins[1]->valueIndex].number;
+            float newNum = interpreter->values[node->inputPins[1]->valueIndex].number;
+            *numToSet = newNum;
         }
         break;
     }
@@ -602,7 +605,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[node->outputPins[1]->valueIndex].string = interpreter->values[node->inputPins[1]->valueIndex].string;
+            char **strToSet = &interpreter->values[node->outputPins[1]->valueIndex].string;
+            char *newStr = interpreter->values[node->inputPins[1]->valueIndex].string;
+            *strToSet = newStr;
         }
         break;
     }
@@ -611,7 +616,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[node->outputPins[1]->valueIndex].boolean = interpreter->values[node->inputPins[1]->valueIndex].boolean;
+            bool *boolToSet = &interpreter->values[node->outputPins[1]->valueIndex].boolean;
+            bool newBool = interpreter->values[node->inputPins[1]->valueIndex].boolean;
+            *boolToSet = newBool;
         }
         break;
     }
@@ -620,7 +627,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->values[node->outputPins[1]->valueIndex].color = interpreter->values[node->inputPins[1]->valueIndex].color;
+            Color *colorToSet = &interpreter->values[node->outputPins[1]->valueIndex].color;
+            Color newColor = interpreter->values[node->inputPins[1]->valueIndex].color;
+            *colorToSet = interpreter->values[node->inputPins[1]->valueIndex].color;
         }
         break;
     }
@@ -703,7 +712,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_BRANCH:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].boolean)
+        bool *condition = &interpreter->values[node->inputPins[1]->valueIndex].boolean;
+        if (*condition)
         {
             InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
         }
@@ -718,7 +728,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_LOOP:
     {
         int steps = 1000;
-        while (interpreter->values[node->inputPins[1]->valueIndex].boolean)
+        bool *condition = &interpreter->values[node->inputPins[1]->valueIndex].boolean;
+        while (*condition)
         {
             if (steps == 0)
             {
@@ -770,7 +781,6 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
             interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
             interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[4]->valueIndex].number - 360);
-        
         }
         break;
     }
@@ -834,8 +844,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         SceneComponent *component = &interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex];
         int forceIndex = DoesForceExist(interpreter, node->index);
-        if(forceIndex != -1){
-            interpreter->forces[forceIndex].duration = interpreter->values[node->inputPins[4]->valueIndex].number; 
+        if (forceIndex != -1)
+        {
+            interpreter->forces[forceIndex].duration = interpreter->values[node->inputPins[4]->valueIndex].number;
         }
         else if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
@@ -963,8 +974,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
             interpreter->values[node->inputPins[2]->valueIndex].number,
             interpreter->values[node->inputPins[3]->valueIndex].number,
             interpreter->values[node->inputPins[4]->valueIndex].number,
-            interpreter->values[node->inputPins[5]->valueIndex].color
-        );
+            interpreter->values[node->inputPins[5]->valueIndex].color);
         break;
     }
     }

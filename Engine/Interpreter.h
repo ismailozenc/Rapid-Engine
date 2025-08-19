@@ -68,11 +68,6 @@ typedef struct
     int count;
 } Polygon;
 
-typedef struct {
-    Vector2 center;
-    float radius;
-} Circle;
-
 typedef enum {
     HITBOX_NONE,
     HITBOX_RECT,
@@ -83,9 +78,11 @@ typedef enum {
 typedef struct {
     HitboxType type;
     Vector2 offset;
-    Rectangle rectHitbox;
-    Circle circleHitbox;
-    Polygon polygonHitbox;
+    union{
+        Vector2 rectHitboxSize;
+        float circleHitboxRadius;
+        Polygon polygonHitbox;
+    };
 } Hitbox;
 
 typedef struct

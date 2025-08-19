@@ -534,9 +534,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[5]->valueIndex].color;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
 
-            interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_RECT; /////test
-            interpreter->components[interpreter->componentCount].prop.hitbox.rectHitbox = (Rectangle){interpreter->components[interpreter->componentCount].prop.position.x, interpreter->components[interpreter->componentCount].prop.position.y, interpreter->components[interpreter->componentCount].prop.width, interpreter->components[interpreter->componentCount].prop.height}; ///////test
-            //interpreter->components[interpreter->componentCount].prop.hitbox.offset = (Vector2){0, 0}; //////test
+            interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_RECT;
+            interpreter->components[interpreter->componentCount].prop.hitbox.rectHitboxSize = (Vector2){interpreter->components[interpreter->componentCount].prop.width, interpreter->components[interpreter->componentCount].prop.height};
+            interpreter->components[interpreter->componentCount].prop.hitbox.offset = (Vector2){0, 0};
 
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             interpreter->componentCount++;
@@ -551,6 +551,11 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].prop.height = interpreter->values[node->inputPins[3]->valueIndex].number * 2;
             interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[4]->valueIndex].color;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[5]->valueIndex].number;
+
+            interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_CIRCLE;
+            interpreter->components[interpreter->componentCount].prop.hitbox.circleHitboxRadius = interpreter->components[interpreter->componentCount].prop.width / 2;
+            interpreter->components[interpreter->componentCount].prop.hitbox.offset = (Vector2){0, 0};
+
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             interpreter->componentCount++;
             continue;
@@ -991,43 +996,49 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     }
 }
 
-void DrawHitbox(Hitbox *h, Vector2 worldPos, Color color) {
-    switch (h->type) {
-        case HITBOX_RECT: {
-            Rectangle r = {
-                worldPos.x + h->offset.x,
-                worldPos.y + h->offset.y,
-                h->rectHitbox.width,
-                h->rectHitbox.height
-            };
-            DrawRectangleLinesEx(r, 1, color);
-        } break;
-
-        case HITBOX_CIRCLE: {
-            Vector2 c = {
-                worldPos.x + h->offset.x + h->circleHitbox.center.x,
-                worldPos.y + h->offset.y + h->circleHitbox.center.y
-            };
-            DrawCircleLines((int)c.x, (int)c.y, h->circleHitbox.radius, color);
-        } break;
-
-        case HITBOX_POLY: {
-            for (int i = 0; i < h->polygonHitbox.count; i++) {
-                Vector2 p1 = {
-                    worldPos.x + h->offset.x + h->polygonHitbox.vertices[i].x,
-                    worldPos.y + h->offset.y + h->polygonHitbox.vertices[i].y
-                };
-                Vector2 p2 = {
-                    worldPos.x + h->offset.x + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].x,
-                    worldPos.y + h->offset.y + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].y
-                };
-                DrawLineV(p1, p2, color);
-            }
-        } break;
-
-        default: break;
+void DrawHitbox(Hitbox *h, Vector2 worldPos, Color color) //// test
+{
+    switch (h->type)
+    {
+    case HITBOX_RECT:
+    {
+        Rectangle r = {
+            worldPos.x + h->offset.x,
+            worldPos.y + h->offset.y,
+            h->rectHitboxSize.x,
+            h->rectHitboxSize.y};
+        DrawRectangleLinesEx(r, 1, color);
     }
-} ////test
+    break;
+
+    case HITBOX_CIRCLE:
+    {
+        Vector2 c = {
+            worldPos.x + h->offset.x,
+            worldPos.y + h->offset.y};
+        DrawCircleLines((int)c.x, (int)c.y, h->circleHitboxRadius, color);
+    }
+    break;
+
+    case HITBOX_POLY:
+    {
+        for (int i = 0; i < h->polygonHitbox.count; i++)
+        {
+            Vector2 p1 = {
+                worldPos.x + h->offset.x + h->polygonHitbox.vertices[i].x,
+                worldPos.y + h->offset.y + h->polygonHitbox.vertices[i].y};
+            Vector2 p2 = {
+                worldPos.x + h->offset.x + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].x,
+                worldPos.y + h->offset.y + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].y};
+            DrawLineV(p1, p2, color);
+        }
+    }
+    break;
+
+    default:
+        break;
+    }
+}
 
 void DrawComponents(InterpreterContext *interpreter)
 {
@@ -1053,6 +1064,7 @@ void DrawComponents(InterpreterContext *interpreter)
                 (Vector2){component.sprite.width / 2.0f, component.sprite.height / 2.0f},
                 component.sprite.rotation,
                 WHITE);
+            DrawHitbox(&interpreter->components[i].sprite.hitbox, component.sprite.position, RED);
             continue;
         }
         else
@@ -1063,7 +1075,6 @@ void DrawComponents(InterpreterContext *interpreter)
                 break; //
             case PROP_RECTANGLE:
                 DrawRectangle(component.prop.position.x, component.prop.position.y, component.prop.width, component.prop.height, component.prop.color);
-                DrawHitbox(&interpreter->components[i].prop.hitbox, component.prop.position, RED);
                 break;
             case PROP_CIRCLE:
                 DrawCircle(component.prop.position.x, component.prop.position.y, component.prop.width / 2, component.prop.color);
@@ -1071,6 +1082,7 @@ void DrawComponents(InterpreterContext *interpreter)
             default:
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Component error!"}, 2);
             }
+            DrawHitbox(&interpreter->components[i].prop.hitbox, component.prop.position, RED);
         }
     }
 }
@@ -1095,6 +1107,99 @@ void HandleForces(InterpreterContext *interpreter)
             }
             interpreter->forcesCount--;
             i--;
+        }
+    }
+}
+
+bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset) {
+    for (int i = 0; i < a->count; i++) {
+        Vector2 a1 = { a->vertices[i].x + aOffset.x, a->vertices[i].y + aOffset.y };
+        Vector2 a2 = { a->vertices[(i + 1) % a->count].x + aOffset.x, a->vertices[(i + 1) % a->count].y + aOffset.y };
+
+        for (int j = 0; j < b->count; j++) {
+            Vector2 b1 = { b->vertices[j].x + bOffset.x, b->vertices[j].y + bOffset.y };
+            Vector2 b2 = { b->vertices[(j + 1) % b->count].x + bOffset.x, b->vertices[(j + 1) % b->count].y + bOffset.y };
+
+            if (CheckCollisionLines(a1, a2, b1, b2, NULL)) return true;
+        }
+    }
+    return false;
+}
+
+void CheckCollisions(InterpreterContext *interpreter)
+{
+    for (int i = 0; i < interpreter->componentCount; i++)
+    {
+        SceneComponent *a = &interpreter->components[i];
+        Hitbox *hitA = a->isSprite ? &a->sprite.hitbox : &a->prop.hitbox;
+        Vector2 posA = a->isSprite ? a->sprite.position : a->prop.position;
+
+        for (int j = i + 1; j < interpreter->componentCount; j++)
+        {
+            SceneComponent *b = &interpreter->components[j];
+            Hitbox *hitB = b->isSprite ? &b->sprite.hitbox : &b->prop.hitbox;
+            Vector2 posB = b->isSprite ? b->sprite.position : b->prop.position;
+
+            bool collided = false;
+
+            if (hitA->type == HITBOX_RECT && hitB->type == HITBOX_RECT)
+            {
+                Rectangle rA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y, hitA->rectHitboxSize.x, hitA->rectHitboxSize.y};
+                Rectangle rB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y, hitB->rectHitboxSize.x, hitB->rectHitboxSize.y};
+                collided = CheckCollisionRecs(rA, rB);
+            }
+            else if (hitA->type == HITBOX_CIRCLE && hitB->type == HITBOX_CIRCLE)
+            {
+                Vector2 cA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y};
+                Vector2 cB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y};
+                collided = CheckCollisionCircles(cA, hitA->circleHitboxRadius, cB, hitB->circleHitboxRadius);
+            }
+            else if (hitA->type == HITBOX_POLY && hitB->type == HITBOX_POLY)
+            {
+                collided = CheckCollisionPolyPoly(&hitA->polygonHitbox, posA, &hitB->polygonHitbox, posB);
+            }
+            else
+            {
+                Rectangle rA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y, 0, 0};
+                Rectangle rB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y, 0, 0};
+
+                if (hitA->type == HITBOX_RECT) rA.width = hitA->rectHitboxSize.x, rA.height = hitA->rectHitboxSize.y;
+                if (hitA->type == HITBOX_CIRCLE) rA.width = rA.height = hitA->circleHitboxRadius * 2;
+                if (hitA->type == HITBOX_POLY)
+                {
+                    rA.x -= hitA->polygonHitbox.vertices[0].x;
+                    rA.y -= hitA->polygonHitbox.vertices[0].y;
+                    rA.width = rA.height = 0;
+                    for (int k = 0; k < hitA->polygonHitbox.count; k++)
+                    {
+                        if (hitA->polygonHitbox.vertices[k].x > rA.width) rA.width = hitA->polygonHitbox.vertices[k].x;
+                        if (hitA->polygonHitbox.vertices[k].y > rA.height) rA.height = hitA->polygonHitbox.vertices[k].y;
+                    }
+                }
+
+                if (hitB->type == HITBOX_RECT) rB.width = hitB->rectHitboxSize.x, rB.height = hitB->rectHitboxSize.y;
+                if (hitB->type == HITBOX_CIRCLE) rB.width = rB.height = hitB->circleHitboxRadius * 2;
+                if (hitB->type == HITBOX_POLY)
+                {
+                    rB.x -= hitB->polygonHitbox.vertices[0].x;
+                    rB.y -= hitB->polygonHitbox.vertices[0].y;
+                    rB.width = rB.height = 0;
+                    for (int k = 0; k < hitB->polygonHitbox.count; k++)
+                    {
+                        if (hitB->polygonHitbox.vertices[k].x > rB.width) rB.width = hitB->polygonHitbox.vertices[k].x;
+                        if (hitB->polygonHitbox.vertices[k].y > rB.height) rB.height = hitB->polygonHitbox.vertices[k].y;
+                    }
+                }
+
+                //collided = CheckCollisionRecs(rA, rB);
+            }
+
+            if (collided)
+            {
+                printf("1\n");
+                DrawRectangle(2060, 1582, 100, 100, RED);
+                return;
+            }
         }
     }
 }
@@ -1137,7 +1242,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     {
         int nodeIndex = interpreter->onButtonNodeIndexes[i];
         KeyboardKey key = graph->nodes[nodeIndex].inputPins[0]->pickedOption;
-        KeyAction action = graph->nodes[nodeIndex].inputPins[1]->pickedOption; // You need to store this
+        KeyAction action = graph->nodes[nodeIndex].inputPins[1]->pickedOption;
 
         bool triggered = false;
         switch (action)
@@ -1184,6 +1289,15 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }
     }
+
+    for(int i = 0; i < interpreter->componentCount; i++){
+        if(interpreter->components[i].isSprite){
+            interpreter->components[i].sprite.hitbox.type = HITBOX_RECT;
+            interpreter->components[i].sprite.hitbox.rectHitboxSize = (Vector2){50, 50};
+        }
+    }
+
+    CheckCollisions(interpreter);
 
     return true;
 }

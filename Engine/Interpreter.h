@@ -15,6 +15,8 @@
 
 #define MAX_LOG_MESSAGES 32
 
+#define MAX_HITBOX_VERTICES 64
+
 typedef struct RuntimePin
 {
     int id;
@@ -62,13 +64,43 @@ typedef enum
 
 typedef struct
 {
-    Texture2D texture;
+    Vector2 vertices[MAX_HITBOX_VERTICES];
+    int count;
+} Polygon;
+
+typedef struct {
+    Vector2 center;
+    float radius;
+} Circle;
+
+typedef enum {
+    HITBOX_NONE,
+    HITBOX_RECT,
+    HITBOX_CIRCLE,
+    HITBOX_POLY
+} HitboxType;
+
+typedef struct {
+    HitboxType type;
+    Vector2 offset;
+    Rectangle rectHitbox;
+    Circle circleHitbox;
+    Polygon polygonHitbox;
+} Hitbox;
+
+typedef struct
+{
+    bool isVisible;
+
     Vector2 position;
     int width;
     int height;
     float rotation;
-    bool isVisible;
     int layer;
+
+    Hitbox hitbox;
+
+    Texture2D texture;
 } Sprite;
 
 typedef enum
@@ -80,21 +112,26 @@ typedef enum
 
 typedef struct
 {
-    Texture2D texture;
+    PropType propType;
+    Vector2 position;
     int width;
     int height;
-    int radius;
-    Vector2 position;
-    PropType propType;
+
+    float rotation; // not implemented rotation for props
+
     Color color;
-    float rotation;
     int layer;
+
+    Hitbox hitbox;
+
+    Texture2D texture;
 } Prop;
 
 typedef struct
 {
     bool isVisible;
     bool isSprite;
+
     union
     {
         Sprite sprite;

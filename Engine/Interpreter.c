@@ -533,6 +533,11 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number - interpreter->components[interpreter->componentCount].prop.height / 2;
             interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[5]->valueIndex].color;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+
+            interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_RECT; /////test
+            interpreter->components[interpreter->componentCount].prop.hitbox.rectHitbox = (Rectangle){interpreter->components[interpreter->componentCount].prop.position.x, interpreter->components[interpreter->componentCount].prop.position.y, interpreter->components[interpreter->componentCount].prop.width, interpreter->components[interpreter->componentCount].prop.height}; ///////test
+            //interpreter->components[interpreter->componentCount].prop.hitbox.offset = (Vector2){0, 0}; //////test
+
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             interpreter->componentCount++;
             continue;
@@ -542,7 +547,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].prop.propType = PROP_CIRCLE;
             interpreter->components[interpreter->componentCount].prop.position.x = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->componentCount].prop.radius = interpreter->values[node->inputPins[3]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].prop.width = interpreter->values[node->inputPins[3]->valueIndex].number * 2;
+            interpreter->components[interpreter->componentCount].prop.height = interpreter->values[node->inputPins[3]->valueIndex].number * 2;
             interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[4]->valueIndex].color;
             interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[5]->valueIndex].number;
             node->outputPins[1]->componentIndex = interpreter->componentCount;
@@ -985,6 +991,44 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     }
 }
 
+void DrawHitbox(Hitbox *h, Vector2 worldPos, Color color) {
+    switch (h->type) {
+        case HITBOX_RECT: {
+            Rectangle r = {
+                worldPos.x + h->offset.x,
+                worldPos.y + h->offset.y,
+                h->rectHitbox.width,
+                h->rectHitbox.height
+            };
+            DrawRectangleLinesEx(r, 1, color);
+        } break;
+
+        case HITBOX_CIRCLE: {
+            Vector2 c = {
+                worldPos.x + h->offset.x + h->circleHitbox.center.x,
+                worldPos.y + h->offset.y + h->circleHitbox.center.y
+            };
+            DrawCircleLines((int)c.x, (int)c.y, h->circleHitbox.radius, color);
+        } break;
+
+        case HITBOX_POLY: {
+            for (int i = 0; i < h->polygonHitbox.count; i++) {
+                Vector2 p1 = {
+                    worldPos.x + h->offset.x + h->polygonHitbox.vertices[i].x,
+                    worldPos.y + h->offset.y + h->polygonHitbox.vertices[i].y
+                };
+                Vector2 p2 = {
+                    worldPos.x + h->offset.x + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].x,
+                    worldPos.y + h->offset.y + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].y
+                };
+                DrawLineV(p1, p2, color);
+            }
+        } break;
+
+        default: break;
+    }
+} ////test
+
 void DrawComponents(InterpreterContext *interpreter)
 {
     ClearBackground(interpreter->backgroundColor);
@@ -1019,9 +1063,10 @@ void DrawComponents(InterpreterContext *interpreter)
                 break; //
             case PROP_RECTANGLE:
                 DrawRectangle(component.prop.position.x, component.prop.position.y, component.prop.width, component.prop.height, component.prop.color);
+                DrawHitbox(&interpreter->components[i].prop.hitbox, component.prop.position, RED);
                 break;
             case PROP_CIRCLE:
-                DrawCircle(component.prop.position.x, component.prop.position.y, component.prop.radius, component.prop.color);
+                DrawCircle(component.prop.position.x, component.prop.position.y, component.prop.width / 2, component.prop.color);
                 break;
             default:
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Component error!"}, 2);

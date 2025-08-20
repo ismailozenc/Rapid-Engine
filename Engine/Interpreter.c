@@ -1111,7 +1111,7 @@ void HandleForces(InterpreterContext *interpreter)
     }
 }
 
-bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset)
+bool CheckCollisionPolyPoly(PolygonHitbox *a, Vector2 aOffset, PolygonHitbox *b, Vector2 bOffset)
 {
     for (int i = 0; i < a->count; i++)
     {
@@ -1130,7 +1130,7 @@ bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOf
     return false;
 }
 
-bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 circlePos, float circleRadius)
+bool CheckCollisionPolyCircle(PolygonHitbox *poly, Vector2 polyPos, Vector2 circlePos, float circleRadius)
 {
     Rectangle bounds = {polyPos.x, polyPos.y, 0, 0};
     for (int i = 0; i < poly->count; i++)
@@ -1143,7 +1143,7 @@ bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 circlePos,
     return CheckCollisionCircleRec(circlePos, circleRadius, bounds);
 }
 
-bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 rectPos, Vector2 rectSize)
+bool CheckCollisionPolyRect(PolygonHitbox *poly, Vector2 polyPos, Vector2 rectPos, Vector2 rectSize)
 {
     Rectangle rect = {rectPos.x, rectPos.y, rectSize.x, rectSize.y};
     for (int i = 0; i < poly->count; i++)
@@ -1316,21 +1316,6 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
         {
             interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
-        }
-    }
-
-    for (int i = 0; i < interpreter->componentCount; i++)
-    {
-        if (interpreter->components[i].isSprite)
-        {
-            Polygon p;
-            p.count = 3;
-            p.vertices[0] = (Vector2){0, 0};
-            p.vertices[1] = (Vector2){50, 0};
-            p.vertices[2] = (Vector2){25, 50};
-
-            interpreter->components[i].sprite.hitbox.type = HITBOX_POLY;
-            interpreter->components[i].sprite.hitbox.polygonHitbox = p;
         }
     }
 

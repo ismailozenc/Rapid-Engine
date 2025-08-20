@@ -556,7 +556,8 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
         options = getPinDropdownOptionsByType(graph->pins[currPinIndex].type);
     }
 
-    if(graph->pins[currPinIndex].pickedOption >= options.optionsCount){
+    if (graph->pins[currPinIndex].pickedOption >= options.optionsCount)
+    {
         graph->pins[currPinIndex].pickedOption = 0;
     }
 
@@ -796,7 +797,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             roundness, segments, 2.0f / editor->zoom, WHITE);
 
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
-                   (Vector2){x + 8/*10*/, y + 6 /*3*/}, 28, 1, WHITE);
+                   (Vector2){x + 8 /*10*/, y + 6 /*3*/}, 28, 1, WHITE);
 
         if (getIsEditableByType(graph->nodes[i].type))
         {
@@ -886,6 +887,46 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         else if (graph->pins[i].type == PIN_FIELD_KEY)
         {
             HandleKeyNodeField(editor, graph, i);
+        }
+        else if (graph->pins[i].type == PIN_EDIT_HITBOX)
+        {
+            DrawRectangle(graph->pins[i].position.x - 6, graph->pins[i].position.y - 10, 96, 24, DARKPURPLE);
+            DrawTextEx(editor->font, "Edit Hitbox", (Vector2){graph->pins[i].position.x - 2, graph->pins[i].position.y - 6}, 18, 0.2f, WHITE);
+            if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->pins[i].position.x - 6, graph->pins[i].position.y - 10, 96, 24}))
+            {
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    // Find texture file name from linked literal node(shouldn't only work with literal nodes)
+                    for (int b = 0; b < graph->nodeCount; b++)
+                    {
+                        if (graph->nodes[b].id == graph->pins[i].nodeID)
+                        {
+                            for (int c = 0; c < graph->pinCount; c++)
+                            {
+                                if (graph->nodes[b].inputPins[1] == graph->pins[c].id)
+                                {
+                                    for (int k = 0; k < graph->linkCount; k++)
+                                    {
+                                        if (graph->links[k].inputPinID == graph->pins[c].id)
+                                        {
+                                            for(int d = 0; d < graph->nodeCount; d++){
+                                                if(graph->nodes[d].outputPins[0] == graph->links[k].outputPinID){
+                                                    for(int e = 0; e < graph->pinCount; e++){
+                                                        if(graph->pins[e].id == graph->nodes[d].inputPins[0]){
+                                                            editor->shouldOpenHitboxEditor = true;
+                                                            strcpy(editor->hitboxEditorFileName, graph->pins[e].textFieldValue);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         else
         {
@@ -1035,7 +1076,8 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
     int subMenuCounts[] = {4, 5, 6, 3, 6, 9, 3, 3, 2, 4};
 
-    if(IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)){
+    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+    {
         editor->createNodeMenuFirstFrame = true;
     }
 
@@ -1084,10 +1126,12 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     if (strlen(editor->nodeMenuSearch) == 0)
         filteredCount = menuItemCount;
 
-    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < filteredCount - MENU_VISIBLE_ITEMS){
+    if (GetMouseWheelMove() < 0 && editor->scrollIndexNodeMenu < filteredCount - MENU_VISIBLE_ITEMS)
+    {
         editor->scrollIndexNodeMenu++;
     }
-    if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0){
+    if (GetMouseWheelMove() > 0 && editor->scrollIndexNodeMenu > 0)
+    {
         editor->scrollIndexNodeMenu--;
     }
 
@@ -1103,7 +1147,7 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
         {
             editor->menuPosition.x -= MENU_WIDTH;
         }
-        
+
         Rectangle menuRect = {editor->menuPosition.x, editor->menuPosition.y + searchBarHeight + 10, MENU_WIDTH, menuHeight - searchBarHeight - 10};
         editor->submenuPosition.x = (editor->menuPosition.x + MENU_WIDTH + SUBMENU_WIDTH > editor->screenWidth)
                                         ? (editor->menuPosition.x - SUBMENU_WIDTH)

@@ -88,7 +88,8 @@ typedef enum
     PIN_VARIABLE,
     PIN_SPRITE_VARIABLE,
     PIN_ANY_VALUE,
-    PIN_UNKNOWN_VALUE
+    PIN_UNKNOWN_VALUE,
+    PIN_EDIT_HITBOX
 } PinType;
 
 typedef enum
@@ -180,7 +181,7 @@ static InfoByType NodeInfoByType[] = {
     {NODE_BREAK, 1, 0, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW}, {0}, {"Prev"}, {0}, true},                                     // not implemented
     {NODE_RETURN, 2, 0, 130, 100, {90, 90, 90, 200}, false, {PIN_FLOW, PIN_UNKNOWN_VALUE}, {0}, {"Prev", "Return value"}, {0}, true}, // not implemented
 
-    {NODE_CREATE_SPRITE, 5, 2, 220, 190, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_STRING, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Texture file name", "Width", "Height", "Layer"}, {"Next", "Sprite"}},
+    {NODE_CREATE_SPRITE, 6, 2, 220, 230, {70, 100, 70, 200}, true, {PIN_FLOW, PIN_STRING, PIN_NUM, PIN_NUM, PIN_NUM, PIN_EDIT_HITBOX}, {PIN_FLOW, PIN_SPRITE}, {"Prev", "Texture file name", "Width", "Height", "Layer", "Hitbox"}, {"Next", "Sprite"}},
     {NODE_SPAWN_SPRITE, 5, 1, 120, 190, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "Pos X", "Pos Y", "Rotation"}, {"Next"}},
     {NODE_DESTROY_SPRITE, 2, 1, 120, 100, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE}, {PIN_FLOW}, {"Prev", "Sprite"}, {"Next"}},
     {NODE_SET_SPRITE_POSITION, 4, 1, 185, 160, {40, 110, 70, 200}, false, {PIN_FLOW, PIN_SPRITE_VARIABLE, PIN_NUM, PIN_NUM}, {PIN_FLOW}, {"Prev", "Sprite", "X", "Y"}, {"Next"}},

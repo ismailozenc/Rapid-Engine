@@ -62,11 +62,15 @@ typedef enum
     VAL_SPRITE
 } ValueType;
 
-typedef struct
-{
+#ifndef POLYGON_H
+#define POLYGON_H
+
+typedef struct {
     Vector2 vertices[MAX_HITBOX_VERTICES];
     int count;
-} Polygon;
+} PolygonHitbox;
+
+#endif
 
 typedef enum {
     HITBOX_NONE,
@@ -81,7 +85,7 @@ typedef struct {
     union{
         Vector2 rectHitboxSize;
         float circleHitboxRadius;
-        Polygon polygonHitbox;
+        PolygonHitbox polygonHitbox;
     };
 } Hitbox;
 

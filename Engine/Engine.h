@@ -135,6 +135,7 @@ typedef struct EngineContext
     RenderTexture2D viewport, UI;
     Texture2D resizeButton, viewportFullscreenButton;
     char *currentPath;
+    char *projectPath;
     char *CGFilePath;
     Font font;
     Logs logs;

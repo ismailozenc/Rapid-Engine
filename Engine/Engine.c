@@ -8,6 +8,7 @@
 #include "ProjectManager.h"
 #include "Engine.h"
 #include "Interpreter.h"
+#include "HitboxEditor.h"
 
 Logs InitLogs()
 {
@@ -98,6 +99,12 @@ void FreeEngineContext(EngineContext *engine)
     {
         free(engine->currentPath);
         engine->currentPath = NULL;
+    }
+
+    if (engine->currentPath)
+    {
+        free(engine->projectPath);
+        engine->projectPath = NULL;
     }
 
     if (engine->CGFilePath)
@@ -397,7 +404,8 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             break;
         case SAVE_CG:
             engine->isSaveButtonHovered = true;
-            if(engine->isGameRunning){
+            if (engine->isGameRunning)
+            {
                 break;
             }
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
@@ -1075,24 +1083,24 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         {
         case FILE_FOLDER:
             fileOutlineColor = (Color){205, 205, 50, 200}; //(Color){200, 170, 50, 200}
-            fileTextColor    = (Color){240, 240, 120, 255};
+            fileTextColor = (Color){240, 240, 120, 255};
             break;
         case FILE_CG:
             fileOutlineColor = (Color){220, 140, 240, 200};
-            fileTextColor    = (Color){245, 200, 255, 255};
+            fileTextColor = (Color){245, 200, 255, 255};
             break;
         case FILE_IMAGE:
             fileOutlineColor = (Color){205, 30, 30, 200};
-            fileTextColor    = (Color){255, 60, 60, 255};
+            fileTextColor = (Color){255, 60, 60, 255};
             break;
         case FILE_OTHER:
             fileOutlineColor = (Color){160, 160, 160, 255};
-            fileTextColor    = (Color){220, 220, 220, 255};
+            fileTextColor = (Color){220, 220, 220, 255};
             break;
         default:
             AddToLog(engine, "File error", 2);
             fileOutlineColor = (Color){160, 160, 160, 255};
-            fileTextColor    = (Color){220, 220, 220, 255};
+            fileTextColor = (Color){220, 220, 220, 255};
             break;
         }
 
@@ -1309,7 +1317,8 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         engine->isGameFullscreen = false;
         FreeInterpreterContext(interpreter);
     }
-    else if(IsKeyPressed(KEY_ESCAPE)){
+    else if (IsKeyPressed(KEY_ESCAPE))
+    {
         engine->isGameFullscreen = false;
     }
 
@@ -1431,7 +1440,8 @@ int GetMouseCursor(EngineContext *engine, EditorContext *editor)
         return editor->cursor;
     }
 
-    if(engine->isSaveButtonHovered && engine->isGameRunning){
+    if (engine->isSaveButtonHovered && engine->isGameRunning)
+    {
         return MOUSE_CURSOR_NOT_ALLOWED;
     }
 
@@ -1472,6 +1482,7 @@ int main()
     PrepareCGFilePath(&engine, fileName);
 
     interpreter.projectPath = strdup(engine.currentPath);
+    engine.projectPath = strdup(engine.currentPath); // should be moved
 
     LoadGraphFromFile(engine.CGFilePath, &graph);
 
@@ -1506,15 +1517,19 @@ int main()
 
         SetMouseCursor(GetMouseCursor(&engine, &editor));
         int fps;
-        if(engine.isViewportFocused){
-            if(engine.isGameRunning){
+        if (engine.isViewportFocused)
+        {
+            if (engine.isGameRunning)
+            {
                 fps = interpreter.fps;
             }
-            else{
+            else
+            {
                 fps = editor.fps;
             }
         }
-        else{
+        else
+        {
             fps = engine.fps;
         }
         SetTargetFPS(fps);
@@ -1540,14 +1555,16 @@ int main()
         int textureX;
         int textureY;
 
-        if(engine.isGameRunning){
+        if (engine.isGameRunning)
+        {
             srcW = engine.viewportWidth;
             srcH = engine.viewportHeight;
 
             textureX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
             textureY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
         }
-        else{
+        else
+        {
             srcW = engine.viewportWidth / engine.editorZoom;
             srcH = engine.viewportHeight / engine.editorZoom;
 
@@ -1559,11 +1576,12 @@ int main()
             engine.sideBarWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
             (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
             engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
-            engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)
-        };
+            engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
 
         BeginDrawing();
         ClearBackground(BLACK);
+
+        Polygon test;
 
         if (engine.showSaveWarning == 1)
         {
@@ -1595,11 +1613,25 @@ int main()
                 editor.hasChangedInLastFrame = false;
                 engine.wasBuilt = false;
             }
+            if(editor.shouldOpenHitboxEditor){
+                editor.shouldOpenHitboxEditor = false;
+                engine.viewportMode = VIEWPORT_HITBOX_EDITOR;
+            }
         }
-        else
+        else if (engine.viewportMode == VIEWPORT_GAME_SCREEN)
         {
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
+
+            for (int i = 0; i < interpreter.componentCount; i++)
+            {
+                if (interpreter.components[i].isSprite)
+                {
+                    interpreter.components[i].sprite.hitbox.type = HITBOX_POLY;
+                    memcpy(interpreter.components[i].sprite.hitbox.polygonHitbox.vertices, test.vertices, sizeof(Vector2) * MAX_HITBOX_VERTICES);
+                    interpreter.components[i].sprite.hitbox.polygonHitbox.count = test.count;
+                }
+            }
 
             engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureX, textureY}, viewportBoundaryTranslated);
 
@@ -1620,6 +1652,59 @@ int main()
                 engine.delayFrames = true;
             }
             EndTextureMode();
+        }
+        else if (engine.viewportMode == VIEWPORT_HITBOX_EDITOR)
+        {
+            BeginTextureMode(engine.viewport);
+
+            static Texture2D tex = {0};
+            static HitboxEditor hitboxEditor = {0};
+
+            static Vector2 texPos;
+
+            if (tex.id == 0)
+            {
+                char path[128];
+                snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
+                tex = LoadTexture(path);
+                texPos = (Vector2){
+                    (engine.viewport.texture.width - tex.width) / 2.0f,
+                    (engine.viewport.texture.height - tex.height) / 2.0f};
+                hitboxEditor = InitHitboxEditor(tex, texPos);
+            }
+
+            Vector2 mouseScreen = GetMousePosition();
+
+            Vector2 mouseLocal;
+
+            mouseLocal.x = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) +
+                           (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
+            mouseLocal.y = engine.mousePos.y +
+                           (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
+
+            UpdateEditor(&hitboxEditor, mouseLocal);
+
+            for (int i = 0; i < hitboxEditor.poly.count; i++)
+            {
+                Vector2 v = hitboxEditor.poly.vertices[i];
+                float x = v.x;
+                float y = v.y;
+                printf("Vertex %d: x = %.2f, y = %.2f\n", i, x, y);
+            }
+
+            DrawEditor(&hitboxEditor, mouseLocal);
+
+            if (hitboxEditor.poly.closed)
+            {
+                test = hitboxEditor.poly; // test
+            }
+
+            EndTextureMode();
+        }
+        else
+        {
+            AddToLog(&engine, "Viewport error!", LOG_ERROR);
+            engine.viewportMode = VIEWPORT_CG_EDITOR;
         }
 
         if (!engine.isGameRunning || !engine.isGameFullscreen)
@@ -1667,8 +1752,6 @@ int main()
                 0.0f,
                 WHITE);
         }
-
-        // DrawFPS(engine.screenWidth / 2, 10);
 
         if (engine.showSaveWarning == 1)
         {

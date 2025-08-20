@@ -74,6 +74,9 @@ typedef struct
     bool createNodeMenuFirstFrame;
 
     char nodeMenuSearch[64];
+
+    bool shouldOpenHitboxEditor;
+    char hitboxEditorFileName[128];
 } EditorContext;
 
 EditorContext InitEditorContext(void);

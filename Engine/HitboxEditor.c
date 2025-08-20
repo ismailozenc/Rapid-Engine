@@ -1,26 +1,13 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <math.h>
+#include "HitboxEditor.h"
 
 #define MAX_VERTICES 64
 #define SNAP_DIST 10.0f
 #define TEST_RADIUS 10.0f
 
-typedef struct
-{
-    Vector2 vertices[MAX_VERTICES];
-    int count;
-    bool closed;
-} Polygon;
-
-typedef struct
-{
-    Texture2D texture;
-    Vector2 position;
-    Polygon poly;
-} HitboxEditor;
-
-HitboxEditor InitEditor(Texture2D tex, Vector2 pos)
+HitboxEditor InitHitboxEditor(Texture2D tex, Vector2 pos)
 {
     HitboxEditor e = {0};
     e.texture = tex;
@@ -45,7 +32,7 @@ static bool IsNear(Vector2 a, Vector2 b, float dist)
     return (dx * dx + dy * dy) < (dist * dist);
 }
 
-bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset) {
+bool CheckCollisionPolyPolyTest(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset) {
     for (int i = 0; i < a->count; i++) {
         Vector2 a1 = { a->vertices[i].x + aOffset.x, a->vertices[i].y + aOffset.y };
         Vector2 a2 = { a->vertices[(i + 1) % a->count].x + aOffset.x, a->vertices[(i + 1) % a->count].y + aOffset.y };
@@ -60,21 +47,21 @@ bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOf
     return false;
 }
 
-void UpdateEditor(HitboxEditor *e)
+void UpdateEditor(HitboxEditor *e, Vector2 mouseLocal)
 {
     if (e->poly.closed)
         return;
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        Vector2 mouse = GetMousePosition();
-        Vector2 rel = {mouse.x - e->position.x, mouse.y - e->position.y};
+        Vector2 mouse = mouseLocal;
+        Vector2 rel = {mouse.x - e->position.x - e->texture.width / 2, mouse.y - e->position.y - e->texture.height / 2};
 
-        if (e->poly.count >= 3)
+        if (e->poly.count > 2)
         {
             Vector2 firstScreen = {
-                e->poly.vertices[0].x + e->position.x,
-                e->poly.vertices[0].y + e->position.y};
+                e->poly.vertices[0].x + e->position.x + e->texture.width / 2,
+                e->poly.vertices[0].y + e->position.y + e->texture.height / 2};
             if (IsNear(mouse, firstScreen, SNAP_DIST))
             {
                 e->poly.closed = true;
@@ -86,45 +73,58 @@ void UpdateEditor(HitboxEditor *e)
     }
 }
 
-void DrawEditor(HitboxEditor *e, Color bg)
+void DrawEditor(HitboxEditor *e, Vector2 mouseLocal)
 {
-    ClearBackground(bg);
+    ClearBackground(BLACK);
+
     DrawTexture(e->texture, e->position.x, e->position.y, WHITE);
 
     for (int i = 0; i < e->poly.count; i++)
     {
-        Vector2 p = {e->poly.vertices[i].x + e->position.x,
-                     e->poly.vertices[i].y + e->position.y};
+        Vector2 p = {
+            e->position.x + e->poly.vertices[i].x + e->texture.width / 2,
+            e->position.y + e->poly.vertices[i].y + e->texture.height / 2
+        };
         DrawCircle(p.x, p.y, 4, BLUE);
 
         if (i > 0)
         {
-            Vector2 prev = {e->poly.vertices[i - 1].x + e->position.x,
-                            e->poly.vertices[i - 1].y + e->position.y};
+            Vector2 prev = {
+                e->position.x + e->poly.vertices[i - 1].x + e->texture.width / 2,
+                e->position.y + e->poly.vertices[i - 1].y + e->texture.height / 2
+            };
             DrawLineEx(prev, p, 2, RED);
         }
     }
 
     if (e->poly.closed && e->poly.count > 2)
     {
-        Vector2 first = {e->poly.vertices[0].x + e->position.x,
-                         e->poly.vertices[0].y + e->position.y};
-        Vector2 last = {e->poly.vertices[e->poly.count - 1].x + e->position.x,
-                        e->poly.vertices[e->poly.count - 1].y + e->position.y};
+        Vector2 first = {
+            e->position.x + e->poly.vertices[0].x + e->texture.width / 2,
+            e->position.y + e->poly.vertices[0].y + e->texture.height / 2
+        };
+        Vector2 last = {
+            e->position.x + e->poly.vertices[e->poly.count - 1].x + e->texture.width / 2,
+            e->position.y + e->poly.vertices[e->poly.count - 1].y + e->texture.height / 2
+        };
         DrawLineEx(last, first, 2, RED);
     }
     else if (e->poly.count > 0)
     {
-        Vector2 last = {e->poly.vertices[e->poly.count - 1].x + e->position.x,
-                        e->poly.vertices[e->poly.count - 1].y + e->position.y};
-        Vector2 mouse = GetMousePosition();
-        DrawLineEx(last, mouse, 1, GRAY);
+        Vector2 last = {
+            e->position.x + e->poly.vertices[e->poly.count - 1].x + e->texture.width / 2,
+            e->position.y + e->poly.vertices[e->poly.count - 1].y + e->texture.height / 2
+        };
+        
+        DrawLineEx(last, mouseLocal, 1, GRAY);
 
         if (e->poly.count >= 3)
         {
-            Vector2 first = {e->poly.vertices[0].x + e->position.x,
-                             e->poly.vertices[0].y + e->position.y};
-            if (IsNear(mouse, first, SNAP_DIST))
+            Vector2 first = {
+                e->position.x + e->poly.vertices[0].x + e->texture.width / 2,
+                e->position.y + e->poly.vertices[0].y + e->texture.height / 2
+            };
+            if (IsNear(mouseLocal, first, SNAP_DIST))
             {
                 DrawCircleLines(first.x, first.y, SNAP_DIST, GREEN);
             }
@@ -146,7 +146,7 @@ Polygon CircleToPoly(Vector2 center, float radius, int sides) {
     return poly;
 }
 
-int main()
+/*int main()
 {
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1000, 1000, "Sprite Collision Editor Test");
@@ -189,4 +189,4 @@ int main()
     UnloadTexture(tex);
     CloseWindow();
     return 0;
-}
+}*/

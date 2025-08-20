@@ -68,7 +68,7 @@ EngineContext InitEngineContext()
 
     engine.hoveredUIElementIndex = -1;
 
-    engine.isEditorOpened = true;
+    engine.viewportMode = VIEWPORT_CG_EDITOR;
     engine.isGameRunning = false;
 
     engine.save = LoadSound("sound//save.wav");
@@ -418,7 +418,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
         case STOP_GAME:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                engine->isEditorOpened = true;
+                engine->viewportMode = VIEWPORT_CG_EDITOR;
                 editor->isFirstFrame = true;
                 engine->isGameRunning = false;
                 engine->wasBuilt = false;
@@ -438,7 +438,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     AddToLog(engine, "Project has not been built", 1);
                     break;
                 }
-                engine->isEditorOpened = false;
+                engine->viewportMode = VIEWPORT_GAME_SCREEN;
                 engine->isGameRunning = true;
                 interpreter->isFirstFrame = true;
             }
@@ -561,7 +561,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
                         LoadGraphFromFile(engine->CGFilePath, graph);
 
-                        engine->isEditorOpened = true;
+                        engine->viewportMode = VIEWPORT_CG_EDITOR;
                     }
                     else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
                     {
@@ -723,7 +723,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save");
         }
 
-        if (!engine->isEditorOpened)
+        if (engine->viewportMode != VIEWPORT_CG_EDITOR)
         {
             AddUIElement(engine, (UIElement){
                                      .name = "StopButton",
@@ -1261,7 +1261,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         }
         else
         {
-            engine->isEditorOpened = false;
+            engine->viewportMode = VIEWPORT_GAME_SCREEN;
             engine->isGameRunning = true;
             interpreter->isFirstFrame = true;
         }
@@ -1270,7 +1270,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
     {
         editor->delayFrames = true;
         engine->delayFrames = true;
-        engine->isEditorOpened = true;
+        engine->viewportMode = VIEWPORT_CG_EDITOR;
         editor->isFirstFrame = true;
         engine->isGameRunning = false;
         engine->wasBuilt = false;
@@ -1302,7 +1302,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
     {
         editor->delayFrames = true;
         engine->delayFrames = true;
-        engine->isEditorOpened = true;
+        engine->viewportMode = VIEWPORT_CG_EDITOR;
         editor->isFirstFrame = true;
         engine->isGameRunning = false;
         engine->wasBuilt = false;
@@ -1534,11 +1534,6 @@ int main()
         }
         editor.zoom = engine.editorZoom;
 
-        /*if(engine.isGameFullscreen){
-            engine.viewportWidth = engine.screenWidth;
-            engine.viewportHeight = engine.screenHeight;
-        }*/
-
         float srcW;
         float srcH;
 
@@ -1575,7 +1570,7 @@ int main()
             engine.isViewportFocused = false;
         }
 
-        if (engine.isEditorOpened)
+        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
         {
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.isFirstFrame))
             {
@@ -1610,7 +1605,7 @@ int main()
 
             if (!engine.isGameRunning)
             {
-                engine.isEditorOpened = true;
+                engine.viewportMode = VIEWPORT_CG_EDITOR;
                 editor.isFirstFrame = true;
                 engine.wasBuilt = false;
                 FreeInterpreterContext(&interpreter);
@@ -1646,7 +1641,7 @@ int main()
                 WHITE);
         }
 
-        if (engine.CGFilePath[0] != '\0' && engine.isEditorOpened)
+        if (engine.CGFilePath[0] != '\0' && engine.viewportMode == VIEWPORT_CG_EDITOR)
         {
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));

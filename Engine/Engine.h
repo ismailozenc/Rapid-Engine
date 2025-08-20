@@ -118,6 +118,12 @@ typedef struct UIElement
     int valueIndex;
 } UIElement;
 
+typedef enum{
+    VIEWPORT_CG_EDITOR,
+    VIEWPORT_GAME_SCREEN,
+    VIEWPORT_HITBOX_EDITOR
+}ViewportMode;
+
 typedef struct EngineContext
 {
     int screenWidth, screenHeight, bottomBarHeight, sideBarWidth, sideBarMiddleY;
@@ -152,6 +158,7 @@ typedef struct EngineContext
     bool isGameFullscreen;
     VarFilter varsFilter;
     bool isSaveButtonHovered;
+    ViewportMode viewportMode;
 } EngineContext;
 
 typedef enum

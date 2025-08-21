@@ -559,9 +559,6 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                         strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
                         openedFileName[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
 
-                        // FreeEditorContext(editor);
-                        // FreeGraphContext(graph);
-
                         *editor = InitEditorContext();
                         *graph = InitGraphContext();
 
@@ -731,7 +728,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save");
         }
 
-        if (engine->viewportMode != VIEWPORT_CG_EDITOR)
+        if (engine->viewportMode == VIEWPORT_GAME_SCREEN)
         {
             AddUIElement(engine, (UIElement){
                                      .name = "StopButton",
@@ -1667,6 +1664,10 @@ int main()
                 char path[128];
                 snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
                 tex = LoadTexture(path);
+                if(tex.id == 0){
+                    AddToLog(&engine, "Invalid texture file name", 2);
+                    engine.viewportMode = VIEWPORT_CG_EDITOR;
+                }
                 texPos = (Vector2){
                     (engine.viewport.texture.width - tex.width) / 2.0f,
                     (engine.viewport.texture.height - tex.height) / 2.0f};
@@ -1682,21 +1683,28 @@ int main()
             mouseLocal.y = engine.mousePos.y +
                            (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
 
-            UpdateEditor(&hitboxEditor, mouseLocal);
+            if(engine.isViewportFocused){
+                UpdateEditor(&hitboxEditor, mouseLocal);
+            }
 
-            for (int i = 0; i < hitboxEditor.poly.count; i++)
+            /*for (int i = 0; i < hitboxEditor.poly.count; i++)
             {
                 Vector2 v = hitboxEditor.poly.vertices[i];
                 float x = v.x;
                 float y = v.y;
                 printf("Vertex %d: x = %.2f, y = %.2f\n", i, x, y);
-            }
+            }*/
 
             DrawEditor(&hitboxEditor, mouseLocal);
 
-            if (hitboxEditor.poly.closed)
-            {
-                test = hitboxEditor.poly; // test
+            if(IsKeyPressed(KEY_ESCAPE)){
+                if(hitboxEditor.poly.closed){
+                    test = hitboxEditor.poly;
+                    engine.viewportMode = VIEWPORT_CG_EDITOR;
+                }
+                else{
+                    engine.viewportMode = VIEWPORT_CG_EDITOR;
+                }
             }
 
             EndTextureMode();

@@ -1111,7 +1111,7 @@ void HandleForces(InterpreterContext *interpreter)
     }
 }
 
-bool CheckCollisionPolyPoly(PolygonHitbox *a, Vector2 aOffset, PolygonHitbox *b, Vector2 bOffset)
+bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset)
 {
     for (int i = 0; i < a->count; i++)
     {
@@ -1130,7 +1130,7 @@ bool CheckCollisionPolyPoly(PolygonHitbox *a, Vector2 aOffset, PolygonHitbox *b,
     return false;
 }
 
-bool CheckCollisionPolyCircle(PolygonHitbox *poly, Vector2 polyPos, Vector2 circlePos, float circleRadius)
+bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 circlePos, float circleRadius)
 {
     Rectangle bounds = {polyPos.x, polyPos.y, 0, 0};
     for (int i = 0; i < poly->count; i++)
@@ -1143,7 +1143,7 @@ bool CheckCollisionPolyCircle(PolygonHitbox *poly, Vector2 polyPos, Vector2 circ
     return CheckCollisionCircleRec(circlePos, circleRadius, bounds);
 }
 
-bool CheckCollisionPolyRect(PolygonHitbox *poly, Vector2 polyPos, Vector2 rectPos, Vector2 rectSize)
+bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 rectPos, Vector2 rectSize)
 {
     Rectangle rect = {rectPos.x, rectPos.y, rectSize.x, rectSize.y};
     for (int i = 0; i < poly->count; i++)

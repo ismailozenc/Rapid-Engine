@@ -9,6 +9,14 @@
 
 #define MAX_NODE_PINS 16
 
+#define MAX_HITBOX_VERTICES 64
+
+typedef struct {
+    Vector2 vertices[MAX_HITBOX_VERTICES];
+    int count;
+    bool closed;
+} Polygon;
+
 extern const char *InputsByNodeTypes[][5];
 
 extern const char *OutputsByNodeTypes[][5];

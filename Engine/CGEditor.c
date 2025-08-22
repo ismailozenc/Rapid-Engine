@@ -915,6 +915,9 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                                                         if(graph->pins[e].id == graph->nodes[d].inputPins[0]){
                                                             editor->shouldOpenHitboxEditor = true;
                                                             strcpy(editor->hitboxEditorFileName, graph->pins[e].textFieldValue);
+                                                            editor->hasChanged = false;
+                                                            editor->hasChangedInLastFrame = false;
+                                                            return;
                                                         }
                                                     }
                                                 }

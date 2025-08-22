@@ -15,8 +15,6 @@
 
 #define MAX_LOG_MESSAGES 32
 
-#define MAX_HITBOX_VERTICES 64
-
 typedef struct RuntimePin
 {
     int id;
@@ -65,11 +63,6 @@ typedef enum
 #ifndef POLYGON_H
 #define POLYGON_H
 
-typedef struct {
-    Vector2 vertices[MAX_HITBOX_VERTICES];
-    int count;
-} PolygonHitbox;
-
 #endif
 
 typedef enum {
@@ -85,7 +78,7 @@ typedef struct {
     union{
         Vector2 rectHitboxSize;
         float circleHitboxRadius;
-        PolygonHitbox polygonHitbox;
+        Polygon polygonHitbox;
     };
 } Hitbox;
 

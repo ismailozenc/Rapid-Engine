@@ -3,16 +3,10 @@
 
 #include "raylib.h"
 #include <stdbool.h>
+#include "Nodes.h"
 
-#define MAX_HITBOX_VERTICES 64
 #define SNAP_DIST 10.0f
 #define TEST_RADIUS 10.0f
-
-typedef struct {
-    Vector2 vertices[MAX_HITBOX_VERTICES];
-    int count;
-    bool closed;
-} Polygon;
 
 typedef struct {
     Texture2D texture;

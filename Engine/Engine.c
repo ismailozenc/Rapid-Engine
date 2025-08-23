@@ -1421,7 +1421,7 @@ void ContextChangePerFrame(EngineContext *engine)
     }
 }
 
-int GetMouseCursor(EngineContext *engine, EditorContext *editor)
+int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
 {
     if (engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3)
     {
@@ -1434,17 +1434,18 @@ int GetMouseCursor(EngineContext *engine, EditorContext *editor)
 
     if (engine->isViewportFocused)
     {
-        switch(engine->viewportMode){
-            case VIEWPORT_CG_EDITOR:
-                return editor->cursor;
-            case VIEWPORT_GAME_SCREEN:
-                //return interpreter->cursor;
-                return MOUSE_CURSOR_ARROW;
-            case VIEWPORT_HITBOX_EDITOR:
-                return MOUSE_CURSOR_CROSSHAIR; //
-            default:
-                engine->viewportMode = VIEWPORT_CG_EDITOR;
-                return editor->cursor;
+        switch (engine->viewportMode)
+        {
+        case VIEWPORT_CG_EDITOR:
+            return editor->cursor;
+        case VIEWPORT_GAME_SCREEN:
+            // return interpreter->cursor;
+            return MOUSE_CURSOR_ARROW;
+        case VIEWPORT_HITBOX_EDITOR:
+            return MOUSE_CURSOR_CROSSHAIR; //
+        default:
+            engine->viewportMode = VIEWPORT_CG_EDITOR;
+            return editor->cursor;
         }
     }
 
@@ -1459,6 +1460,37 @@ int GetMouseCursor(EngineContext *engine, EditorContext *editor)
     }
 
     return MOUSE_CURSOR_ARROW;
+}
+
+int GetEngineFPS(EngineContext *engine, EditorContext *editor, InterpreterContext *interpreter)
+{
+    int fps;
+
+    if (engine->isViewportFocused)
+    {
+        switch (engine->viewportMode)
+        {
+        case VIEWPORT_CG_EDITOR:
+            fps = editor->fps;
+            break;
+        case VIEWPORT_GAME_SCREEN:
+            fps = interpreter->fps;
+            break;
+        case VIEWPORT_HITBOX_EDITOR:
+            fps = 60;
+            break;
+        default:
+            fps = 60;
+            engine->viewportMode = VIEWPORT_CG_EDITOR;
+            break;
+        }
+    }
+    else
+    {
+        fps = engine->fps;
+    }
+
+    return fps;
 }
 
 int main()
@@ -1523,34 +1555,11 @@ int main()
             engine.delayFrames = false;
         }
 
-        SetMouseCursor(GetMouseCursor(&engine, &editor));
-        int fps;
-        if (engine.isViewportFocused)
-        {
-            switch(engine.viewportMode)
-            {
-                case VIEWPORT_CG_EDITOR:
-                    fps = editor.fps;
-                    break;
-                case VIEWPORT_GAME_SCREEN:
-                    fps = interpreter.fps;
-                    break;
-                case VIEWPORT_HITBOX_EDITOR:
-                    fps = 60;
-                    break;
-                default:
-                    fps = 60;
-                    engine.viewportMode = VIEWPORT_CG_EDITOR;
-                    continue;
-            }
-        }
-        else
-        {
-            fps = engine.fps;
-        }
-        SetTargetFPS(fps);
+        SetMouseCursor(GetEngineMouseCursor(&engine, &editor));
 
-        if (GetMouseWheelMove() != 0 && engine.isViewportFocused && !editor.menuOpen)
+        SetTargetFPS(GetEngineFPS(&engine, &editor, &interpreter));
+
+        if (GetMouseWheelMove() != 0 && engine.isViewportFocused && !editor.menuOpen && engine.viewportMode == VIEWPORT_CG_EDITOR)
         {
             editor.delayFrames = true;
 
@@ -1568,24 +1577,24 @@ int main()
         float srcW;
         float srcH;
 
-        int textureX;
-        int textureY;
+        int textureMouseX;
+        int textureMouseY;
 
-        if (engine.isGameRunning)
+        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
         {
             srcW = engine.viewportWidth;
             srcH = engine.viewportHeight;
 
-            textureX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
-            textureY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
+            textureMouseX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
+            textureMouseY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
         }
         else
         {
             srcW = engine.viewportWidth / engine.editorZoom;
             srcH = engine.viewportHeight / engine.editorZoom;
 
-            textureX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-            textureY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
+            textureMouseX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
+            textureMouseY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
         }
 
         Rectangle viewportBoundaryTranslated = (Rectangle){
@@ -1613,7 +1622,7 @@ int main()
                 editor.leftBorderLimit = (engine.viewport.texture.width - srcW) / 2.0f;
                 editor.bottomBorderLimit = (engine.screenHeight - engine.bottomBarHeight) / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
                 editor.rightBorderLimit = (engine.screenWidth - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureX, textureY}, engine.draggingResizeButtonID != 0);
+                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureMouseX, textureMouseY}, engine.draggingResizeButtonID != 0);
             }
 
             if (editor.newLogMessage)
@@ -1654,7 +1663,7 @@ int main()
                 }
             }
 
-            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureX, textureY}, viewportBoundaryTranslated);
+            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureMouseX, textureMouseY}, viewportBoundaryTranslated);
 
             if (!engine.isGameRunning)
             {
@@ -1678,15 +1687,11 @@ int main()
         }
         case VIEWPORT_HITBOX_EDITOR:
         {
-            BeginTextureMode(engine.viewport);
-
-            static Texture2D tex = {0};
             static HitboxEditor hitboxEditor = {0};
 
-            static Vector2 texPos;
-
-            if (tex.id == 0)
+            if (hitboxEditor.texture.id == 0)
             {
+                Texture2D tex = {0};
                 char path[128];
                 snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
                 tex = LoadTexture(path);
@@ -1695,27 +1700,18 @@ int main()
                     AddToLog(&engine, "Invalid texture file name", 2);
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
-                texPos = (Vector2){
-                    (engine.viewport.texture.width - tex.width) / 2.0f,
-                    (engine.viewport.texture.height - tex.height) / 2.0f};
+                Vector2 texPos = (Vector2){(engine.viewport.texture.width - tex.width) / 2.0f, (engine.viewport.texture.height - tex.height) / 2.0f};
                 hitboxEditor = InitHitboxEditor(tex, texPos);
             }
 
-            Vector2 mouseScreen = GetMousePosition();
-
-            Vector2 mouseLocal;
-
-            mouseLocal.x = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) +
-                           (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
-            mouseLocal.y = engine.mousePos.y +
-                           (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
-
             if (engine.isViewportFocused)
             {
-                UpdateEditor(&hitboxEditor, mouseLocal);
+                UpdateEditor(&hitboxEditor, (Vector2){textureMouseX, textureMouseY});
             }
 
-            DrawEditor(&hitboxEditor, mouseLocal);
+            BeginTextureMode(engine.viewport);
+
+            DrawEditor(&hitboxEditor, (Vector2){textureMouseX, textureMouseY});
 
             EndTextureMode();
 

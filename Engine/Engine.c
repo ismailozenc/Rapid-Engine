@@ -1582,19 +1582,19 @@ int main()
 
         if (engine.viewportMode == VIEWPORT_CG_EDITOR)
         {
-            srcW = engine.viewportWidth;
-            srcH = engine.viewportHeight;
-
-            textureMouseX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
-            textureMouseY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
-        }
-        else
-        {
             srcW = engine.viewportWidth / engine.editorZoom;
             srcH = engine.viewportHeight / engine.editorZoom;
 
             textureMouseX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
             textureMouseY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
+        }
+        else
+        {
+            srcW = engine.viewportWidth;
+            srcH = engine.viewportHeight;
+
+            textureMouseX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
+            textureMouseY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
         }
 
         Rectangle viewportBoundaryTranslated = (Rectangle){

@@ -400,9 +400,9 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
     {
         switch (engine->uiElements[engine->hoveredUIElementIndex].type)
         {
-        case NO_COLLISION_ACTION:
+        case UI_ACTION_NO_COLLISION_ACTION:
             break;
-        case SAVE_CG:
+        case UI_ACTION_SAVE_CG:
             engine->isSaveButtonHovered = true;
             if (engine->isGameRunning)
             {
@@ -423,7 +423,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     AddToLog(engine, "ERROR SAVING CHANGES!", 1);
             }
             break;
-        case STOP_GAME:
+        case UI_ACTION_STOP_GAME:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 engine->viewportMode = VIEWPORT_CG_EDITOR;
@@ -433,7 +433,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 FreeInterpreterContext(interpreter);
             }
             break;
-        case RUN_GAME:
+        case UI_ACTION_RUN_GAME:
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 if (editor->hasChanged)
@@ -451,7 +451,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 interpreter->isFirstFrame = true;
             }
             break;
-        case BUILD_GRAPH:
+        case UI_ACTION_BUILD_GRAPH:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 if (editor->hasChanged)
@@ -472,7 +472,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
             }
             break;
-        case BACK_FILEPATH:
+        case UI_ACTION_BACK_FILEPATH:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 char *lastSlash = strrchr(engine->currentPath, '\\');
@@ -483,13 +483,13 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
             }
             break;
-        case REFRESH_FILES:
+        case UI_ACTION_REFRESH_FILES:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
             }
             break;
-        case CLOSE_WINDOW:
+        case UI_ACTION_CLOSE_WINDOW:
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
@@ -504,42 +504,42 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
             }
             break;
-        case MINIMIZE_WINDOW:
+        case UI_ACTION_MINIMIZE_WINDOW:
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 MinimizeWindow();
             }
             break;
-        case RESIZE_BOTTOM_BAR:
+        case UI_ACTION_RESIZE_BOTTOM_BAR:
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 1;
             }
             break;
-        case RESIZE_SIDE_BAR:
+        case UI_ACTION_RESIZE_SIDE_BAR:
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 2;
             }
             break;
-        case RESIZE_SIDE_BAR_MIDDLE:
+        case UI_ACTION_RESIZE_SIDE_BAR_MIDDLE:
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
             {
                 engine->draggingResizeButtonID = 3;
             }
             break;
-        case OPEN_FILE:
+        case UI_ACTION_OPEN_FILE:
             char tooltipText[256] = "";
             snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name), GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
             Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
             AddUIElement(engine, (UIElement){
                                      .name = "FileTooltip",
                                      .shape = UIRectangle,
-                                     .type = NO_COLLISION_ACTION,
+                                     .type = UI_ACTION_NO_COLLISION_ACTION,
                                      .rect = {.pos = {tooltipRect.x, tooltipRect.y}, .recSize = {tooltipRect.width, tooltipRect.height}, .roundness = 0, .roundSegments = 0},
                                      .color = DARKGRAY,
                                      .layer = 1,
@@ -586,12 +586,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
             break;
 
-        case VAR_TOOLTIP_RUNTIME:
+        case UI_ACTION_VAR_TOOLTIP_RUNTIME:
             sprintf(temp, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type), interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
-                                     .type = NO_COLLISION_ACTION,
+                                     .type = UI_ACTION_NO_COLLISION_ACTION,
                                      .rect = {.pos = {engine->sideBarWidth, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {MeasureTextEx(engine->font, temp, 20, 0).x + 20, 40}, .roundness = 0.4f, .roundSegments = 8},
                                      .color = DARKGRAY,
                                      .layer = 1,
@@ -599,7 +599,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
             break;
 
-        case CHANGE_VARS_FILTER:
+        case UI_ACTION_CHANGE_VARS_FILTER:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 engine->varsFilter++;
@@ -609,7 +609,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
             }
             break;
-        case VIEWPORT_FULLSCREEN:
+        case UI_ACTION_FULLSCREEN_BUTTON_VIEWPORT:
             engine->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
@@ -625,12 +625,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 Clamp(col.g + 50, 0, 255),
                 Clamp(col.b + 50, 0, 255),
                 col.a};
-            if (engine->uiElements[engine->hoveredUIElementIndex].type == CLOSE_WINDOW || engine->uiElements[engine->hoveredUIElementIndex].type == MINIMIZE_WINDOW)
+            if (engine->uiElements[engine->hoveredUIElementIndex].type == UI_ACTION_CLOSE_WINDOW || engine->uiElements[engine->hoveredUIElementIndex].type == UI_ACTION_MINIMIZE_WINDOW)
             {
                 AddUIElement(engine, (UIElement){
                                          .name = "HoverBlink",
                                          .shape = UIRectangle,
-                                         .type = NO_COLLISION_ACTION,
+                                         .type = UI_ACTION_NO_COLLISION_ACTION,
                                          .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
                                          .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
                                          .layer = 99});
@@ -673,7 +673,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "SideBarVars",
                                  .shape = UIRectangle,
-                                 .type = NO_COLLISION_ACTION,
+                                 .type = UI_ACTION_NO_COLLISION_ACTION,
                                  .rect = {.pos = {0, 0}, .recSize = {engine->sideBarWidth, engine->sideBarMiddleY}, .roundness = 0.0f, .roundSegments = 0},
                                  .color = (Color){28, 28, 28, 255},
                                  .layer = 0,
@@ -682,7 +682,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "SideBarLog",
                                  .shape = UIRectangle,
-                                 .type = NO_COLLISION_ACTION,
+                                 .type = UI_ACTION_NO_COLLISION_ACTION,
                                  .rect = {.pos = {0, engine->sideBarMiddleY}, .recSize = {engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight}, .roundness = 0.0f, .roundSegments = 0},
                                  .color = (Color){15, 15, 15, 255},
                                  .layer = 0,
@@ -691,7 +691,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "SideBarMiddleLine",
                                  .shape = UILine,
-                                 .type = NO_COLLISION_ACTION,
+                                 .type = UI_ACTION_NO_COLLISION_ACTION,
                                  .line = {.startPos = {engine->sideBarWidth, 0}, .engPos = {engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight}, .thickness = 2},
                                  .color = WHITE,
                                  .layer = 0,
@@ -700,7 +700,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "SideBarFromViewportDividerLine",
                                  .shape = UILine,
-                                 .type = NO_COLLISION_ACTION,
+                                 .type = UI_ACTION_NO_COLLISION_ACTION,
                                  .line = {.startPos = {0, engine->sideBarMiddleY}, .engPos = {engine->sideBarWidth, engine->sideBarMiddleY}, .thickness = 2},
                                  .color = WHITE,
                                  .layer = 0,
@@ -713,7 +713,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "SaveButton",
                                  .shape = UIRectangle,
-                                 .type = SAVE_CG,
+                                 .type = UI_ACTION_SAVE_CG,
                                  .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){70, 70, 70, 200},
                                  .layer = 1,
@@ -733,7 +733,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "StopButton",
                                      .shape = UIRectangle,
-                                     .type = STOP_GAME,
+                                     .type = UI_ACTION_STOP_GAME,
                                      .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = RED,
                                      .layer = 1,
@@ -745,7 +745,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "RunButton",
                                      .shape = UIRectangle,
-                                     .type = RUN_GAME,
+                                     .type = UI_ACTION_RUN_GAME,
                                      .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = DARKGREEN,
                                      .layer = 1,
@@ -757,7 +757,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "BuildButton",
                                      .shape = UIRectangle,
-                                     .type = BUILD_GRAPH,
+                                     .type = UI_ACTION_BUILD_GRAPH,
                                      .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){70, 70, 70, 200},
                                      .layer = 1,
@@ -835,7 +835,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "LogText",
                                      .shape = UIText,
-                                     .type = NO_COLLISION_ACTION,
+                                     .type = UI_ACTION_NO_COLLISION_ACTION,
                                      .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = logColor},
                                      .layer = 0});
 
@@ -850,7 +850,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "VarsFilterShowText",
                                      .shape = UIText,
-                                     .type = NO_COLLISION_ACTION,
+                                     .type = UI_ACTION_NO_COLLISION_ACTION,
                                      .text = {.string = "Show:", .textPos = {engine->sideBarWidth - 155, 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                      .layer = 0});
             char varsFilterText[10];
@@ -890,7 +890,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "VarsFilterButton",
                                      .shape = UIRectangle,
-                                     .type = CHANGE_VARS_FILTER,
+                                     .type = UI_ACTION_CHANGE_VARS_FILTER,
                                      .rect = {.pos = {engine->sideBarWidth - 85, 15}, .recSize = {78, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){70, 70, 70, 200},
                                      .layer = 1,
@@ -968,7 +968,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "Variable Background",
                                      .shape = UIRectangle,
-                                     .type = engine->isGameRunning ? VAR_TOOLTIP_RUNTIME : NO_COLLISION_ACTION,
+                                     .type = engine->isGameRunning ? UI_ACTION_VAR_TOOLTIP_RUNTIME : UI_ACTION_NO_COLLISION_ACTION,
                                      .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){59, 59, 59, 255},
                                      .layer = 1,
@@ -1008,7 +1008,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             AddUIElement(engine, (UIElement){
                                      .name = "Variable",
                                      .shape = UICircle,
-                                     .type = NO_COLLISION_ACTION,
+                                     .type = UI_ACTION_NO_COLLISION_ACTION,
                                      .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 + 3 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
                                      .color = varColor,
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
@@ -1023,7 +1023,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "BottomBar",
                              .shape = UIRectangle,
-                             .type = NO_COLLISION_ACTION,
+                             .type = UI_ACTION_NO_COLLISION_ACTION,
                              .rect = {.pos = {0, engine->screenHeight - engine->bottomBarHeight}, .recSize = {engine->screenWidth, engine->bottomBarHeight}, .roundness = 0.0f, .roundSegments = 0},
                              .color = (Color){28, 28, 28, 255},
                              .layer = 0,
@@ -1032,7 +1032,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "BottomBarFromViewportDividerLine",
                              .shape = UILine,
-                             .type = NO_COLLISION_ACTION,
+                             .type = UI_ACTION_NO_COLLISION_ACTION,
                              .line = {.startPos = {0, engine->screenHeight - engine->bottomBarHeight}, .engPos = {engine->screenWidth, engine->screenHeight - engine->bottomBarHeight}, .thickness = 2},
                              .color = WHITE,
                              .layer = 0,
@@ -1041,7 +1041,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "BackButton",
                              .shape = UIRectangle,
-                             .type = BACK_FILEPATH,
+                             .type = UI_ACTION_BACK_FILEPATH,
                              .rect = {.pos = {30, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {65, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
                              .color = (Color){70, 70, 70, 150},
                              .layer = 1,
@@ -1050,7 +1050,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "RefreshButton",
                              .shape = UIRectangle,
-                             .type = REFRESH_FILES,
+                             .type = UI_ACTION_REFRESH_FILES,
                              .rect = {.pos = {110, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {100, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
                              .color = (Color){70, 70, 70, 150},
                              .layer = 1,
@@ -1059,7 +1059,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "CurrentPath",
                              .shape = UIText,
-                             .type = NO_COLLISION_ACTION,
+                             .type = UI_ACTION_NO_COLLISION_ACTION,
                              .color = (Color){0, 0, 0, 0},
                              .layer = 0,
                              .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
@@ -1130,7 +1130,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "FileOutline",
                                  .shape = UIRectangle,
-                                 .type = NO_COLLISION_ACTION,
+                                 .type = UI_ACTION_NO_COLLISION_ACTION,
                                  .rect = {.pos = {xOffset - 1, yOffset - 1}, .recSize = {152, 62}, .roundness = 0.5f, .roundSegments = 8},
                                  .color = fileOutlineColor,
                                  .layer = 0});
@@ -1138,7 +1138,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "File",
                                  .shape = UIRectangle,
-                                 .type = OPEN_FILE,
+                                 .type = UI_ACTION_OPEN_FILE,
                                  .rect = {.pos = {xOffset, yOffset}, .recSize = {150, 60}, .roundness = 0.5f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                  .color = (Color){40, 40, 40, 255},
                                  .layer = 1,
@@ -1158,7 +1158,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "TopBarClose",
                              .shape = UIRectangle,
-                             .type = CLOSE_WINDOW,
+                             .type = UI_ACTION_CLOSE_WINDOW,
                              .rect = {.pos = {engine->screenWidth - 50, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = RED},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
@@ -1166,7 +1166,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "TopBarMinimize",
                              .shape = UIRectangle,
-                             .type = MINIMIZE_WINDOW,
+                             .type = UI_ACTION_MINIMIZE_WINDOW,
                              .rect = {.pos = {engine->screenWidth - 100, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
@@ -1175,7 +1175,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "BottomBarResizeButton",
                              .shape = UICircle,
-                             .type = RESIZE_BOTTOM_BAR,
+                             .type = UI_ACTION_RESIZE_BOTTOM_BAR,
                              .circle = {.center = (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, .radius = 10},
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
@@ -1183,7 +1183,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "SideBarResizeButton",
                              .shape = UICircle,
-                             .type = RESIZE_SIDE_BAR,
+                             .type = UI_ACTION_RESIZE_SIDE_BAR,
                              .circle = {.center = (Vector2){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, .radius = 10},
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
@@ -1191,7 +1191,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     AddUIElement(engine, (UIElement){
                              .name = "SideBarMiddleResizeButton",
                              .shape = UICircle,
-                             .type = RESIZE_SIDE_BAR_MIDDLE,
+                             .type = UI_ACTION_RESIZE_SIDE_BAR_MIDDLE,
                              .circle = {.center = (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, .radius = 10},
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
@@ -1202,7 +1202,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         AddUIElement(engine, (UIElement){
                                  .name = "ViewportFullscreenButton",
                                  .shape = UIRectangle,
-                                 .type = VIEWPORT_FULLSCREEN,
+                                 .type = UI_ACTION_FULLSCREEN_BUTTON_VIEWPORT,
                                  .rect = {.pos = {engine->sideBarWidth + 8, 10}, .recSize = {50, 50}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = GRAY},
                                  .color = (Color){60, 60, 60, 255},
                                  .layer = 1,
@@ -1434,7 +1434,18 @@ int GetMouseCursor(EngineContext *engine, EditorContext *editor)
 
     if (engine->isViewportFocused)
     {
-        return editor->cursor;
+        switch(engine->viewportMode){
+            case VIEWPORT_CG_EDITOR:
+                return editor->cursor;
+            case VIEWPORT_GAME_SCREEN:
+                //return interpreter->cursor;
+                return MOUSE_CURSOR_ARROW;
+            case VIEWPORT_HITBOX_EDITOR:
+                return MOUSE_CURSOR_CROSSHAIR; //
+            default:
+                engine->viewportMode = VIEWPORT_CG_EDITOR;
+                return editor->cursor;
+        }
     }
 
     if (engine->isSaveButtonHovered && engine->isGameRunning)
@@ -1516,13 +1527,21 @@ int main()
         int fps;
         if (engine.isViewportFocused)
         {
-            if (engine.isGameRunning)
+            switch(engine.viewportMode)
             {
-                fps = interpreter.fps;
-            }
-            else
-            {
-                fps = editor.fps;
+                case VIEWPORT_CG_EDITOR:
+                    fps = editor.fps;
+                    break;
+                case VIEWPORT_GAME_SCREEN:
+                    fps = interpreter.fps;
+                    break;
+                case VIEWPORT_HITBOX_EDITOR:
+                    fps = 60;
+                    break;
+                default:
+                    fps = 60;
+                    engine.viewportMode = VIEWPORT_CG_EDITOR;
+                    continue;
             }
         }
         else
@@ -1585,7 +1604,9 @@ int main()
             engine.isViewportFocused = false;
         }
 
-        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
+        switch (engine.viewportMode)
+        {
+        case VIEWPORT_CG_EDITOR:
         {
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.isFirstFrame))
             {
@@ -1610,12 +1631,15 @@ int main()
                 editor.hasChangedInLastFrame = false;
                 engine.wasBuilt = false;
             }
-            if(editor.shouldOpenHitboxEditor){
+            if (editor.shouldOpenHitboxEditor)
+            {
                 editor.shouldOpenHitboxEditor = false;
                 engine.viewportMode = VIEWPORT_HITBOX_EDITOR;
             }
+
+            break;
         }
-        else if (engine.viewportMode == VIEWPORT_GAME_SCREEN)
+        case VIEWPORT_GAME_SCREEN:
         {
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
@@ -1649,8 +1673,10 @@ int main()
                 engine.delayFrames = true;
             }
             EndTextureMode();
+
+            break;
         }
-        else if (engine.viewportMode == VIEWPORT_HITBOX_EDITOR)
+        case VIEWPORT_HITBOX_EDITOR:
         {
             BeginTextureMode(engine.viewport);
 
@@ -1664,7 +1690,8 @@ int main()
                 char path[128];
                 snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
                 tex = LoadTexture(path);
-                if(tex.id == 0){
+                if (tex.id == 0)
+                {
                     AddToLog(&engine, "Invalid texture file name", 2);
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
@@ -1683,36 +1710,35 @@ int main()
             mouseLocal.y = engine.mousePos.y +
                            (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
 
-            if(engine.isViewportFocused){
+            if (engine.isViewportFocused)
+            {
                 UpdateEditor(&hitboxEditor, mouseLocal);
             }
-
-            /*for (int i = 0; i < hitboxEditor.poly.count; i++)
-            {
-                Vector2 v = hitboxEditor.poly.vertices[i];
-                float x = v.x;
-                float y = v.y;
-                printf("Vertex %d: x = %.2f, y = %.2f\n", i, x, y);
-            }*/
 
             DrawEditor(&hitboxEditor, mouseLocal);
 
             EndTextureMode();
 
-            if(IsKeyPressed(KEY_ESCAPE)){
-                if(hitboxEditor.poly.closed){
+            if (IsKeyPressed(KEY_ESCAPE))
+            {
+                if (hitboxEditor.poly.closed)
+                {
                     test = hitboxEditor.poly;
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
-                else{
+                else
+                {
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
             }
+
+            break;
         }
-        else
+        default:
         {
             AddToLog(&engine, "Viewport error!", LOG_ERROR);
             engine.viewportMode = VIEWPORT_CG_EDITOR;
+        }
         }
 
         if (!engine.isGameRunning || !engine.isGameFullscreen)
@@ -1739,7 +1765,8 @@ int main()
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
-        else if(engine.viewportMode == VIEWPORT_HITBOX_EDITOR){
+        else if (engine.viewportMode == VIEWPORT_HITBOX_EDITOR)
+        {
             DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){engine.sideBarWidth + 30, 30}, 30, 1, GRAY);
         }
 

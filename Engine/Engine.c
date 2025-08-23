@@ -1697,6 +1697,8 @@ int main()
 
             DrawEditor(&hitboxEditor, mouseLocal);
 
+            EndTextureMode();
+
             if(IsKeyPressed(KEY_ESCAPE)){
                 if(hitboxEditor.poly.closed){
                     test = hitboxEditor.poly;
@@ -1706,8 +1708,6 @@ int main()
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
             }
-
-            EndTextureMode();
         }
         else
         {
@@ -1734,10 +1734,13 @@ int main()
                 WHITE);
         }
 
-        if (engine.CGFilePath[0] != '\0' && engine.viewportMode == VIEWPORT_CG_EDITOR)
+        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
         {
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
+        }
+        else if(engine.viewportMode == VIEWPORT_HITBOX_EDITOR){
+            DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){engine.sideBarWidth + 30, 30}, 30, 1, GRAY);
         }
 
         DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);

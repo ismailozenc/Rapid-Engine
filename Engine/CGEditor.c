@@ -890,10 +890,10 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else if (graph->pins[i].type == PIN_EDIT_HITBOX)
         {
-            DrawRectangle(graph->pins[i].position.x - 6, graph->pins[i].position.y - 10, 96, 24, DARKPURPLE);
-            DrawTextEx(editor->font, "Edit Hitbox", (Vector2){graph->pins[i].position.x - 2, graph->pins[i].position.y - 6}, 18, 0.2f, WHITE);
+            DrawRectangleRounded((Rectangle){graph->pins[i].position.x - 6, graph->pins[i].position.y - 10, 96, 24}, 0.4f, 4, DARKPURPLE);
             if (CheckCollisionPointRec(editor->mousePos, (Rectangle){graph->pins[i].position.x - 6, graph->pins[i].position.y - 10, 96, 24}))
             {
+                DrawRectangleRounded((Rectangle){graph->pins[i].position.x - 6, graph->pins[i].position.y - 10, 96, 24}, 0.4f, 4, (Color){255, 255, 255, 100});
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
                     // Find texture file name from linked literal node(shouldn't only work with literal nodes)
@@ -930,6 +930,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                     }
                 }
             }
+            DrawTextEx(editor->font, "Edit Hitbox", (Vector2){graph->pins[i].position.x - 2, graph->pins[i].position.y - 6}, 18, 0.2f, WHITE);
         }
         else
         {

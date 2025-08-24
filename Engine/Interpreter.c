@@ -996,17 +996,20 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     }
 }
 
-void DrawHitbox(Hitbox *h, Vector2 worldPos, Color color) //// test
+void DrawHitbox(Hitbox *h, Vector2 centerPos, Vector2 spriteSize, Vector2 texSize, Color color)
 {
+    float scaleX = spriteSize.x / texSize.x;
+    float scaleY = spriteSize.y / texSize.y;
+
     switch (h->type)
     {
     case HITBOX_RECT:
     {
         Rectangle r = {
-            worldPos.x + h->offset.x,
-            worldPos.y + h->offset.y,
-            h->rectHitboxSize.x,
-            h->rectHitboxSize.y};
+            centerPos.x + h->offset.x * scaleX,
+            centerPos.y + h->offset.y * scaleY,
+            h->rectHitboxSize.x * scaleX,
+            h->rectHitboxSize.y * scaleY};
         DrawRectangleLinesEx(r, 1, color);
     }
     break;
@@ -1014,9 +1017,9 @@ void DrawHitbox(Hitbox *h, Vector2 worldPos, Color color) //// test
     case HITBOX_CIRCLE:
     {
         Vector2 c = {
-            worldPos.x + h->offset.x,
-            worldPos.y + h->offset.y};
-        DrawCircleLines((int)c.x, (int)c.y, h->circleHitboxRadius, color);
+            centerPos.x + h->offset.x * scaleX,
+            centerPos.y + h->offset.y * scaleY};
+        DrawCircleLines((int)c.x, (int)c.y, h->circleHitboxRadius * ((scaleX + scaleY) / 2), color);
     }
     break;
 
@@ -1025,11 +1028,11 @@ void DrawHitbox(Hitbox *h, Vector2 worldPos, Color color) //// test
         for (int i = 0; i < h->polygonHitbox.count; i++)
         {
             Vector2 p1 = {
-                worldPos.x + h->offset.x + h->polygonHitbox.vertices[i].x,
-                worldPos.y + h->offset.y + h->polygonHitbox.vertices[i].y};
+                centerPos.x + h->offset.x * scaleX + h->polygonHitbox.vertices[i].x * scaleX,
+                centerPos.y + h->offset.y * scaleY + h->polygonHitbox.vertices[i].y * scaleY};
             Vector2 p2 = {
-                worldPos.x + h->offset.x + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].x,
-                worldPos.y + h->offset.y + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].y};
+                centerPos.x + h->offset.x * scaleX + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].x * scaleX,
+                centerPos.y + h->offset.y * scaleY + h->polygonHitbox.vertices[(i + 1) % h->polygonHitbox.count].y * scaleY};
             DrawLineV(p1, p2, color);
         }
     }
@@ -1064,7 +1067,12 @@ void DrawComponents(InterpreterContext *interpreter)
                 (Vector2){component.sprite.width / 2.0f, component.sprite.height / 2.0f},
                 component.sprite.rotation,
                 WHITE);
-            DrawHitbox(&interpreter->components[i].sprite.hitbox, component.sprite.position, RED);
+            DrawHitbox(
+                &component.sprite.hitbox,
+                component.sprite.position,
+                (Vector2){component.sprite.width, component.sprite.height},
+                (Vector2){component.sprite.texture.width, component.sprite.texture.height},
+                RED);
             continue;
         }
         else
@@ -1082,7 +1090,12 @@ void DrawComponents(InterpreterContext *interpreter)
             default:
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Component error!"}, 2);
             }
-            DrawHitbox(&interpreter->components[i].prop.hitbox, component.prop.position, RED);
+            DrawHitbox(
+                &component.prop.hitbox,
+                component.prop.position,
+                (Vector2){component.prop.width, component.prop.height},
+                (Vector2){component.prop.width, component.prop.height},
+                RED);
         }
     }
 }

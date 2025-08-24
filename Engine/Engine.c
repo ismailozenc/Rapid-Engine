@@ -1687,21 +1687,56 @@ int main()
         }
         case VIEWPORT_HITBOX_EDITOR:
         {
-            static HitboxEditor hitboxEditor = {0};
+            static HitboxEditorContext hitboxEditor = {0};
 
             if (hitboxEditor.texture.id == 0)
             {
-                Texture2D tex = {0};
                 char path[128];
                 snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
-                tex = LoadTexture(path);
-                if (tex.id == 0)
+
+                Image img = LoadImage(path);
+                if (img.data == NULL)
                 {
                     AddToLog(&engine, "Invalid texture file name", 2);
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
-                Vector2 texPos = (Vector2){(engine.viewport.texture.width - tex.width) / 2.0f, (engine.viewport.texture.height - tex.height) / 2.0f};
-                hitboxEditor = InitHitboxEditor(tex, texPos);
+                else
+                {
+                    int newWidth, newHeight;
+                    if (img.width >= img.height)
+                    {
+                        newWidth = 500;
+                        newHeight = (int)((float)img.height * 500 / img.width);
+                    }
+                    else
+                    {
+                        newHeight = 500;
+                        newWidth = (int)((float)img.width * 500 / img.height);
+                    }
+
+                    ImageResize(&img, newWidth, newHeight);
+
+                    Texture2D tex = LoadTextureFromImage(img);
+                    UnloadImage(img);
+
+                    Vector2 texPos = (Vector2){
+                        engine.viewport.texture.width / 2.0f,
+                        engine.viewport.texture.height / 2.0f};
+
+                    hitboxEditor = InitHitboxEditor(tex, texPos);
+
+                    float scaleX = (float)hitboxEditor.texture.width / hitboxEditor.texture.width;
+                    float scaleY = (float)hitboxEditor.texture.height / hitboxEditor.texture.height;
+
+                    for (int i = 0; i < hitboxEditor.poly.count; i++)
+                    {
+                        hitboxEditor.poly.vertices[i].x *= scaleX;
+                        hitboxEditor.poly.vertices[i].y *= scaleY;
+                        
+                        hitboxEditor.poly.vertices[i].x -= hitboxEditor.texture.width / 2.0f;
+                        hitboxEditor.poly.vertices[i].y -= hitboxEditor.texture.height / 2.0f;
+                    }
+                }
             }
 
             if (engine.isViewportFocused)

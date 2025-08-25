@@ -1762,6 +1762,15 @@ int main()
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
             }
+            if(IsKeyPressed(KEY_R)){
+                memset(hitboxEditor.poly.vertices, 0, sizeof(Polygon));
+            }
+            if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z)){
+                if(hitboxEditor.poly.count != 0){
+                    hitboxEditor.poly.count--;
+                    hitboxEditor.poly.closed = false;
+                }
+            }
 
             break;
         }

@@ -1752,9 +1752,14 @@ int main()
 
             if (IsKeyPressed(KEY_ESCAPE))
             {
-                if (hitboxEditor.poly.closed)
+                if (hitboxEditor.poly.isClosed)
                 {
                     test = hitboxEditor.poly;
+                    for(int i = 0; i < graph.pinCount; i++){
+                        if(graph.pins[i].id == editor.hitboxEditingPinID){
+                            graph.pins[i].hitbox = hitboxEditor.poly;
+                        }
+                    }
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
                 else
@@ -1768,7 +1773,7 @@ int main()
             if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z)){
                 if(hitboxEditor.poly.count != 0){
                     hitboxEditor.poly.count--;
-                    hitboxEditor.poly.closed = false;
+                    hitboxEditor.poly.isClosed = false;
                 }
             }
 

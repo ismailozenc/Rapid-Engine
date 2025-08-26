@@ -14,7 +14,7 @@
 typedef struct {
     Vector2 vertices[MAX_HITBOX_VERTICES];
     int count;
-    bool closed;
+    bool isClosed;
 } Polygon;
 
 extern const char *InputsByNodeTypes[][5];
@@ -43,9 +43,13 @@ typedef struct Pin
     int posInNode;
     bool isInput;
     Vector2 position;
-    int pickedOption;
-    char textFieldValue[128];
     bool isFloat;
+
+    union{
+        int pickedOption;
+        char textFieldValue[128];
+        Polygon hitbox;
+    };
 } Pin;
 
 typedef struct Link

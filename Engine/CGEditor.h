@@ -77,6 +77,7 @@ typedef struct
 
     bool shouldOpenHitboxEditor;
     char hitboxEditorFileName[128];
+    int hitboxEditingPinID;
 } EditorContext;
 
 EditorContext InitEditorContext(void);

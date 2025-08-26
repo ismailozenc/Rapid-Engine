@@ -13,13 +13,13 @@ HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos)
     e.texture = tex;
     e.position = pos;
     e.poly.count = 0;
-    e.poly.closed = false;
+    e.poly.isClosed = false;
     return e;
 }
 
 void AddVertex(HitboxEditorContext *e, Vector2 v)
 {
-    if (e->poly.count < MAX_VERTICES && !e->poly.closed)
+    if (e->poly.count < MAX_VERTICES && !e->poly.isClosed)
     {
         e->poly.vertices[e->poly.count++] = v;
     }
@@ -34,7 +34,7 @@ static bool IsNear(Vector2 a, Vector2 b, float dist)
 
 void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
 {
-    if (e->poly.closed) return;
+    if (e->poly.isClosed) return;
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
@@ -51,7 +51,7 @@ void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
             };
             if (IsNear(mouseLocal, firstScreen, SNAP_DIST))
             {
-                e->poly.closed = true;
+                e->poly.isClosed = true;
                 return;
             }
         }
@@ -62,7 +62,7 @@ void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
 
 void DrawEditor(HitboxEditorContext *e, Vector2 mouseLocal)
 {
-    ClearBackground(BLACK);
+    ClearBackground((Color){80, 0, 90, 100});
 
     DrawTexture(
         e->texture,
@@ -89,7 +89,7 @@ void DrawEditor(HitboxEditorContext *e, Vector2 mouseLocal)
         }
     }
 
-    if (e->poly.closed && e->poly.count > 2)
+    if (e->poly.isClosed && e->poly.count > 2)
     {
         Vector2 first = {
             (e->position.x - e->texture.width/2) + e->poly.vertices[0].x,
@@ -128,7 +128,7 @@ Polygon CircleToPoly(Vector2 center, float radius, int sides)
 {
     Polygon poly = {0};
     poly.count = sides;
-    poly.closed = true;
+    poly.isClosed = true;
 
     for (int i = 0; i < sides; i++)
     {

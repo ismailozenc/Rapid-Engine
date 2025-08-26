@@ -490,7 +490,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             }
             interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[4]->valueIndex].number;
+            interpreter->components[interpreter->componentCount].sprite.layer = interpreter->values[node->inputPins[4]->valueIndex].number;
+            //interpreter->components[interpreter->componentCount].sprite.hitbox.type = HITBOX_POLY; // should support all types
+            //interpreter->components[interpreter->componentCount].sprite.hitbox.polygonHitbox = 
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             for (int j = 0; j < runtime.nodeCount; j++)
             {
@@ -789,9 +791,15 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
             interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = true;
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[4]->valueIndex].number - 360);
+            if(node->inputPins[2]->valueIndex != -1){
+                interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
+            }
+            if(node->inputPins[3]->valueIndex != -1){
+                interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
+            }
+            if(node->inputPins[4]->valueIndex != -1){
+                interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[4]->valueIndex].number - 360);
+            }
         }
         break;
     }

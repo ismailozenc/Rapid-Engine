@@ -12,6 +12,7 @@ typedef struct {
     Texture2D texture;
     Vector2 position;
     Polygon poly;
+    int draggingVerticeIndex;
 } HitboxEditorContext;
 
 HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos);

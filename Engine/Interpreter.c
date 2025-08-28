@@ -1170,8 +1170,13 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 rectPos, Vec
     for (int i = 0; i < poly->count; i++)
     {
         Vector2 p = {polyPos.x + poly->vertices[i].x, polyPos.y + poly->vertices[i].y};
-        if (CheckCollisionPointRec(p, rect))
+        if (CheckCollisionPointRec(p, rect)){
+            DrawCircle(p.x, p.y, 5, BLUE);
+            char str[32];
+            sprintf(str, "%d", i);
+            DrawText(str, p.x, p.y, 20, RED);
             return true;
+        }
     }
     return false;
 }

@@ -1689,6 +1689,9 @@ int main()
         {
             static HitboxEditorContext hitboxEditor = {0};
 
+            static float scaleX;
+            static float scaleY;
+
             if (hitboxEditor.texture.id == 0)
             {
                 char path[128];
@@ -1714,6 +1717,9 @@ int main()
                         newWidth = (int)((float)img.width * 500 / img.height);
                     }
 
+                    scaleX = (float)newWidth / (float)img.width;
+                    scaleY = (float)newHeight / (float)img.height;
+
                     ImageResize(&img, newWidth, newHeight);
 
                     Texture2D tex = LoadTextureFromImage(img);
@@ -1725,14 +1731,11 @@ int main()
 
                     hitboxEditor = InitHitboxEditor(tex, texPos);
 
-                    float scaleX = (float)hitboxEditor.texture.width / hitboxEditor.texture.width;
-                    float scaleY = (float)hitboxEditor.texture.height / hitboxEditor.texture.height;
-
                     for (int i = 0; i < hitboxEditor.poly.count; i++)
                     {
                         hitboxEditor.poly.vertices[i].x *= scaleX;
                         hitboxEditor.poly.vertices[i].y *= scaleY;
-                        
+
                         hitboxEditor.poly.vertices[i].x -= hitboxEditor.texture.width / 2.0f;
                         hitboxEditor.poly.vertices[i].y -= hitboxEditor.texture.height / 2.0f;
                     }
@@ -1754,9 +1757,15 @@ int main()
             {
                 if (hitboxEditor.poly.isClosed)
                 {
+                    for(int i = 0; i < hitboxEditor.poly.count; i++){
+                        hitboxEditor.poly.vertices[i].x /= scaleX;
+                        hitboxEditor.poly.vertices[i].y /= scaleY;
+                    }
                     test = hitboxEditor.poly;
-                    for(int i = 0; i < graph.pinCount; i++){
-                        if(graph.pins[i].id == editor.hitboxEditingPinID){
+                    for (int i = 0; i < graph.pinCount; i++)
+                    {
+                        if (graph.pins[i].id == editor.hitboxEditingPinID)
+                        {
                             graph.pins[i].hitbox = hitboxEditor.poly;
                         }
                     }
@@ -1767,11 +1776,14 @@ int main()
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
             }
-            if(IsKeyPressed(KEY_R)){
+            if (IsKeyPressed(KEY_R))
+            {
                 memset(hitboxEditor.poly.vertices, 0, sizeof(Polygon));
             }
-            if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z)){
-                if(hitboxEditor.poly.count != 0){
+            if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
+            {
+                if (hitboxEditor.poly.count != 0)
+                {
                     hitboxEditor.poly.count--;
                     hitboxEditor.poly.isClosed = false;
                 }

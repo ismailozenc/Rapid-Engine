@@ -1132,45 +1132,76 @@ void HandleForces(InterpreterContext *interpreter)
     }
 }
 
-bool CheckCollisionPolyPoly(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset)
+bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTexSize,
+                            Polygon *b, Vector2 bPos, Vector2 bSize, Vector2 bTexSize)
 {
+    float scaleAX = aSize.x / aTexSize.x;
+    float scaleAY = aSize.y / aTexSize.y;
+    float scaleBX = bSize.x / bTexSize.x;
+    float scaleBY = bSize.y / bTexSize.y;
+
     for (int i = 0; i < a->count; i++)
     {
-        Vector2 a1 = {a->vertices[i].x + aOffset.x, a->vertices[i].y + aOffset.y};
-        Vector2 a2 = {a->vertices[(i + 1) % a->count].x + aOffset.x, a->vertices[(i + 1) % a->count].y + aOffset.y};
+        Vector2 a1 = {aPos.x + a->vertices[i].x * scaleAX,
+                      aPos.y + a->vertices[i].y * scaleAY};
+        Vector2 a2 = {aPos.x + a->vertices[(i + 1) % a->count].x * scaleAX,
+                      aPos.y + a->vertices[(i + 1) % a->count].y * scaleAY};
 
         for (int j = 0; j < b->count; j++)
         {
-            Vector2 b1 = {b->vertices[j].x + bOffset.x, b->vertices[j].y + bOffset.y};
-            Vector2 b2 = {b->vertices[(j + 1) % b->count].x + bOffset.x, b->vertices[(j + 1) % b->count].y + bOffset.y};
+            Vector2 b1 = {bPos.x + b->vertices[j].x * scaleBX,
+                          bPos.y + b->vertices[j].y * scaleBY};
+            Vector2 b2 = {bPos.x + b->vertices[(j + 1) % b->count].x * scaleBX,
+                          bPos.y + b->vertices[(j + 1) % b->count].y * scaleBY};
 
             if (CheckCollisionLines(a1, a2, b1, b2, NULL))
+            {
+                DrawCircle(a1.x, a1.y, 5, BLUE);
+                char str[32];
+                sprintf(str, "%d", i);
+                DrawText(str, a1.x, a1.y, 20, RED);
                 return true;
+            }
         }
     }
     return false;
 }
 
-bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 circlePos, float circleRadius)
+bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 polySize, Vector2 polyTexSize,
+                              Vector2 circlePos, float circleRadius)
 {
-    Rectangle bounds = {polyPos.x, polyPos.y, 0, 0};
+    float scaleX = polySize.x / polyTexSize.x;
+    float scaleY = polySize.y / polyTexSize.y;
+
     for (int i = 0; i < poly->count; i++)
     {
-        if (poly->vertices[i].x > bounds.width)
-            bounds.width = poly->vertices[i].x;
-        if (poly->vertices[i].y > bounds.height)
-            bounds.height = poly->vertices[i].y;
+        Vector2 p = {polyPos.x + poly->vertices[i].x * scaleX,
+                     polyPos.y + poly->vertices[i].y * scaleY};
+        if (CheckCollisionPointCircle(p, circlePos, circleRadius))
+        {
+            DrawCircle(p.x, p.y, 5, BLUE);
+            char str[32];
+            sprintf(str, "%d", i);
+            DrawText(str, p.x, p.y, 20, RED);
+            return true;
+        }
     }
-    return CheckCollisionCircleRec(circlePos, circleRadius, bounds);
+    return false;
 }
 
-bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 rectPos, Vector2 rectSize)
+bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Vector2 polyTexSize,
+                            Vector2 rectPos, Vector2 rectSize)
 {
+    float scaleX = polySize.x / polyTexSize.x;
+    float scaleY = polySize.y / polyTexSize.y;
     Rectangle rect = {rectPos.x, rectPos.y, rectSize.x, rectSize.y};
+
     for (int i = 0; i < poly->count; i++)
     {
-        Vector2 p = {polyPos.x + poly->vertices[i].x, polyPos.y + poly->vertices[i].y};
-        if (CheckCollisionPointRec(p, rect)){
+        Vector2 p = {polyPos.x + poly->vertices[i].x * scaleX,
+                     polyPos.y + poly->vertices[i].y * scaleY};
+        if (CheckCollisionPointRec(p, rect))
+        {
             DrawCircle(p.x, p.y, 5, BLUE);
             char str[32];
             sprintf(str, "%d", i);
@@ -1188,66 +1219,86 @@ void CheckCollisions(InterpreterContext *interpreter)
         SceneComponent *a = &interpreter->components[i];
         Hitbox *hitA = a->isSprite ? &a->sprite.hitbox : &a->prop.hitbox;
         Vector2 posA = a->isSprite ? a->sprite.position : a->prop.position;
+        Vector2 sizeA = a->isSprite ? (Vector2){a->sprite.width, a->sprite.height} : (Vector2){a->prop.width, a->prop.height};
+        Vector2 texA  = a->isSprite ? (Vector2){a->sprite.texture.width, a->sprite.texture.height} : (Vector2){a->prop.texture.width, a->prop.texture.height};
 
         for (int j = i + 1; j < interpreter->componentCount; j++)
         {
             SceneComponent *b = &interpreter->components[j];
             Hitbox *hitB = b->isSprite ? &b->sprite.hitbox : &b->prop.hitbox;
             Vector2 posB = b->isSprite ? b->sprite.position : b->prop.position;
+            Vector2 sizeB = b->isSprite ? (Vector2){b->sprite.width, b->sprite.height} : (Vector2){b->prop.width, b->prop.height};
+            Vector2 texB  = b->isSprite ? (Vector2){b->sprite.texture.width, b->sprite.texture.height} : (Vector2){b->prop.texture.width, b->prop.texture.height};
 
             bool collided = false;
 
             if (hitA->type == HITBOX_RECT && hitB->type == HITBOX_RECT)
             {
                 Rectangle rA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y,
-                                hitA->rectHitboxSize.x, hitA->rectHitboxSize.y};
+                                hitA->rectHitboxSize.x * (sizeA.x / texA.x),
+                                hitA->rectHitboxSize.y * (sizeA.y / texA.y)};
                 Rectangle rB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y,
-                                hitB->rectHitboxSize.x, hitB->rectHitboxSize.y};
+                                hitB->rectHitboxSize.x * (sizeB.x / texB.x),
+                                hitB->rectHitboxSize.y * (sizeB.y / texB.y)};
                 collided = CheckCollisionRecs(rA, rB);
             }
             else if (hitA->type == HITBOX_CIRCLE && hitB->type == HITBOX_CIRCLE)
             {
-                Vector2 cA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y};
-                Vector2 cB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y};
-                collided = CheckCollisionCircles(cA, hitA->circleHitboxRadius, cB, hitB->circleHitboxRadius);
+                Vector2 cA = {posA.x + hitA->offset.x * (sizeA.x / texA.x),
+                              posA.y + hitA->offset.y * (sizeA.y / texA.y)};
+                Vector2 cB = {posB.x + hitB->offset.x * (sizeB.x / texB.x),
+                              posB.y + hitB->offset.y * (sizeB.y / texB.y)};
+                collided = CheckCollisionCircles(cA, hitA->circleHitboxRadius * ((sizeA.x/texA.x + sizeA.y/texA.y)/2),
+                                                 cB, hitB->circleHitboxRadius * ((sizeB.x/texB.x + sizeB.y/texB.y)/2));
             }
             else if (hitA->type == HITBOX_POLY && hitB->type == HITBOX_POLY)
             {
-                collided = CheckCollisionPolyPoly(&hitA->polygonHitbox, posA, &hitB->polygonHitbox, posB);
+                collided = CheckCollisionPolyPoly(&hitA->polygonHitbox, posA, sizeA, texA,
+                                                  &hitB->polygonHitbox, posB, sizeB, texB);
             }
             else if (hitA->type == HITBOX_RECT && hitB->type == HITBOX_CIRCLE)
             {
                 Rectangle rA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y,
-                                hitA->rectHitboxSize.x, hitA->rectHitboxSize.y};
-                Vector2 cB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y};
-                collided = CheckCollisionCircleRec(cB, hitB->circleHitboxRadius, rA);
+                                hitA->rectHitboxSize.x * (sizeA.x / texA.x),
+                                hitA->rectHitboxSize.y * (sizeA.y / texA.y)};
+                Vector2 cB = {posB.x + hitB->offset.x * (sizeB.x / texB.x),
+                              posB.y + hitB->offset.y * (sizeB.y / texB.y)};
+                collided = CheckCollisionCircleRec(cB,
+                    hitB->circleHitboxRadius * ((sizeB.x/texB.x + sizeB.y/texB.y)/2), rA);
             }
             else if (hitA->type == HITBOX_CIRCLE && hitB->type == HITBOX_RECT)
             {
                 Rectangle rB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y,
-                                hitB->rectHitboxSize.x, hitB->rectHitboxSize.y};
-                Vector2 cA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y};
-                collided = CheckCollisionCircleRec(cA, hitA->circleHitboxRadius, rB);
+                                hitB->rectHitboxSize.x * (sizeB.x / texB.x),
+                                hitB->rectHitboxSize.y * (sizeB.y / texB.y)};
+                Vector2 cA = {posA.x + hitA->offset.x * (sizeA.x / texA.x),
+                              posA.y + hitA->offset.y * (sizeA.y / texA.y)};
+                collided = CheckCollisionCircleRec(cA,
+                    hitA->circleHitboxRadius * ((sizeA.x/texA.x + sizeA.y/texA.y)/2), rB);
             }
             else if (hitA->type == HITBOX_POLY && hitB->type == HITBOX_CIRCLE)
             {
-                Vector2 cB = {posB.x + hitB->offset.x, posB.y + hitB->offset.y};
-                collided = CheckCollisionPolyCircle(&hitA->polygonHitbox, posA, cB, hitB->circleHitboxRadius);
+                Vector2 cB = {posB.x + hitB->offset.x * (sizeB.x / texB.x),
+                              posB.y + hitB->offset.y * (sizeB.y / texB.y)};
+                collided = CheckCollisionPolyCircle(&hitA->polygonHitbox, posA, sizeA, texA,
+                                                    cB, hitB->circleHitboxRadius * ((sizeB.x/texB.x + sizeB.y/texB.y)/2));
             }
             else if (hitA->type == HITBOX_CIRCLE && hitB->type == HITBOX_POLY)
             {
-                Vector2 cA = {posA.x + hitA->offset.x, posA.y + hitA->offset.y};
-                collided = CheckCollisionPolyCircle(&hitB->polygonHitbox, posB, cA, hitA->circleHitboxRadius);
+                Vector2 cA = {posA.x + hitA->offset.x * (sizeA.x / texA.x),
+                              posA.y + hitA->offset.y * (sizeA.y / texA.y)};
+                collided = CheckCollisionPolyCircle(&hitB->polygonHitbox, posB, sizeB, texB,
+                                                    cA, hitA->circleHitboxRadius * ((sizeA.x/texA.x + sizeA.y/texA.y)/2));
             }
             else if (hitA->type == HITBOX_POLY && hitB->type == HITBOX_RECT)
             {
-                Vector2 rectSize = hitB->rectHitboxSize;
-                collided = CheckCollisionPolyRect(&hitA->polygonHitbox, posA, posB, rectSize);
+                collided = CheckCollisionPolyRect(&hitA->polygonHitbox, posA, sizeA, texA,
+                                                  posB, hitB->rectHitboxSize);
             }
             else if (hitA->type == HITBOX_RECT && hitB->type == HITBOX_POLY)
             {
-                Vector2 rectSize = hitA->rectHitboxSize;
-                collided = CheckCollisionPolyRect(&hitB->polygonHitbox, posB, posA, rectSize);
+                collided = CheckCollisionPolyRect(&hitB->polygonHitbox, posB, sizeB, texB,
+                                                  posA, hitA->rectHitboxSize);
             }
 
             if (collided)

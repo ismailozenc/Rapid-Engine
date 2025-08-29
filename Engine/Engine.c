@@ -1653,18 +1653,8 @@ int main()
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            for (int i = 0; i < interpreter.componentCount; i++)
-            {
-                if (interpreter.components[i].isSprite)
-                {
-                    interpreter.components[i].sprite.hitbox.type = HITBOX_POLY;
-                    memcpy(interpreter.components[i].sprite.hitbox.polygonHitbox.vertices, test.vertices, sizeof(Vector2) * MAX_HITBOX_VERTICES);
-                    interpreter.components[i].sprite.hitbox.polygonHitbox.count = test.count;
-                }
-            }
-
             engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureMouseX, textureMouseY}, viewportBoundaryTranslated);
-
+            
             if (!engine.isGameRunning)
             {
                 engine.viewportMode = VIEWPORT_CG_EDITOR;

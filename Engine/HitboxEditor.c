@@ -33,10 +33,6 @@ void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
         if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON))
         {
             e->draggingVerticeIndex = -1;
-            for (int i = 0; i < e->poly.count; i++)
-            {
-                printf("V%d: %f %f\n", i, e->poly.vertices[i].x, e->poly.vertices[i].y);
-            }
             return;
         }
 
@@ -158,20 +154,4 @@ void DrawEditor(HitboxEditorContext *e, Vector2 mouseLocal)
             }
         }
     }
-}
-
-Polygon CircleToPoly(Vector2 center, float radius, int sides)
-{
-    Polygon poly = {0};
-    poly.count = sides;
-    poly.isClosed = true;
-
-    for (int i = 0; i < sides; i++)
-    {
-        float angle = (2 * PI * i) / sides;
-        poly.vertices[i].x = center.x + cosf(angle) * radius;
-        poly.vertices[i].y = center.y + sinf(angle) * radius;
-    }
-
-    return poly;
 }

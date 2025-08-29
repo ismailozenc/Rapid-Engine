@@ -491,8 +491,13 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[node->inputPins[1]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[node->inputPins[2]->valueIndex].number;
             interpreter->components[interpreter->componentCount].sprite.layer = interpreter->values[node->inputPins[4]->valueIndex].number;
-            //interpreter->components[interpreter->componentCount].sprite.hitbox.type = HITBOX_POLY; // should support all types
-            //interpreter->components[interpreter->componentCount].sprite.hitbox.polygonHitbox = 
+
+            interpreter->components[interpreter->componentCount].sprite.hitbox.type = HITBOX_POLY; // should support all types
+            for(int j = 0; j < graph->pinCount; j++){
+                if(graph->pins[j].id == graph->nodes[i].inputPins[5]){
+                    interpreter->components[interpreter->componentCount].sprite.hitbox.polygonHitbox = graph->pins[j].hitbox;
+                }
+            }
             node->outputPins[1]->componentIndex = interpreter->componentCount;
             for (int j = 0; j < runtime.nodeCount; j++)
             {
@@ -780,9 +785,12 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         {
             sprite->layer = interpreter->values[node->inputPins[4]->valueIndex].number;
         }
-        Texture2D temp = interpreter->components[node->outputPins[1]->componentIndex].sprite.texture;
+        Texture2D tempTex = interpreter->components[node->outputPins[1]->componentIndex].sprite.texture;
+        Polygon tempHitbox = interpreter->components[node->outputPins[1]->componentIndex].sprite.hitbox.polygonHitbox;
         interpreter->components[node->outputPins[1]->componentIndex].sprite = *sprite;
-        interpreter->components[node->outputPins[1]->componentIndex].sprite.texture = temp;
+        interpreter->components[node->outputPins[1]->componentIndex].sprite.texture = tempTex;
+        interpreter->components[node->outputPins[1]->componentIndex].sprite.hitbox.type = HITBOX_POLY;
+        interpreter->components[node->outputPins[1]->componentIndex].sprite.hitbox.polygonHitbox = tempHitbox;
         break;
     }
 
@@ -1132,8 +1140,7 @@ void HandleForces(InterpreterContext *interpreter)
     }
 }
 
-bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTexSize,
-                            Polygon *b, Vector2 bPos, Vector2 bSize, Vector2 bTexSize)
+bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTexSize, Polygon *b, Vector2 bPos, Vector2 bSize, Vector2 bTexSize)
 {
     float scaleAX = aSize.x / aTexSize.x;
     float scaleAY = aSize.y / aTexSize.y;
@@ -1156,10 +1163,10 @@ bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTe
 
             if (CheckCollisionLines(a1, a2, b1, b2, NULL))
             {
-                DrawCircle(a1.x, a1.y, 5, BLUE);
-                char str[32];
-                sprintf(str, "%d", i);
-                DrawText(str, a1.x, a1.y, 20, RED);
+                DrawCircle(a1.x, a1.y, 5, BLUE); //test
+                char str[32]; //test
+                sprintf(str, "%d", i); //test
+                DrawText(str, a1.x, a1.y, 20, RED); //test
                 return true;
             }
         }
@@ -1179,10 +1186,10 @@ bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 polySize, 
                      polyPos.y + poly->vertices[i].y * scaleY};
         if (CheckCollisionPointCircle(p, circlePos, circleRadius))
         {
-            DrawCircle(p.x, p.y, 5, BLUE);
-            char str[32];
-            sprintf(str, "%d", i);
-            DrawText(str, p.x, p.y, 20, RED);
+            DrawCircle(p.x, p.y, 5, BLUE); //test
+            char str[32]; //test
+            sprintf(str, "%d", i); //test
+            DrawText(str, p.x, p.y, 20, RED); //test
             return true;
         }
     }
@@ -1202,10 +1209,10 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
                      polyPos.y + poly->vertices[i].y * scaleY};
         if (CheckCollisionPointRec(p, rect))
         {
-            DrawCircle(p.x, p.y, 5, BLUE);
-            char str[32];
-            sprintf(str, "%d", i);
-            DrawText(str, p.x, p.y, 20, RED);
+            DrawCircle(p.x, p.y, 5, BLUE); //test
+            char str[32]; //test
+            sprintf(str, "%d", i); //test
+            DrawText(str, p.x, p.y, 20, RED); //test
             return true;
         }
     }
@@ -1312,6 +1319,7 @@ void CheckCollisions(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
 {
+
     UpdateSpecialValues(interpreter, mousePos, screenBoundary);
 
     if (interpreter->isFirstFrame)
@@ -1343,6 +1351,8 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     {
         interpreter->newLogMessage = false;
     }
+
+    //printf("%d\n", interpreter->components[8].sprite.hitbox.polygonHitbox.count);
 
     for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)
     {
@@ -1391,6 +1401,7 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     {
         if (interpreter->values[i].type == VAL_SPRITE)
         {
+            printf("%d\n", interpreter->components[interpreter->values[i].componentIndex].sprite.hitbox.polygonHitbox.count);
             interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }

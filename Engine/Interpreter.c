@@ -1152,10 +1152,10 @@ bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTe
 
             if (CheckCollisionLines(a1, a2, b1, b2, NULL))
             {
-                DrawCircle(a1.x, a1.y, 5, BLUE);    // test
-                char str[32];                       // test
-                sprintf(str, "%d", i);              // test
-                DrawText(str, a1.x, a1.y, 20, RED); // test
+                // DrawCircle(a1.x, a1.y, 5, BLUE);    // test
+                // char str[32];                       // test
+                // sprintf(str, "%d", i);              // test
+                // DrawText(str, a1.x, a1.y, 20, RED); // test
                 return true;
             }
         }
@@ -1175,10 +1175,10 @@ bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 polySize, 
                      polyPos.y + poly->vertices[i].y * scaleY};
         if (CheckCollisionPointCircle(p, circlePos, circleRadius))
         {
-            DrawCircle(p.x, p.y, 5, BLUE);    // test
-            char str[32];                     // test
-            sprintf(str, "%d", i);            // test
-            DrawText(str, p.x, p.y, 20, RED); // test
+            //DrawCircle(p.x, p.y, 5, BLUE);    // test
+            //char str[32];                     // test
+            //sprintf(str, "%d", i);            // test
+            //DrawText(str, p.x, p.y, 20, RED); // test
             return true;
         }
     }
@@ -1198,10 +1198,10 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
                      polyPos.y + poly->vertices[i].y * scaleY};
         if (CheckCollisionPointRec(p, rect))
         {
-            DrawCircle(p.x, p.y, 5, BLUE);    // test
-            char str[32];                     // test
-            sprintf(str, "%d", i);            // test
-            DrawText(str, p.x, p.y, 20, RED); // test
+            // DrawCircle(p.x, p.y, 5, BLUE);    // test
+            // char str[32];                     // test
+            // sprintf(str, "%d", i);            // test
+            // DrawText(str, p.x, p.y, 20, RED); // test
             return true;
         }
     }
@@ -1219,7 +1219,7 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
     Hitbox *hitA = a->isSprite ? &a->sprite.hitbox : &a->prop.hitbox;
     Vector2 posA = a->isSprite ? a->sprite.position : a->prop.position;
     Vector2 sizeA = a->isSprite ? (Vector2){a->sprite.width, a->sprite.height} : (Vector2){a->prop.width, a->prop.height};
-    Vector2 texA  = a->isSprite ? (Vector2){a->sprite.texture.width, a->sprite.texture.height} : (Vector2){a->prop.texture.width, a->prop.texture.height};
+    Vector2 texA = a->isSprite ? (Vector2){a->sprite.texture.width, a->sprite.texture.height} : (Vector2){a->prop.texture.width, a->prop.texture.height};
 
     for (int j = 0; j < interpreter->componentCount; j++)
     {
@@ -1235,7 +1235,7 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
         Hitbox *hitB = b->isSprite ? &b->sprite.hitbox : &b->prop.hitbox;
         Vector2 posB = b->isSprite ? b->sprite.position : b->prop.position;
         Vector2 sizeB = b->isSprite ? (Vector2){b->sprite.width, b->sprite.height} : (Vector2){b->prop.width, b->prop.height};
-        Vector2 texB  = b->isSprite ? (Vector2){b->sprite.texture.width, b->sprite.texture.height} : (Vector2){b->prop.texture.width, b->prop.texture.height};
+        Vector2 texB = b->isSprite ? (Vector2){b->sprite.texture.width, b->sprite.texture.height} : (Vector2){b->prop.texture.width, b->prop.texture.height};
 
         bool collided = false;
 
@@ -1310,7 +1310,6 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
 
         if (collided)
         {
-            DrawRectangle(2060, 1582, 100, 100, RED); // test
             return true;
         }
     }
@@ -1432,11 +1431,6 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
             interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }
-    }
-
-    for (int i = 0; i < interpreter->componentCount; i++)
-    {
-        CheckCollisions(interpreter, i);
     }
 
     return true;

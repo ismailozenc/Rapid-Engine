@@ -389,9 +389,11 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
 
     static SettingsMode settingsMode = SETTINGS_MODE_ENGINE;
 
-    DrawRectangleRounded((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 250});
+    DrawRectangleRounded((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 255});
     DrawRectangleRoundedLines((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, WHITE);
 
+
+    static bool skipClickOnFirstFrame = true;
     DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 140}, (Vector2){engine->screenWidth * 3 / 4 - 30, 160}, 3, WHITE);
     DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 160}, (Vector2){engine->screenWidth * 3 / 4 - 30, 140}, 3, WHITE);
     if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){engine->screenWidth * 3 / 4 - 50, 140, 20, 20}))
@@ -399,6 +401,16 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
+            skipClickOnFirstFrame = true;
+            return false;
+        }
+    }
+    if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200})){
+        if(skipClickOnFirstFrame){
+            skipClickOnFirstFrame = false;
+        }
+        else{
+            skipClickOnFirstFrame = true;
             return false;
         }
     }
@@ -463,6 +475,9 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
     case SETTINGS_MODE_GAME:
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &interpreter->isInfiniteLoopProtectionOn, engine->mousePos);
+
+        DrawTextEx(engine->font, "Draw Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
+        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &interpreter->shouldDrawHitboxes, engine->mousePos);
     }
 
     return true;

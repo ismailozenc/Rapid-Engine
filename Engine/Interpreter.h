@@ -194,6 +194,8 @@ typedef struct
     bool isInfiniteLoopProtectionOn;
 
     bool buildFailed;
+
+    bool shouldDrawHitboxes;
 } InterpreterContext;
 
 typedef enum{

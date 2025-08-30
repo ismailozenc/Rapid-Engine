@@ -1352,8 +1352,6 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
         interpreter->newLogMessage = false;
     }
 
-    //printf("%d\n", interpreter->components[8].sprite.hitbox.polygonHitbox.count);
-
     for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)
     {
         int nodeIndex = interpreter->onButtonNodeIndexes[i];
@@ -1401,7 +1399,6 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
     {
         if (interpreter->values[i].type == VAL_SPRITE)
         {
-            printf("%d\n", interpreter->components[interpreter->values[i].componentIndex].sprite.hitbox.polygonHitbox.count);
             interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
             interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
         }

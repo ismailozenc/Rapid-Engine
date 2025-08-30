@@ -26,6 +26,7 @@ typedef enum
     UI_ACTION_REFRESH_FILES,
     UI_ACTION_CLOSE_WINDOW,
     UI_ACTION_MINIMIZE_WINDOW,
+    UI_ACTION_OPEN_SETTINGS,
     UI_ACTION_RESIZE_BOTTOM_BAR,
     UI_ACTION_RESIZE_SIDE_BAR,
     UI_ACTION_RESIZE_SIDE_BAR_MIDDLE,
@@ -133,7 +134,7 @@ typedef struct EngineContext
     int viewportHeight;
     Vector2 mousePos;
     RenderTexture2D viewport, UI;
-    Texture2D resizeButton, viewportFullscreenButton;
+    Texture2D resizeButton, viewportFullscreenButton, settingsGear;
     char *currentPath;
     char *projectPath;
     char *CGFilePath;
@@ -156,6 +157,7 @@ typedef struct EngineContext
     float editorZoom;
     bool wasBuilt;
     int showSaveWarning;
+    bool showSettingsMenu;
     bool isGameFullscreen;
     VarFilter varsFilter;
     bool isSaveButtonHovered;
@@ -169,3 +171,11 @@ typedef enum
     FILE_IMAGE,
     FILE_OTHER
 }FileType;
+
+typedef enum
+{
+    SETTINGS_MODE_ENGINE,
+    SETTINGS_MODE_GAME,
+    SETTINGS_MODE_KEYBINDS,
+    SETTINGS_MODE_EXPORT
+}SettingsMode;

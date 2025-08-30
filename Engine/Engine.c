@@ -48,6 +48,7 @@ EngineContext InitEngineContext()
     engine.UI = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
     engine.resizeButton = LoadTexture("textures//resize_btn.png");
     engine.viewportFullscreenButton = LoadTexture("textures//viewport_fullscreen.png");
+    engine.settingsGear = LoadTexture("textures//settings_gear.png");
     if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
@@ -83,6 +84,7 @@ EngineContext InitEngineContext()
     engine.wasBuilt = false;
 
     engine.showSaveWarning = 0;
+    engine.showSettingsMenu = false;
 
     engine.varsFilter = 0;
 
@@ -122,6 +124,7 @@ void FreeEngineContext(EngineContext *engine)
     UnloadRenderTexture(engine->UI);
     UnloadTexture(engine->resizeButton);
     UnloadTexture(engine->viewportFullscreenButton);
+    UnloadTexture(engine->settingsGear);
 
     UnloadFont(engine->font);
 
@@ -352,6 +355,110 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
     return 1;
 }
 
+void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
+{
+    if (CheckCollisionPointRec(mousePos, (Rectangle){pos.x, pos.y, 40, 25}))
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            *value = !*value;
+        }
+    }
+
+    if (*value)
+    {
+        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GREEN);
+        DrawCircle(pos.x + 28, pos.y + 12, 10, WHITE);
+    }
+    else
+    {
+        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GRAY);
+        DrawCircle(pos.x + 12, pos.y + 12, 10, WHITE);
+    }
+}
+
+bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
+{
+
+    static SettingsMode settingsMode = SETTINGS_MODE_ENGINE;
+
+    DrawRectangleRounded((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 250});
+    DrawRectangleRoundedLines((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, WHITE);
+
+    DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 140}, (Vector2){engine->screenWidth * 3 / 4 - 30, 160}, 3, WHITE);
+    DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 160}, (Vector2){engine->screenWidth * 3 / 4 - 30, 140}, 3, WHITE);
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){engine->screenWidth * 3 / 4 - 50, 140, 20, 20}))
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            return false;
+        }
+    }
+
+    DrawTextEx(engine->font, "Settings", (Vector2){engine->screenWidth / 2 - MeasureTextEx(engine->font, "Settings", 50, 1).x / 2, 130}, 50, 1, WHITE);
+
+    DrawTextEx(engine->font, "Engine", (Vector2){engine->screenWidth / 4 + 30, 300}, 30, 1, settingsMode == SETTINGS_MODE_ENGINE ? WHITE : GRAY);
+
+    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 290, MeasureTextEx(engine->font, "Engine", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_ENGINE)
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            settingsMode = SETTINGS_MODE_ENGINE;
+        }
+    }
+
+    DrawTextEx(engine->font, "Game", (Vector2){engine->screenWidth / 4 + 30, 350}, 30, 1, settingsMode == SETTINGS_MODE_GAME ? WHITE : GRAY);
+
+    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 340, MeasureTextEx(engine->font, "Game", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_GAME)
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            settingsMode = SETTINGS_MODE_GAME;
+        }
+    }
+
+    DrawTextEx(engine->font, "Keybinds", (Vector2){engine->screenWidth / 4 + 30, 400}, 30, 1, settingsMode == SETTINGS_MODE_KEYBINDS ? WHITE : GRAY);
+
+    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 390, MeasureTextEx(engine->font, "Keybinds", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_KEYBINDS)
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            settingsMode = SETTINGS_MODE_KEYBINDS;
+        }
+    }
+
+    DrawTextEx(engine->font, "Export", (Vector2){engine->screenWidth / 4 + 30, 450}, 30, 1, settingsMode == SETTINGS_MODE_EXPORT ? WHITE : GRAY);
+
+    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 440, MeasureTextEx(engine->font, "Export", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_EXPORT)
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            settingsMode = SETTINGS_MODE_EXPORT;
+        }
+    }
+
+    DrawRectangleGradientV(engine->screenWidth / 4 + 180, 300, 2, engine->screenHeight - 400, (Color){100, 100, 100, 255}, (Color){30, 30, 30, 255});
+
+    switch (settingsMode)
+    {
+    case SETTINGS_MODE_ENGINE:
+        DrawTextEx(engine->font, "Sound", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
+        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &engine->isSoundOn, engine->mousePos);
+        break;
+    case SETTINGS_MODE_GAME:
+        DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
+        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &interpreter->isInfiniteLoopProtectionOn, engine->mousePos);
+    }
+
+    return true;
+}
+
 void CountingSortByLayer(EngineContext *engine)
 {
     int **elements = malloc(MAX_LAYER_COUNT * sizeof(int *));
@@ -510,6 +617,13 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 MinimizeWindow();
             }
+            break;
+        case UI_ACTION_OPEN_SETTINGS:
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                engine->showSettingsMenu = true;
+            }
+            engine->isViewportFocused = false;
             break;
         case UI_ACTION_RESIZE_BOTTOM_BAR:
             engine->isViewportFocused = false;
@@ -1171,6 +1285,14 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
                          });
+    AddUIElement(engine, (UIElement){
+                             .name = "TopBarSettings",
+                             .shape = UIRectangle,
+                             .type = UI_ACTION_OPEN_SETTINGS,
+                             .rect = {.pos = {engine->screenWidth - 150, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
+                             .color = (Color){0, 0, 0, 0},
+                             .layer = 1,
+                         });
 
     AddUIElement(engine, (UIElement){
                              .name = "BottomBarResizeButton",
@@ -1220,6 +1342,11 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     DrawLineEx((Vector2){engine->screenWidth - 35, 35}, (Vector2){engine->screenWidth - 15, 15}, 2, WHITE);
 
     DrawLineEx((Vector2){engine->screenWidth - 85, 25}, (Vector2){engine->screenWidth - 65, 25}, 2, WHITE);
+
+    Rectangle src = {0, 0, engine->settingsGear.width, engine->settingsGear.height};
+    Rectangle dst = {engine->screenWidth - 135, 10, 30, 30};
+    Vector2 origin = {0, 0};
+    DrawTexturePro(engine->settingsGear, src, dst, origin, 0.0f, WHITE);
 
     DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
     DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
@@ -1541,7 +1668,7 @@ int main()
 
         if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph) && !engine.isGameFullscreen)
         {
-            if (((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && engine.showSaveWarning != 1) || engine.delayFrames)
+            if (((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && engine.showSaveWarning != 1 && engine.showSettingsMenu == false) || engine.delayFrames)
             {
                 BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
                 engine.fps = 140;
@@ -1606,9 +1733,7 @@ int main()
         BeginDrawing();
         ClearBackground(BLACK);
 
-        Polygon test;
-
-        if (engine.showSaveWarning == 1)
+        if (engine.showSaveWarning == 1 || engine.showSettingsMenu)
         {
             engine.isViewportFocused = false;
         }
@@ -1654,7 +1779,7 @@ int main()
             ClearBackground(BLACK);
 
             engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureMouseX, textureMouseY}, viewportBoundaryTranslated);
-            
+
             if (!engine.isGameRunning)
             {
                 engine.viewportMode = VIEWPORT_CG_EDITOR;
@@ -1721,13 +1846,18 @@ int main()
 
                     hitboxEditor = InitHitboxEditor(tex, texPos);
 
+                    for (int i = 0; i < graph.pinCount; i++)
+                    {
+                        if (graph.pins[i].id == editor.hitboxEditingPinID)
+                        {
+                            hitboxEditor.poly = graph.pins[i].hitbox;
+                        }
+                    }
+
                     for (int i = 0; i < hitboxEditor.poly.count; i++)
                     {
                         hitboxEditor.poly.vertices[i].x *= scaleX;
                         hitboxEditor.poly.vertices[i].y *= scaleY;
-
-                        hitboxEditor.poly.vertices[i].x -= hitboxEditor.texture.width / 2.0f;
-                        hitboxEditor.poly.vertices[i].y -= hitboxEditor.texture.height / 2.0f;
                     }
                 }
             }
@@ -1747,11 +1877,11 @@ int main()
             {
                 if (hitboxEditor.poly.isClosed)
                 {
-                    for(int i = 0; i < hitboxEditor.poly.count; i++){
+                    for (int i = 0; i < hitboxEditor.poly.count; i++)
+                    {
                         hitboxEditor.poly.vertices[i].x /= scaleX;
                         hitboxEditor.poly.vertices[i].y /= scaleY;
                     }
-                    test = hitboxEditor.poly;
                     for (int i = 0; i < graph.pinCount; i++)
                     {
                         if (graph.pins[i].id == editor.hitboxEditingPinID)
@@ -1759,6 +1889,8 @@ int main()
                             graph.pins[i].hitbox = hitboxEditor.poly;
                         }
                     }
+                    UnloadTexture(hitboxEditor.texture);
+                    hitboxEditor.texture.id = 0;
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
                 else
@@ -1846,6 +1978,10 @@ int main()
                 CloseWindow();
                 break;
             }
+        }
+        else if (engine.showSettingsMenu)
+        {
+            engine.showSettingsMenu = DrawSettingsMenu(&engine, &interpreter);
         }
 
         EndDrawing();

@@ -32,7 +32,7 @@ EditorContext InitEditorContext()
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
-    editor.gearTxt = LoadTexture("textures//gear.png");
+    editor.gearTxt = LoadTexture("textures//node_gear.png");
     if (editor.gearTxt.id == 0)
     {
         // Error
@@ -802,7 +802,12 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         if (getIsEditableByType(graph->nodes[i].type))
         {
             Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18 - fullRadius / 5, graph->nodes[i].position.y + 5 + fullRadius / 5, 16, 16};
-            DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
+            //DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
+
+            Rectangle src = {0, 0, editor->gearTxt.width, editor->gearTxt.height};
+            Rectangle dst = {gearRect.x, gearRect.y, 15, 15};
+            Vector2 origin = {0, 0};
+            DrawTexturePro(editor->gearTxt, src, dst, origin, 0.0f, WHITE);
 
             if (CheckCollisionPointRec(editor->mousePos, gearRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
@@ -909,10 +914,14 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                                     {
                                         if (graph->links[k].inputPinID == graph->pins[c].id)
                                         {
-                                            for(int d = 0; d < graph->nodeCount; d++){
-                                                if(graph->nodes[d].outputPins[0] == graph->links[k].outputPinID){
-                                                    for(int e = 0; e < graph->pinCount; e++){
-                                                        if(graph->pins[e].id == graph->nodes[d].inputPins[0]){
+                                            for (int d = 0; d < graph->nodeCount; d++)
+                                            {
+                                                if (graph->nodes[d].outputPins[0] == graph->links[k].outputPinID)
+                                                {
+                                                    for (int e = 0; e < graph->pinCount; e++)
+                                                    {
+                                                        if (graph->pins[e].id == graph->nodes[d].inputPins[0])
+                                                        {
                                                             editor->shouldOpenHitboxEditor = true;
                                                             strcpy(editor->hitboxEditorFileName, graph->pins[e].textFieldValue);
                                                             editor->hitboxEditingPinID = graph->pins[i].id;

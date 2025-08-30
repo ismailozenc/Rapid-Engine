@@ -162,6 +162,8 @@ typedef struct EngineContext
     VarFilter varsFilter;
     bool isSaveButtonHovered;
     ViewportMode viewportMode;
+    bool isAutoSaveON;
+    float autoSaveTimer;
 } EngineContext;
 
 typedef enum

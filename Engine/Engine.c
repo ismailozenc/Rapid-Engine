@@ -92,6 +92,9 @@ EngineContext InitEngineContext()
 
     engine.isSaveButtonHovered = false;
 
+    engine.isAutoSaveON = false;
+    engine.autoSaveTimer = 0.0f;
+
     return engine;
 }
 
@@ -151,7 +154,6 @@ void AddToLog(EngineContext *engine, const char *newLine, int level)
         engine->logs.entries = realloc(engine->logs.entries, sizeof(LogEntry) * engine->logs.capacity);
         if (!engine->logs.entries)
         {
-            // handle out-of-memory error gracefully
             exit(1);
         }
     }
@@ -357,35 +359,28 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
 
 void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
 {
-    bool justSwitched = false;
     if (CheckCollisionPointRec(mousePos, (Rectangle){pos.x, pos.y, 40, 25}))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             *value = !*value;
-            justSwitched = true;
+            SetTargetFPS(50);
+            DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, (Color){65, 179, 89, 255});
+            DrawCircle(pos.x + 20, pos.y + 12, 10, WHITE);
+            return;
         }
     }
 
-    if (justSwitched)
+    if (*value)
     {
-        SetTargetFPS(50);
-        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, (Color){65, 179, 89, 255});
-        DrawCircle(pos.x + 20, pos.y + 12, 10, WHITE);
+        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GREEN);
+        DrawCircle(pos.x + 28, pos.y + 12, 10, WHITE);
     }
     else
     {
-        if (*value)
-        {
-            DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GREEN);
-            DrawCircle(pos.x + 28, pos.y + 12, 10, WHITE);
-        }
-        else
-        {
-            DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GRAY);
-            DrawCircle(pos.x + 12, pos.y + 12, 10, WHITE);
-        }
+        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GRAY);
+        DrawCircle(pos.x + 12, pos.y + 12, 10, WHITE);
     }
 }
 
@@ -461,6 +456,9 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
     case SETTINGS_MODE_ENGINE:
         DrawTextEx(engine->font, "Sound", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &engine->isSoundOn, engine->mousePos);
+
+        DrawTextEx(engine->font, "Auto Save Every 2 Minutes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
+        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &engine->isAutoSaveON, engine->mousePos);
         break;
     case SETTINGS_MODE_GAME:
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
@@ -1759,6 +1757,23 @@ int main()
                 editor.bottomBorderLimit = (engine.screenHeight - engine.bottomBarHeight) / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
                 editor.rightBorderLimit = (engine.screenWidth - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
                 HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureMouseX, textureMouseY}, engine.draggingResizeButtonID != 0);
+            }
+
+            if (engine.isAutoSaveON)
+            {
+                engine.autoSaveTimer += GetFrameTime();
+
+                if (engine.autoSaveTimer >= 120.0f)
+                {
+                    if (SaveGraphToFile(engine.CGFilePath, &graph) == 0)
+                    {
+                        editor.hasChanged = false;
+                        AddToLog(&engine, "Auto-saved successfully!", 3);
+                    }
+                    else
+                        AddToLog(&engine, "ERROR SAVING CHANGES!", 1);
+                    engine.autoSaveTimer = 0.0f;
+                }
             }
 
             if (editor.newLogMessage)

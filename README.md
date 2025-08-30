@@ -1,6 +1,6 @@
 # Rapid Engine
 
-**Rapid Engine** is a game engine written in C, using the Raylib library, that includes a visual scripting language called **CoreGraph**. Designed for speed, full control, and node-based logic.
+**Rapid Engine** is a game engine written in C, using the Raylib library, that includes a visual scripting language called **CoreGraph**. Designed for speed and full control with node-based logic.
 
 <img width="2559" height="1527" alt="image" src="https://github.com/user-attachments/assets/cee2d3a4-b675-409e-b692-12abd5f57263" />
 
@@ -12,6 +12,7 @@
 - 🎯 Real-time interaction and graph editing
 - ⚙️ Basic language constructs such as variables, arithmetic, logic, conditionals, and loops
 - 🎮 Spawning and moving sprites
+- ✂️ Hitbox editor: Visual polygon hitbox creation
 - 💾 Save, build and run systems
 ---
 
@@ -24,7 +25,7 @@
 - Real-time log for error and debug messages
 - Variables menu for viewing information about the current variables and their values
 - Different pin types: flow, dropdown, text box and more
-- Custom window management top menu
+- Custom window management top menu with settings
 
 
 ## 🧩 All node types:
@@ -64,8 +65,8 @@
 ## 🧪 In Development
 
 - Interacting with sprites
-- Sprite collision
-- Hitbox editor
+- Sprite collision events
+- Hitbox editor improvements
 - Helper function nodes
 - Exporting game as .exe
 - Ongoing CoreGraph improvements and optimizations

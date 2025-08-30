@@ -195,7 +195,7 @@ typedef struct
 
     bool buildFailed;
 
-    bool shouldDrawHitboxes;
+    bool shouldShowHitboxes;
 } InterpreterContext;
 
 typedef enum{

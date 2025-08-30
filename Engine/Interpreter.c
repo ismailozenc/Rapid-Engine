@@ -21,7 +21,7 @@ InterpreterContext InitInterpreterContext()
 
     interpreter.fps = 60;
 
-    interpreter.shouldDrawHitboxes = false;
+    interpreter.shouldShowHitboxes = false;
 
     return interpreter;
 }
@@ -1090,7 +1090,7 @@ void DrawComponents(InterpreterContext *interpreter)
                 (Vector2){component.sprite.width / 2.0f, component.sprite.height / 2.0f},
                 component.sprite.rotation,
                 WHITE);
-            if (interpreter->shouldDrawHitboxes)
+            if (interpreter->shouldShowHitboxes)
             {
                 DrawHitbox(
                     &component.sprite.hitbox,
@@ -1116,7 +1116,7 @@ void DrawComponents(InterpreterContext *interpreter)
             default:
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Component error!"}, 2);
             }
-            if (interpreter->shouldDrawHitboxes)
+            if (interpreter->shouldShowHitboxes)
             {
                 DrawHitbox(
                     &component.prop.hitbox,
@@ -1214,10 +1214,12 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
         return false;
 
     SceneComponent *a = &interpreter->components[index];
+    int layerA = a->isSprite ? a->sprite.layer : a->prop.layer;
+
     Hitbox *hitA = a->isSprite ? &a->sprite.hitbox : &a->prop.hitbox;
     Vector2 posA = a->isSprite ? a->sprite.position : a->prop.position;
     Vector2 sizeA = a->isSprite ? (Vector2){a->sprite.width, a->sprite.height} : (Vector2){a->prop.width, a->prop.height};
-    Vector2 texA = a->isSprite ? (Vector2){a->sprite.texture.width, a->sprite.texture.height} : (Vector2){a->prop.texture.width, a->prop.texture.height};
+    Vector2 texA  = a->isSprite ? (Vector2){a->sprite.texture.width, a->sprite.texture.height} : (Vector2){a->prop.texture.width, a->prop.texture.height};
 
     for (int j = 0; j < interpreter->componentCount; j++)
     {
@@ -1225,10 +1227,15 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
             continue;
 
         SceneComponent *b = &interpreter->components[j];
+        int layerB = b->isSprite ? b->sprite.layer : b->prop.layer;
+
+        if (layerB > layerA)
+            continue;
+
         Hitbox *hitB = b->isSprite ? &b->sprite.hitbox : &b->prop.hitbox;
         Vector2 posB = b->isSprite ? b->sprite.position : b->prop.position;
         Vector2 sizeB = b->isSprite ? (Vector2){b->sprite.width, b->sprite.height} : (Vector2){b->prop.width, b->prop.height};
-        Vector2 texB = b->isSprite ? (Vector2){b->sprite.texture.width, b->sprite.texture.height} : (Vector2){b->prop.texture.width, b->prop.texture.height};
+        Vector2 texB  = b->isSprite ? (Vector2){b->sprite.texture.width, b->sprite.texture.height} : (Vector2){b->prop.texture.width, b->prop.texture.height};
 
         bool collided = false;
 

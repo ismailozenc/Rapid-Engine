@@ -476,8 +476,15 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &interpreter->isInfiniteLoopProtectionOn, engine->mousePos);
 
-        DrawTextEx(engine->font, "Draw Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
-        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &interpreter->shouldDrawHitboxes, engine->mousePos);
+        DrawTextEx(engine->font, "Show Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
+        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &interpreter->shouldShowHitboxes, engine->mousePos);
+        break;
+    case SETTINGS_MODE_KEYBINDS:
+        break;
+    case SETTINGS_MODE_EXPORT:
+        break;
+    default:
+        settingsMode = SETTINGS_MODE_ENGINE;
     }
 
     return true;

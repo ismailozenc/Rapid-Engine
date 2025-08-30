@@ -357,24 +357,35 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
 
 void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
 {
+    bool justSwitched = false;
     if (CheckCollisionPointRec(mousePos, (Rectangle){pos.x, pos.y, 40, 25}))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             *value = !*value;
+            justSwitched = true;
         }
     }
 
-    if (*value)
+    if (justSwitched)
     {
-        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GREEN);
-        DrawCircle(pos.x + 28, pos.y + 12, 10, WHITE);
+        SetTargetFPS(50);
+        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, (Color){65, 179, 89, 255});
+        DrawCircle(pos.x + 20, pos.y + 12, 10, WHITE);
     }
     else
     {
-        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GRAY);
-        DrawCircle(pos.x + 12, pos.y + 12, 10, WHITE);
+        if (*value)
+        {
+            DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GREEN);
+            DrawCircle(pos.x + 28, pos.y + 12, 10, WHITE);
+        }
+        else
+        {
+            DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GRAY);
+            DrawCircle(pos.x + 12, pos.y + 12, 10, WHITE);
+        }
     }
 }
 

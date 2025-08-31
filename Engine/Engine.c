@@ -95,7 +95,7 @@ EngineContext InitEngineContext()
     engine.isAutoSaveON = false;
     engine.autoSaveTimer = 0.0f;
 
-    engine.fpsLimit = 1000;
+    engine.fpsLimit = 240;
 
     return engine;
 }
@@ -385,18 +385,39 @@ void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
     }
 }
 
-void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos)
+void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos, Font font)
 {
     static bool dropdownOpen = false;
-    int fpsOptions[] = {30, 60, 90, 120, 144, 240};
+    int fpsOptions[] = {240, 90, 60, 30};
     int fpsCount = sizeof(fpsOptions) / sizeof(fpsOptions[0]);
 
-    Rectangle box = {pos.x, pos.y, 120, 30};
-    DrawRectangleRounded(box, 0.2f, 4, GRAY);
-    DrawTextEx(GetFontDefault(), TextFormat("%d FPS", *limit), (Vector2){box.x + 10, box.y + 4}, 20, 1, WHITE);
-    DrawRectangleLines(box.x, box.y, box.width, box.height, WHITE);
+    float blockHeight = 30;
 
-    if (CheckCollisionPointRec(mousePos, box))
+    Rectangle mainBox = {pos.x, pos.y, 90, blockHeight};
+    DrawRectangle(pos.x, pos.y, 90, blockHeight, (Color){60, 60, 60, 255});
+    DrawTextEx(font, TextFormat("%d FPS", *limit), (Vector2){pos.x + 14 - 4 * (*limit) / 100, pos.y + 4}, 20, 1, WHITE);
+    DrawRectangleLines(pos.x, pos.y, 90, blockHeight, WHITE);
+
+    if (dropdownOpen)
+    {
+        for (int i = 0; i < fpsCount; i++)
+        {
+            Rectangle optionBox = {mainBox.x - (i + 1) * 40, mainBox.y, 40, blockHeight};
+            DrawRectangle(mainBox.x - (i + 1) * 40 - 2, mainBox.y, 40, blockHeight, (*limit == fpsOptions[i]) ? GREEN : (Color){60, 60, 60, 255});
+            DrawTextEx(font, TextFormat("%d", fpsOptions[i]), (Vector2){optionBox.x + 10 - 4 * fpsOptions[i] / 100, optionBox.y + 4}, 20, 1, WHITE);
+
+            if (CheckCollisionPointRec(mousePos, optionBox))
+            {
+                SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                    *limit = fpsOptions[i];
+                    dropdownOpen = false;
+                }
+            }
+        }
+    }
+
+    if (CheckCollisionPointRec(mousePos, mainBox))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -404,21 +425,8 @@ void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos)
             dropdownOpen = !dropdownOpen;
         }
     }
-
-    if (dropdownOpen)
-    {
-        for (int i = 0; i < fpsCount; i++)
-        {
-            Rectangle optionBox = {box.x, box.y + (i + 1) * box.height, box.width, box.height};
-            DrawRectangleRounded(optionBox, 0.2f, 4, (*limit == fpsOptions[i]) ? GREEN : GRAY);
-            DrawTextEx(GetFontDefault(), TextFormat("%d FPS", fpsOptions[i]), (Vector2){optionBox.x + 10, optionBox.y + 4}, 20, 1, WHITE);
-
-            if (CheckCollisionPointRec(mousePos, optionBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                *limit = fpsOptions[i];
-                dropdownOpen = false;
-            }
-        }
+    else if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+        dropdownOpen = false;
     }
 }
 
@@ -429,7 +437,6 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
 
     DrawRectangleRounded((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 255});
     DrawRectangleRoundedLines((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, WHITE);
-
 
     static bool skipClickOnFirstFrame = true;
     DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 140}, (Vector2){engine->screenWidth * 3 / 4 - 30, 160}, 3, WHITE);
@@ -511,7 +518,7 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &engine->isAutoSaveON, engine->mousePos);
 
         DrawTextEx(engine->font, "FPS Limit", (Vector2){engine->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
-        DrawFPSLimitDropdown((Vector2){engine->screenWidth * 3 / 4 - 150, 405}, &engine->fpsLimit, engine->mousePos);
+        DrawFPSLimitDropdown((Vector2){engine->screenWidth * 3 / 4 - 100, 405}, &engine->fpsLimit, engine->mousePos, engine->font);
         break;
     case SETTINGS_MODE_GAME:
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);

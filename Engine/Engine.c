@@ -95,6 +95,8 @@ EngineContext InitEngineContext()
     engine.isAutoSaveON = false;
     engine.autoSaveTimer = 0.0f;
 
+    engine.fpsLimit = 1000;
+
     return engine;
 }
 
@@ -365,7 +367,6 @@ void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             *value = !*value;
-            SetTargetFPS(50);
             DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, (Color){65, 179, 89, 255});
             DrawCircle(pos.x + 20, pos.y + 12, 10, WHITE);
             return;
@@ -381,6 +382,43 @@ void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
     {
         DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GRAY);
         DrawCircle(pos.x + 12, pos.y + 12, 10, WHITE);
+    }
+}
+
+void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos)
+{
+    static bool dropdownOpen = false;
+    int fpsOptions[] = {30, 60, 90, 120, 144, 240};
+    int fpsCount = sizeof(fpsOptions) / sizeof(fpsOptions[0]);
+
+    Rectangle box = {pos.x, pos.y, 120, 30};
+    DrawRectangleRounded(box, 0.2f, 4, GRAY);
+    DrawTextEx(GetFontDefault(), TextFormat("%d FPS", *limit), (Vector2){box.x + 10, box.y + 4}, 20, 1, WHITE);
+    DrawRectangleLines(box.x, box.y, box.width, box.height, WHITE);
+
+    if (CheckCollisionPointRec(mousePos, box))
+    {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            dropdownOpen = !dropdownOpen;
+        }
+    }
+
+    if (dropdownOpen)
+    {
+        for (int i = 0; i < fpsCount; i++)
+        {
+            Rectangle optionBox = {box.x, box.y + (i + 1) * box.height, box.width, box.height};
+            DrawRectangleRounded(optionBox, 0.2f, 4, (*limit == fpsOptions[i]) ? GREEN : GRAY);
+            DrawTextEx(GetFontDefault(), TextFormat("%d FPS", fpsOptions[i]), (Vector2){optionBox.x + 10, optionBox.y + 4}, 20, 1, WHITE);
+
+            if (CheckCollisionPointRec(mousePos, optionBox) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                *limit = fpsOptions[i];
+                dropdownOpen = false;
+            }
+        }
     }
 }
 
@@ -471,6 +509,9 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
 
         DrawTextEx(engine->font, "Auto Save Every 2 Minutes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &engine->isAutoSaveON, engine->mousePos);
+
+        DrawTextEx(engine->font, "FPS Limit", (Vector2){engine->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
+        DrawFPSLimitDropdown((Vector2){engine->screenWidth * 3 / 4 - 150, 405}, &engine->fpsLimit, engine->mousePos);
         break;
     case SETTINGS_MODE_GAME:
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
@@ -1648,6 +1689,10 @@ int GetEngineFPS(EngineContext *engine, EditorContext *editor, InterpreterContex
         fps = engine->fps;
     }
 
+    if(fps > engine->fpsLimit){
+        fps = engine->fpsLimit;
+    }
+
     return fps;
 }
 
@@ -2031,6 +2076,8 @@ int main()
         {
             engine.showSettingsMenu = DrawSettingsMenu(&engine, &interpreter);
         }
+
+        DrawFPS(1000, 10);
 
         EndDrawing();
     }

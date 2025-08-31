@@ -164,6 +164,7 @@ typedef struct EngineContext
     ViewportMode viewportMode;
     bool isAutoSaveON;
     float autoSaveTimer;
+    int fpsLimit;
 } EngineContext;
 
 typedef enum

@@ -664,7 +664,20 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 if (hIndex != -1 && hIndex < interpreter->valueCount)
                     interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[hIndex].number;
                 if (layerIndex != -1 && layerIndex < interpreter->valueCount)
-                    interpreter->components[interpreter->componentCount].sprite.layer = interpreter->values[layerIndex].number;
+                {
+                    if (interpreter->values[layerIndex].number < COMPONENT_LAYER_COUNT)
+                    {
+                        interpreter->components[interpreter->componentCount].sprite.layer = interpreter->values[layerIndex].number;
+                    }
+                    else if (interpreter->values[layerIndex].number < 0)
+                    {
+                        interpreter->components[interpreter->componentCount].sprite.layer = 0;
+                    }
+                    else
+                    {
+                        interpreter->components[interpreter->componentCount].sprite.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
+                    }
+                }
 
                 interpreter->components[interpreter->componentCount].sprite.hitbox.type = HITBOX_POLY; // should support all types
 
@@ -732,7 +745,20 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (node->inputPins[5] && node->inputPins[5]->valueIndex < interpreter->valueCount)
                 interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[5]->valueIndex].color;
             if (node->inputPins[6] && node->inputPins[6]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+            {
+                if (interpreter->values[node->inputPins[6]->valueIndex].number < COMPONENT_LAYER_COUNT)
+                {
+                    interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+                }
+                else if (interpreter->values[node->inputPins[6]->valueIndex].number < 0)
+                {
+                    interpreter->components[interpreter->componentCount].prop.layer = 0;
+                }
+                else
+                {
+                    interpreter->components[interpreter->componentCount].prop.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
+                }
+            }
 
             interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_RECT;
             interpreter->components[interpreter->componentCount].prop.hitbox.rectHitboxSize = (Vector2){interpreter->components[interpreter->componentCount].prop.width, interpreter->components[interpreter->componentCount].prop.height};
@@ -757,7 +783,20 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (node->inputPins[4] && node->inputPins[4]->valueIndex < interpreter->valueCount)
                 interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[4]->valueIndex].color;
             if (node->inputPins[5] && node->inputPins[5]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[5]->valueIndex].number;
+            {
+                if (interpreter->values[node->inputPins[5]->valueIndex].number < COMPONENT_LAYER_COUNT)
+                {
+                    interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[5]->valueIndex].number;
+                }
+                else if (interpreter->values[node->inputPins[5]->valueIndex].number < 0)
+                {
+                    interpreter->components[interpreter->componentCount].prop.layer = 0;
+                }
+                else
+                {
+                    interpreter->components[interpreter->componentCount].prop.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
+                }
+            }
 
             interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_CIRCLE;
             interpreter->components[interpreter->componentCount].prop.hitbox.circleHitboxRadius = interpreter->components[interpreter->componentCount].prop.width / 2;
@@ -1442,7 +1481,7 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
     return false;
 }
 
-bool CheckCollisions(InterpreterContext *interpreter, int index)
+CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
 {
     if (index < 0 || index >= interpreter->componentCount)
         return false;
@@ -1463,8 +1502,15 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
         SceneComponent *b = &interpreter->components[j];
         int layerB = b->isSprite ? b->sprite.layer : b->prop.layer;
 
-        if (layerB > layerA)
+        bool aBlocks = (layerA == COMPONENT_LAYER_BLOCKING || layerA == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
+        bool aEvents = (layerA == COMPONENT_LAYER_COLLISION_EVENTS || layerA == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
+
+        bool bBlocks = (layerB == COMPONENT_LAYER_BLOCKING || layerB == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
+        bool bEvents = (layerB == COMPONENT_LAYER_COLLISION_EVENTS || layerB == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
+
+        if (!aBlocks && !aEvents && !bBlocks && !bEvents){
             continue;
+        }
 
         Hitbox *hitB = b->isSprite ? &b->sprite.hitbox : &b->prop.hitbox;
         Vector2 posB = b->isSprite ? b->sprite.position : b->prop.position;
@@ -1544,11 +1590,19 @@ bool CheckCollisions(InterpreterContext *interpreter, int index)
 
         if (collided)
         {
-            return true;
+            bool triggerEvent = aEvents || bEvents;
+            bool triggerBlock = aBlocks && bBlocks;
+            
+            if (triggerEvent && triggerBlock)
+                return COLLISION_RESULT_EVENT_AND_BLOCKING;
+            if (triggerEvent)
+                return COLLISION_RESULT_EVENT;
+            if (triggerBlock)
+                return COLLISION_RESULT_BLOCKING;
         }
     }
 
-    return false;
+    return COLLISION_RESULT_NONE;
 }
 
 void HandleForces(InterpreterContext *interpreter)
@@ -1572,7 +1626,8 @@ void HandleForces(InterpreterContext *interpreter)
 
         f->duration -= deltaTime;
 
-        if (CheckCollisions(interpreter, f->componentIndex))
+        CollisionResult a = CheckCollisions(interpreter, f->componentIndex);
+        if (a == COLLISION_RESULT_BLOCKING || a == COLLISION_RESULT_EVENT_AND_BLOCKING)
         {
             *pos = prevPos;
         }
@@ -1593,7 +1648,6 @@ void HandleForces(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
 {
-
     UpdateSpecialValues(interpreter, mousePos, screenBoundary);
 
     if (interpreter->isFirstFrame)

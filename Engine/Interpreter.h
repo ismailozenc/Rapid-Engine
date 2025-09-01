@@ -207,6 +207,22 @@ typedef enum{
     SPECIAL_VALUES_COUNT
 }SpecialValuesInList;
 
+typedef enum{
+    COMPONENT_LAYER_NO_COLLISION,
+    COMPONENT_LAYER_COLLISION_EVENTS,
+    COMPONENT_LAYER_BLOCKING,
+    COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING,
+    COMPONENT_LAYER_COUNT
+}ComponentLayers;
+
+typedef enum{
+    COLLISION_RESULT_NONE,
+    COLLISION_RESULT_EVENT,
+    COLLISION_RESULT_BLOCKING,
+    COLLISION_RESULT_EVENT_AND_BLOCKING,
+    COLLISION_RESULT_COUNT
+}CollisionResult;
+
 InterpreterContext InitInterpreterContext();
 
 void FreeInterpreterContext(InterpreterContext *interpreter);

@@ -1392,7 +1392,7 @@ bool CheckOpenMenus(EditorContext *editor)
     return editor->draggingNodeIndex != -1 || editor->lastClickedPin.id != -1 || editor->menuOpen || editor->nodeDropdownFocused != -1 || editor->nodeFieldPinFocused != -1 || editor->editingNodeNameIndex != -1;
 }
 
-void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled)
+void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled, bool isSecondFrame)
 {
     editor->newLogMessage = false;
     editor->cursor = MOUSE_CURSOR_ARROW;
@@ -1403,7 +1403,7 @@ void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *v
 
     static RenderTexture2D dot;
 
-    if (editor->isFirstFrame)
+    if (isSecondFrame)
     {
         dot = LoadRenderTexture(15, 15);
         SetTextureFilter(dot.texture, TEXTURE_FILTER_BILINEAR);

@@ -84,6 +84,6 @@ EditorContext InitEditorContext(void);
 
 void FreeEditorContext(EditorContext *editor);
 
-void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled);
+void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled, bool isSecondFrame);
 
 #endif

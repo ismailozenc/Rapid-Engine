@@ -1825,13 +1825,20 @@ int main()
         {
         case VIEWPORT_CG_EDITOR:
         {
-            if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || editor.isFirstFrame))
+            static bool isSecondFrame = false;
+            if(editor.isFirstFrame){
+                isSecondFrame = true;
+                editor.isFirstFrame = false;
+                break;
+            }
+            if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || isSecondFrame))
             {
                 editor.leftBorderLimit = (engine.viewport.texture.width - srcW) / 2.0f;
                 editor.bottomBorderLimit = (engine.screenHeight - engine.bottomBarHeight) / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
                 editor.rightBorderLimit = (engine.screenWidth - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureMouseX, textureMouseY}, engine.draggingResizeButtonID != 0);
+                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureMouseX, textureMouseY}, engine.draggingResizeButtonID != 0, isSecondFrame);
             }
+            if(isSecondFrame){isSecondFrame = false;}
 
             if (engine.isAutoSaveON)
             {

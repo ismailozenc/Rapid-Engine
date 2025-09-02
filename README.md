@@ -64,9 +64,9 @@
 
 ## 🧪 In Development
 
-- Interacting with sprites
 - Sprite collision events
 - Hitbox editor improvements
+- Sprite sheet editor
 - Helper function nodes
 - Exporting game as .exe
 - Ongoing CoreGraph improvements and optimizations

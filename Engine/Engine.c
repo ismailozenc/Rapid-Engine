@@ -1776,7 +1776,7 @@ int main()
 
     if (!LoadGraphFromFile(engine.CGFilePath, &graph))
     {
-        AddToLog(&engine, "Failed to load graph file! Continuing with empty graph", LOG_ERROR);
+        AddToLog(&engine, "Failed to load CoreGraph file! Continuing with empty graph", LOG_ERROR);
         engine.CGFilePath[0] = '\0';
     }
 
@@ -1863,8 +1863,9 @@ int main()
                         editor.hasChanged = false;
                         AddToLog(&engine, "Auto-saved successfully!", 3);
                     }
-                    else
+                    else{
                         AddToLog(&engine, "ERROR SAVING CHANGES!", 1);
+                    }
                     engine.autoSaveTimer = 0.0f;
                 }
             }
@@ -2004,23 +2005,25 @@ int main()
         }
         }
 
-        Rectangle src = {
-            (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f,
-            (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f,
-            engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom,
-            -(engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)};
-
-        Rectangle dst = {
-            engine.isGameFullscreen ? 0 : engine.sideBarWidth,
-            0,
-            engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
-            engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
-
-        DrawTexturePro(engine.viewport.texture, src, dst, (Vector2){0, 0}, 0.0f, WHITE);
+        DrawTexturePro(engine.viewport.texture,
+                       (Rectangle){(engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f,
+                                   (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f,
+                                   engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom,
+                                   -(engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)},
+                       (Rectangle){engine.isGameFullscreen ? 0 : engine.sideBarWidth,
+                                   0,
+                                   engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
+                                   engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)},
+                       (Vector2){0, 0}, 0.0f, WHITE);
 
         if (engine.UI.texture.id != 0 && !engine.isGameFullscreen)
         {
             DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+        }
+
+        if(engine.viewportMode == VIEWPORT_CG_EDITOR){
+            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
+            DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
 
         if (engine.showSaveWarning == 1)

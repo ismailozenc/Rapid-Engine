@@ -98,6 +98,8 @@ EngineContext InitEngineContext()
     engine.fpsLimit = 240;
     engine.shouldShowFPS = false;
 
+    engine.isAnyMenuOpen = false;
+
     return engine;
 }
 
@@ -436,6 +438,8 @@ void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos, Font font)
 bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
 {
 
+    DrawRectangle(0, 0, engine->screenWidth, engine->screenHeight, (Color){0, 0, 0, 150});
+
     static SettingsMode settingsMode = SETTINGS_MODE_ENGINE;
 
     DrawRectangleRounded((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 255});
@@ -591,7 +595,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 {
     engine->isSaveButtonHovered = false;
     char temp[256];
-    if (engine->hoveredUIElementIndex != -1)
+    if (engine->hoveredUIElementIndex != -1 && !engine->isAnyMenuOpen)
     {
         switch (engine->uiElements[engine->hoveredUIElementIndex].type)
         {
@@ -599,7 +603,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             break;
         case UI_ACTION_SAVE_CG:
             engine->isSaveButtonHovered = true;
-            if (engine->isGameRunning)
+            if (engine->viewportMode != VIEWPORT_CG_EDITOR)
             {
                 break;
             }
@@ -821,22 +825,13 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
         {
-            Color col = engine->uiElements[engine->hoveredUIElementIndex].color;
-            engine->uiElements[engine->hoveredUIElementIndex].color = (Color){
-                Clamp(col.r + 50, 0, 255),
-                Clamp(col.g + 50, 0, 255),
-                Clamp(col.b + 50, 0, 255),
-                col.a};
-            if (engine->uiElements[engine->hoveredUIElementIndex].type == UI_ACTION_CLOSE_WINDOW || engine->uiElements[engine->hoveredUIElementIndex].type == UI_ACTION_MINIMIZE_WINDOW)
-            {
-                AddUIElement(engine, (UIElement){
+            AddUIElement(engine, (UIElement){
                                          .name = "HoverBlink",
                                          .shape = UIRectangle,
                                          .type = UI_ACTION_NO_COLLISION_ACTION,
                                          .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
                                          .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
                                          .layer = 99});
-            }
         }
     }
 
@@ -916,10 +911,10 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .name = "SaveButton",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_SAVE_CG,
-                                 .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                 .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = (engine->viewportMode == VIEWPORT_CG_EDITOR ? Fade(WHITE, 0.6f) : (Color){0, 0, 0, 0})},
                                  .color = (Color){70, 70, 70, 200},
                                  .layer = 1,
-                                 .text = {.textPos = {editor->hasChanged ? saveButtonPos.x + 5 : saveButtonPos.x + 8, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                 .text = {.textPos = {editor->hasChanged ? saveButtonPos.x + 5 : saveButtonPos.x + 8, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = (engine->viewportMode == VIEWPORT_CG_EDITOR ? WHITE : GRAY)},
                              });
         if (editor->hasChanged)
         {
@@ -1432,7 +1427,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
     DrawLineEx((Vector2){engine->screenWidth - 85, 25}, (Vector2){engine->screenWidth - 65, 25}, 2, WHITE);
 
     Rectangle src = {0, 0, engine->settingsGear.width, engine->settingsGear.height};
-    Rectangle dst = {engine->screenWidth - 135, 10, 30, 30};
+    Rectangle dst = {engine->screenWidth - 140, 12, 30, 30};
     Vector2 origin = {0, 0};
     DrawTexturePro(engine->settingsGear, src, dst, origin, 0.0f, WHITE);
 
@@ -1638,6 +1633,10 @@ void ContextChangePerFrame(EngineContext *engine)
 
 int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
 {
+    if(engine->isAnyMenuOpen){
+        return MOUSE_CURSOR_ARROW;
+    }
+
     if (engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3)
     {
         return MOUSE_CURSOR_RESIZE_NS;
@@ -1664,7 +1663,7 @@ int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
         }
     }
 
-    if (engine->isSaveButtonHovered && engine->isGameRunning)
+    if (engine->isSaveButtonHovered && engine->viewportMode != VIEWPORT_CG_EDITOR)
     {
         return MOUSE_CURSOR_NOT_ALLOWED;
     }
@@ -1792,6 +1791,7 @@ int main()
         ContextChangePerFrame(&engine);
 
         int prevHoveredUIIndex = engine.hoveredUIElementIndex;
+        engine.isAnyMenuOpen = engine.showSaveWarning == 1 || engine.showSettingsMenu;
 
         if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph) && !engine.isGameFullscreen)
         {
@@ -1930,6 +1930,7 @@ int main()
 
             if (hitboxEditor.texture.id == 0)
             {
+                engine.delayFrames = true;
                 char path[128];
                 snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
 
@@ -1988,6 +1989,7 @@ int main()
                 if (!UpdateHitboxEditor(&hitboxEditor, mouseInViewportTex, &graph, editor.hitboxEditingPinID))
                 {
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
+                    engine.delayFrames = true;
                 }
             }
 

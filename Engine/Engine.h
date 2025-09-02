@@ -166,6 +166,7 @@ typedef struct EngineContext
     float autoSaveTimer;
     int fpsLimit;
     bool shouldShowFPS;
+    bool isAnyMenuOpen;
 } EngineContext;
 
 typedef enum

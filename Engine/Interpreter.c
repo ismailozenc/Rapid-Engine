@@ -27,6 +27,8 @@ InterpreterContext InitInterpreterContext()
 
     interpreter.shouldShowHitboxes = false;
 
+    interpreter.isPaused = false;
+
     return interpreter;
 }
 
@@ -1648,6 +1650,12 @@ void HandleForces(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
 {
+    if(interpreter->isPaused){
+        DrawComponents(interpreter);
+        DrawRectangleRec(screenBoundary, (Color){80, 80, 80, 50});
+        return true;
+    }
+
     UpdateSpecialValues(interpreter, mousePos, screenBoundary);
 
     if (interpreter->isFirstFrame)

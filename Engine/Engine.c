@@ -79,7 +79,7 @@ EngineContext InitEngineContext()
 
     engine.sideBarHalfSnap = false;
 
-    engine.editorZoom = 1.0f;
+    engine.zoom = 1.0f;
 
     engine.wasBuilt = false;
 
@@ -96,6 +96,7 @@ EngineContext InitEngineContext()
     engine.autoSaveTimer = 0.0f;
 
     engine.fpsLimit = 240;
+    engine.shouldShowFPS = false;
 
     return engine;
 }
@@ -409,7 +410,8 @@ void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos, Font font)
             if (CheckCollisionPointRec(mousePos, optionBox))
             {
                 SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-                if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
                     *limit = fpsOptions[i];
                     dropdownOpen = false;
                 }
@@ -425,7 +427,8 @@ void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos, Font font)
             dropdownOpen = !dropdownOpen;
         }
     }
-    else if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+    else if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    {
         dropdownOpen = false;
     }
 }
@@ -450,11 +453,14 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
             return false;
         }
     }
-    if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200})){
-        if(skipClickOnFirstFrame){
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}))
+    {
+        if (skipClickOnFirstFrame)
+        {
             skipClickOnFirstFrame = false;
         }
-        else{
+        else
+        {
             skipClickOnFirstFrame = true;
             return false;
         }
@@ -519,12 +525,15 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
 
         DrawTextEx(engine->font, "FPS Limit", (Vector2){engine->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
         DrawFPSLimitDropdown((Vector2){engine->screenWidth * 3 / 4 - 100, 405}, &engine->fpsLimit, engine->mousePos, engine->font);
+
+        DrawTextEx(engine->font, "Show FPS", (Vector2){engine->screenWidth / 4 + 200, 450}, 28, 1, WHITE);
+        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 455}, &engine->shouldShowFPS, engine->mousePos);
         break;
     case SETTINGS_MODE_GAME:
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &interpreter->isInfiniteLoopProtectionOn, engine->mousePos);
 
-        DrawTextEx(engine->font, "Show Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
+        DrawTextEx(engine->font, "Show Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &interpreter->shouldShowHitboxes, engine->mousePos);
         break;
     case SETTINGS_MODE_KEYBINDS:
@@ -1696,11 +1705,42 @@ int GetEngineFPS(EngineContext *engine, EditorContext *editor, InterpreterContex
         fps = engine->fps;
     }
 
-    if(fps > engine->fpsLimit){
+    if (fps > engine->fpsLimit)
+    {
         fps = engine->fpsLimit;
     }
 
     return fps;
+}
+
+void SetEngineZoom(EngineContext *engine, EditorContext *editor)
+{
+    if (engine->viewportMode != VIEWPORT_CG_EDITOR) // zoom only for CG Editor
+    {
+        engine->zoom = 1.0f;
+        editor->zoom = 1.0f;
+        return;
+    }
+
+    float wheel = GetMouseWheelMove();
+    if (wheel != 0 && engine->isViewportFocused && !editor->menuOpen)
+    {
+        editor->delayFrames = true;
+
+        float zoom = engine->zoom;
+
+        if (wheel > 0 && zoom < 1.5f)
+        {
+            engine->zoom = zoom + 0.25f;
+        }
+
+        if (wheel < 0 && zoom > 0.5f)
+        {
+            engine->zoom = zoom - 0.25f;
+        }
+
+        editor->zoom = engine->zoom;
+    }
 }
 
 int main()
@@ -1711,7 +1751,7 @@ int main()
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
     char fileName[128];
-    strcpy(fileName, "Tetris" /*HandleProjectManager()*/); // temporary hardcode
+    snprintf(fileName, sizeof(fileName), "%s", "Tetris" /*HandleProjectManager()*/); // temporary hardcode
 
     SetTargetFPS(60);
 
@@ -1734,7 +1774,11 @@ int main()
     interpreter.projectPath = strdup(engine.currentPath);
     engine.projectPath = strdup(engine.currentPath); // should be moved
 
-    LoadGraphFromFile(engine.CGFilePath, &graph);
+    if (!LoadGraphFromFile(engine.CGFilePath, &graph))
+    {
+        AddToLog(&engine, "Failed to load graph file! Continuing with empty graph", LOG_ERROR);
+        engine.CGFilePath[0] = '\0';
+    }
 
     AddToLog(&engine, "All resources loaded. Welcome!", 0);
 
@@ -1769,46 +1813,12 @@ int main()
 
         SetTargetFPS(GetEngineFPS(&engine, &editor, &interpreter));
 
-        if (GetMouseWheelMove() != 0 && engine.isViewportFocused && !editor.menuOpen && engine.viewportMode == VIEWPORT_CG_EDITOR)
-        {
-            editor.delayFrames = true;
+        SetEngineZoom(&engine, &editor);
 
-            float wheel = GetMouseWheelMove();
-            float zoom = engine.editorZoom;
-
-            if (wheel > 0 && zoom < 1.5f)
-                engine.editorZoom = zoom + 0.25f;
-
-            if (wheel < 0 && zoom > 0.5f)
-                engine.editorZoom = zoom - 0.25f;
-        }
-        editor.zoom = engine.editorZoom;
-
-        float srcW;
-        float srcH;
-
-        int textureMouseX;
-        int textureMouseY;
-
-        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
-        {
-            srcW = engine.viewportWidth / engine.editorZoom;
-            srcH = engine.viewportHeight / engine.editorZoom;
-
-            textureMouseX = (engine.mousePos.x - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-            textureMouseY = engine.mousePos.y / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
-        }
-        else
-        {
-            srcW = engine.viewportWidth;
-            srcH = engine.viewportHeight;
-
-            textureMouseX = engine.mousePos.x - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f;
-            textureMouseY = engine.mousePos.y + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f;
-        }
+        Vector2 mouseInViewport = (Vector2){(engine.mousePos.x - engine.sideBarWidth) / engine.zoom + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f, engine.mousePos.y / engine.zoom + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f};
 
         Rectangle viewportBoundaryTranslated = (Rectangle){
-            engine.sideBarWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth) + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
+            (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
             (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
             engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
             engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
@@ -1826,19 +1836,21 @@ int main()
         case VIEWPORT_CG_EDITOR:
         {
             static bool isSecondFrame = false;
-            if(editor.isFirstFrame){
+            if (editor.isFirstFrame)
+            {
                 isSecondFrame = true;
                 editor.isFirstFrame = false;
                 break;
             }
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || isSecondFrame))
             {
-                editor.leftBorderLimit = (engine.viewport.texture.width - srcW) / 2.0f;
-                editor.bottomBorderLimit = (engine.screenHeight - engine.bottomBarHeight) / engine.editorZoom + (engine.viewport.texture.height - srcH) / 2.0f;
-                editor.rightBorderLimit = (engine.screenWidth - engine.sideBarWidth) / engine.editorZoom + (engine.viewport.texture.width - srcW) / 2.0f;
-                HandleEditor(&editor, &graph, &engine.viewport, (Vector2){textureMouseX, textureMouseY}, engine.draggingResizeButtonID != 0, isSecondFrame);
+                editor.viewportBoundary = viewportBoundaryTranslated;
+                HandleEditor(&editor, &graph, &engine.viewport, mouseInViewport, engine.draggingResizeButtonID != 0, isSecondFrame);
             }
-            if(isSecondFrame){isSecondFrame = false;}
+            if (isSecondFrame)
+            {
+                isSecondFrame = false;
+            }
 
             if (engine.isAutoSaveON)
             {
@@ -1882,10 +1894,14 @@ int main()
         }
         case VIEWPORT_GAME_SCREEN:
         {
+            if (IsKeyPressed(KEY_P))
+            {
+                interpreter.isPaused = !interpreter.isPaused;
+            }
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, (Vector2){textureMouseX, textureMouseY}, viewportBoundaryTranslated);
+            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, mouseInViewport, viewportBoundaryTranslated);
 
             if (!engine.isGameRunning)
             {
@@ -1971,12 +1987,12 @@ int main()
 
             if (engine.isViewportFocused)
             {
-                UpdateEditor(&hitboxEditor, (Vector2){textureMouseX, textureMouseY});
+                UpdateEditor(&hitboxEditor, mouseInViewport);
             }
 
             BeginTextureMode(engine.viewport);
 
-            DrawEditor(&hitboxEditor, (Vector2){textureMouseX, textureMouseY});
+            DrawEditor(&hitboxEditor, mouseInViewport);
 
             EndTextureMode();
 
@@ -2007,7 +2023,8 @@ int main()
             }
             if (IsKeyPressed(KEY_R))
             {
-                memset(hitboxEditor.poly.vertices, 0, sizeof(Polygon));
+                hitboxEditor.poly.count = 0;
+                hitboxEditor.poly.isClosed = false;
             }
             if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
             {
@@ -2032,10 +2049,10 @@ int main()
             DrawTexturePro(
                 engine.viewport.texture,
                 (Rectangle){
-                    (engine.viewport.texture.width - srcW) / 2.0f,
-                    (engine.viewport.texture.height - srcH) / 2.0f,
-                    srcW,
-                    -srcH},
+                    (engine.viewport.texture.width - engine.viewportWidth / engine.zoom) / 2.0f,
+                    (engine.viewport.texture.height - engine.viewportHeight / engine.zoom) / 2.0f,
+                    engine.viewportWidth / engine.zoom,
+                    -engine.viewportHeight / engine.zoom},
                 (Rectangle){
                     engine.sideBarWidth,
                     0,
@@ -2056,7 +2073,10 @@ int main()
             DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){engine.sideBarWidth + 30, 30}, 30, 1, GRAY);
         }
 
-        DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+        if (engine.UI.texture.id != 0 && !engine.isGameFullscreen)
+        {
+            DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+        }
 
         if (engine.isGameRunning && engine.isGameFullscreen)
         {
@@ -2091,7 +2111,9 @@ int main()
             engine.showSettingsMenu = DrawSettingsMenu(&engine, &interpreter);
         }
 
-        DrawFPS(1000, 10);
+        if(engine.shouldShowFPS){
+            DrawTextEx(engine.font, TextFormat("%d FPS", GetFPS()), (Vector2){engine.screenWidth / 2, 10}, 40, 1, RED);
+        }
 
         EndDrawing();
     }

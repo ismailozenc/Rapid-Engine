@@ -154,7 +154,7 @@ typedef struct EngineContext
     int fps;
     bool isGameRunning;
     bool sideBarHalfSnap;
-    float editorZoom;
+    float zoom;
     bool wasBuilt;
     int showSaveWarning;
     bool showSettingsMenu;
@@ -165,6 +165,7 @@ typedef struct EngineContext
     bool isAutoSaveON;
     float autoSaveTimer;
     int fpsLimit;
+    bool shouldShowFPS;
 } EngineContext;
 
 typedef enum

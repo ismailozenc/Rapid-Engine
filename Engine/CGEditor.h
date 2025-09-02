@@ -67,9 +67,7 @@ typedef struct
 
     float zoom;
 
-    int leftBorderLimit;
-    int bottomBorderLimit;
-    int rightBorderLimit;
+    Rectangle viewportBoundary;
 
     bool createNodeMenuFirstFrame;
 

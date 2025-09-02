@@ -58,6 +58,8 @@ EditorContext InitEditorContext()
 
     editor.createNodeMenuFirstFrame = true;
 
+    editor.zoom = 1.0f;
+
     return editor;
 }
 
@@ -1153,11 +1155,11 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
     {
         editor->menuPosition.x = editor->rightClickPos.x;
         editor->menuPosition.y = editor->rightClickPos.y;
-        if (editor->menuPosition.y + menuHeight > editor->bottomBorderLimit)
+        if (editor->menuPosition.y + menuHeight > editor->viewportBoundary.y + editor->viewportBoundary.height)
         {
             editor->menuPosition.y -= menuHeight;
         }
-        if (editor->menuPosition.x + MENU_WIDTH > editor->rightBorderLimit)
+        if (editor->menuPosition.x + MENU_WIDTH > editor->viewportBoundary.x + editor->viewportBoundary.width)
         {
             editor->menuPosition.x -= MENU_WIDTH;
         }

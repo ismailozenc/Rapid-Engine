@@ -533,7 +533,7 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &interpreter->isInfiniteLoopProtectionOn, engine->mousePos);
 
-        DrawTextEx(engine->font, "Show Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
+        DrawTextEx(engine->font, "Show Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
         DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &interpreter->shouldShowHitboxes, engine->mousePos);
         break;
     case SETTINGS_MODE_KEYBINDS:
@@ -1815,21 +1815,21 @@ int main()
 
         SetEngineZoom(&engine, &editor);
 
-        Vector2 mouseInViewport = (Vector2){(engine.mousePos.x - engine.sideBarWidth) / engine.zoom + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f, engine.mousePos.y / engine.zoom + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f};
+        Vector2 mouseInViewportTex = (Vector2){(engine.mousePos.x - engine.sideBarWidth) / engine.zoom + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f, engine.mousePos.y / engine.zoom + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f};
 
-        Rectangle viewportBoundaryTranslated = (Rectangle){
+        Rectangle viewportRecInViewportTex = (Rectangle){
             (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
             (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
             engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
             engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
 
-        BeginDrawing();
-        ClearBackground(BLACK);
-
         if (engine.showSaveWarning == 1 || engine.showSettingsMenu)
         {
             engine.isViewportFocused = false;
         }
+
+        BeginDrawing();
+        ClearBackground(BLACK);
 
         switch (engine.viewportMode)
         {
@@ -1844,8 +1844,8 @@ int main()
             }
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || isSecondFrame))
             {
-                editor.viewportBoundary = viewportBoundaryTranslated;
-                HandleEditor(&editor, &graph, &engine.viewport, mouseInViewport, engine.draggingResizeButtonID != 0, isSecondFrame);
+                editor.viewportBoundary = viewportRecInViewportTex;
+                HandleEditor(&editor, &graph, &engine.viewport, mouseInViewportTex, engine.draggingResizeButtonID != 0, isSecondFrame);
             }
             if (isSecondFrame)
             {
@@ -1901,7 +1901,7 @@ int main()
             BeginTextureMode(engine.viewport);
             ClearBackground(BLACK);
 
-            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, mouseInViewport, viewportBoundaryTranslated);
+            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, mouseInViewportTex, viewportRecInViewportTex);
 
             if (!engine.isGameRunning)
             {
@@ -1926,9 +1926,6 @@ int main()
         case VIEWPORT_HITBOX_EDITOR:
         {
             static HitboxEditorContext hitboxEditor = {0};
-
-            static float scaleX;
-            static float scaleY;
 
             if (hitboxEditor.texture.id == 0)
             {
@@ -1955,8 +1952,8 @@ int main()
                         newWidth = (int)((float)img.width * 500 / img.height);
                     }
 
-                    scaleX = (float)newWidth / (float)img.width;
-                    scaleY = (float)newHeight / (float)img.height;
+                    float scaleX = (float)newWidth / (float)img.width;
+                    float scaleY = (float)newHeight / (float)img.height;
 
                     ImageResize(&img, newWidth, newHeight);
 
@@ -1967,7 +1964,7 @@ int main()
                         engine.viewport.texture.width / 2.0f,
                         engine.viewport.texture.height / 2.0f};
 
-                    hitboxEditor = InitHitboxEditor(tex, texPos);
+                    hitboxEditor = InitHitboxEditor(tex, texPos, (Vector2){scaleX, scaleY});
 
                     for (int i = 0; i < graph.pinCount; i++)
                     {
@@ -1979,61 +1976,24 @@ int main()
 
                     for (int i = 0; i < hitboxEditor.poly.count; i++)
                     {
-                        hitboxEditor.poly.vertices[i].x *= scaleX;
-                        hitboxEditor.poly.vertices[i].y *= scaleY;
+                        hitboxEditor.poly.vertices[i].x *= hitboxEditor.scale.x;
+                        hitboxEditor.poly.vertices[i].y *= hitboxEditor.scale.y;
                     }
                 }
             }
 
             if (engine.isViewportFocused)
             {
-                UpdateEditor(&hitboxEditor, mouseInViewport);
+                if (!UpdateHitboxEditor(&hitboxEditor, mouseInViewportTex, &graph, editor.hitboxEditingPinID))
+                {
+                    engine.viewportMode = VIEWPORT_CG_EDITOR;
+                }
             }
 
             BeginTextureMode(engine.viewport);
-
-            DrawEditor(&hitboxEditor, mouseInViewport);
-
+            DrawHitboxEditor(&hitboxEditor, mouseInViewportTex);
+            DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 30}, 30, 1, GRAY);
             EndTextureMode();
-
-            if (IsKeyPressed(KEY_ESCAPE))
-            {
-                if (hitboxEditor.poly.isClosed)
-                {
-                    for (int i = 0; i < hitboxEditor.poly.count; i++)
-                    {
-                        hitboxEditor.poly.vertices[i].x /= scaleX;
-                        hitboxEditor.poly.vertices[i].y /= scaleY;
-                    }
-                    for (int i = 0; i < graph.pinCount; i++)
-                    {
-                        if (graph.pins[i].id == editor.hitboxEditingPinID)
-                        {
-                            graph.pins[i].hitbox = hitboxEditor.poly;
-                        }
-                    }
-                    UnloadTexture(hitboxEditor.texture);
-                    hitboxEditor.texture.id = 0;
-                    engine.viewportMode = VIEWPORT_CG_EDITOR;
-                }
-                else
-                {
-                    engine.viewportMode = VIEWPORT_CG_EDITOR;
-                }
-            }
-            if (IsKeyPressed(KEY_R))
-            {
-                hitboxEditor.poly.count = 0;
-                hitboxEditor.poly.isClosed = false;
-            }
-            if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
-            {
-                if (hitboxEditor.poly.count != 0)
-                {
-                    hitboxEditor.poly.count--;
-                    hitboxEditor.poly.isClosed = false;
-                }
-            }
 
             break;
         }
@@ -2044,57 +2004,23 @@ int main()
         }
         }
 
-        if (!engine.isGameRunning || !engine.isGameFullscreen)
-        {
-            DrawTexturePro(
-                engine.viewport.texture,
-                (Rectangle){
-                    (engine.viewport.texture.width - engine.viewportWidth / engine.zoom) / 2.0f,
-                    (engine.viewport.texture.height - engine.viewportHeight / engine.zoom) / 2.0f,
-                    engine.viewportWidth / engine.zoom,
-                    -engine.viewportHeight / engine.zoom},
-                (Rectangle){
-                    engine.sideBarWidth,
-                    0,
-                    engine.screenWidth - engine.sideBarWidth,
-                    engine.screenHeight - engine.bottomBarHeight},
-                (Vector2){0, 0},
-                0.0f,
-                WHITE);
-        }
+        Rectangle src = {
+            (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f,
+            (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f,
+            engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom,
+            -(engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)};
 
-        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
-        {
-            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
-            DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
-        }
-        else if (engine.viewportMode == VIEWPORT_HITBOX_EDITOR)
-        {
-            DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){engine.sideBarWidth + 30, 30}, 30, 1, GRAY);
-        }
+        Rectangle dst = {
+            engine.isGameFullscreen ? 0 : engine.sideBarWidth,
+            0,
+            engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
+            engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
+
+        DrawTexturePro(engine.viewport.texture, src, dst, (Vector2){0, 0}, 0.0f, WHITE);
 
         if (engine.UI.texture.id != 0 && !engine.isGameFullscreen)
         {
             DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
-        }
-
-        if (engine.isGameRunning && engine.isGameFullscreen)
-        {
-            DrawTexturePro(
-                engine.viewport.texture,
-                (Rectangle){
-                    (engine.viewport.texture.width - engine.screenWidth) / 2.0f,
-                    (engine.viewport.texture.height - engine.screenHeight) / 2.0f,
-                    engine.screenWidth,
-                    -engine.screenHeight},
-                (Rectangle){
-                    0,
-                    0,
-                    engine.screenWidth,
-                    engine.screenHeight},
-                (Vector2){0, 0},
-                0.0f,
-                WHITE);
         }
 
         if (engine.showSaveWarning == 1)
@@ -2111,7 +2037,8 @@ int main()
             engine.showSettingsMenu = DrawSettingsMenu(&engine, &interpreter);
         }
 
-        if(engine.shouldShowFPS){
+        if (engine.shouldShowFPS)
+        {
             DrawTextEx(engine.font, TextFormat("%d FPS", GetFPS()), (Vector2){engine.screenWidth / 2, 10}, 40, 1, RED);
         }
 

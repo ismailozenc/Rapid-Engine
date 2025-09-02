@@ -13,13 +13,13 @@ typedef struct {
     Vector2 position;
     Polygon poly;
     int draggingVerticeIndex;
+    Vector2 scale;
 } HitboxEditorContext;
 
-HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos);
+HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos, Vector2 scale);
 void AddVertex(HitboxEditorContext *e, Vector2 v);
 bool CheckCollisionPolyPolyTest(Polygon *a, Vector2 aOffset, Polygon *b, Vector2 bOffset);
-void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal);
-void DrawEditor(HitboxEditorContext *e, Vector2 mouseLocal);
-Polygon CircleToPoly(Vector2 center, float radius, int sides);
+bool UpdateHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal, GraphContext *graph, int hitboxEditingPinID);
+void DrawHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal);
 
 #endif

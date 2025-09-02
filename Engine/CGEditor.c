@@ -1371,6 +1371,9 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
         }
     }
 
+    DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){editor->viewportBoundary.x + 20, editor->viewportBoundary.y + 30}, 40, 4, Fade(WHITE, 0.2f));
+    DrawTextEx(GetFontDefault(), "TM", (Vector2){editor->viewportBoundary.x + 230, editor->viewportBoundary.y + 20}, 15, 1, Fade(WHITE, 0.2f));
+
     EndTextureMode();
 
     return 0;

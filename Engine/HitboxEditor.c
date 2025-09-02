@@ -7,7 +7,7 @@
 #define SNAP_DIST 10.0f
 #define TEST_RADIUS 10.0f
 
-HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos)
+HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos, Vector2 scale)
 {
     HitboxEditorContext e = {0};
     e.texture = tex;
@@ -15,6 +15,7 @@ HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos)
     e.poly.count = 0;
     e.poly.isClosed = false;
     e.draggingVerticeIndex = -1;
+    e.scale = scale;
     return e;
 }
 
@@ -25,15 +26,50 @@ static bool IsNear(Vector2 a, Vector2 b, float dist)
     return (dx * dx + dy * dy) < (dist * dist);
 }
 
-void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
+bool UpdateHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal, GraphContext *graph, int hitboxEditingPinID)
 {
+    if (IsKeyPressed(KEY_ESCAPE))
+    {
+        if (e->poly.isClosed)
+        {
+            for (int i = 0; i < e->poly.count; i++)
+            {
+                e->poly.vertices[i].x /= e->scale.x;
+                e->poly.vertices[i].y /= e->scale.y;
+            }
+            for (int i = 0; i < graph->pinCount; i++)
+            {
+                if (graph->pins[i].id == hitboxEditingPinID)
+                {
+                    graph->pins[i].hitbox = e->poly;
+                }
+            }
+            UnloadTexture(e->texture);
+            e->texture.id = 0;
+        }
+        return false;
+    }
+    if (IsKeyPressed(KEY_R))
+    {
+        e->poly.count = 0;
+        e->poly.isClosed = false;
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
+    {
+        if (e->poly.count != 0)
+        {
+            e->poly.count--;
+            e->poly.isClosed = false;
+        }
+    }
+
     if (e->poly.isClosed)
     {
 
         if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON))
         {
             e->draggingVerticeIndex = -1;
-            return;
+            return true;
         }
 
         if (e->draggingVerticeIndex == -1)
@@ -52,7 +88,7 @@ void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
 
             if (e->draggingVerticeIndex == -1)
             {
-                return;
+                return true;
             }
         }
 
@@ -75,7 +111,7 @@ void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
                 if (IsNear(mouseLocal, firstScreen, SNAP_DIST))
                 {
                     e->poly.isClosed = true;
-                    return;
+                    return true;
                 }
             }
 
@@ -85,9 +121,11 @@ void UpdateEditor(HitboxEditorContext *e, Vector2 mouseLocal)
             }
         }
     }
+
+    return true;
 }
 
-void DrawEditor(HitboxEditorContext *e, Vector2 mouseLocal)
+void DrawHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal)
 {
     ClearBackground((Color){80, 0, 90, 100});
 

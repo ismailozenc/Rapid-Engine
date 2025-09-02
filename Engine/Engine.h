@@ -127,46 +127,62 @@ typedef enum{
 
 typedef struct EngineContext
 {
-    int screenWidth, screenHeight, bottomBarHeight, sideBarWidth, sideBarMiddleY;
+    int screenWidth;
+    int screenHeight;
     int prevScreenWidth;
     int prevScreenHeight;
     int viewportWidth;
     int viewportHeight;
+    float zoom;
+    bool isGameFullscreen;
+    bool sideBarHalfSnap;
+
+    int bottomBarHeight;
+    int sideBarWidth;
+    int sideBarMiddleY;
+    UIElement uiElements[MAX_UI_ELEMENTS];
+    int uiElementCount;
+    int hoveredUIElementIndex;
+    bool hasResizedBar;
+    bool isEditorOpened;
+    bool isViewportFocused;
+    bool isAnyMenuOpen;
+    bool isSaveButtonHovered;
+    int showSaveWarning;
+    bool showSettingsMenu;
+
+    RenderTexture2D viewportTex;
+    RenderTexture2D uiTex;
+    Texture2D resizeButton;
+    Texture2D viewportFullscreenButton;
+    Texture2D settingsGear;
+    Font font;
+    ViewportMode viewportMode;
+
     Vector2 mousePos;
-    RenderTexture2D viewport, UI;
-    Texture2D resizeButton, viewportFullscreenButton, settingsGear;
+    int draggingResizeButtonID;
+
     char *currentPath;
     char *projectPath;
     char *CGFilePath;
-    Font font;
-    Logs logs;
-    bool delayFrames;
     FilePathList files;
-    int draggingResizeButtonID;
-    bool hasResizedBar;
-    UIElement uiElements[MAX_UI_ELEMENTS]; // temporary hardcoded size
-    int uiElementCount;
-    int hoveredUIElementIndex;
-    bool isEditorOpened;
-    bool isViewportFocused;
-    Sound save;
-    bool isSoundOn;
-    int fps;
+
     bool isGameRunning;
-    bool sideBarHalfSnap;
-    float zoom;
     bool wasBuilt;
-    int showSaveWarning;
-    bool showSettingsMenu;
-    bool isGameFullscreen;
     VarFilter varsFilter;
-    bool isSaveButtonHovered;
-    ViewportMode viewportMode;
-    bool isAutoSaveON;
-    float autoSaveTimer;
+
+    Sound saveSound;
+    bool isSoundOn;
+
+    int fps;
     int fpsLimit;
     bool shouldShowFPS;
-    bool isAnyMenuOpen;
+    bool delayFrames;
+    float autoSaveTimer;
+    bool isAutoSaveON;
+
+    Logs logs;
+
 } EngineContext;
 
 typedef enum

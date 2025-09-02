@@ -44,12 +44,12 @@ EngineContext InitEngineContext()
 
     engine.mousePos = GetMousePosition();
 
-    engine.viewport = LoadRenderTexture(engine.screenWidth * 2, engine.screenHeight * 2);
-    engine.UI = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
+    engine.viewportTex = LoadRenderTexture(engine.screenWidth * 2, engine.screenHeight * 2);
+    engine.uiTex = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
     engine.resizeButton = LoadTexture("textures//resize_btn.png");
     engine.viewportFullscreenButton = LoadTexture("textures//viewport_fullscreen.png");
     engine.settingsGear = LoadTexture("textures//settings_gear.png");
-    if (engine.UI.id == 0 || engine.viewport.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
+    if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
         EmergencyExit(&engine);
@@ -73,7 +73,7 @@ EngineContext InitEngineContext()
     engine.viewportMode = VIEWPORT_CG_EDITOR;
     engine.isGameRunning = false;
 
-    engine.save = LoadSound("sound//save.wav");
+    engine.saveSound = LoadSound("sound//save.wav");
 
     engine.isSoundOn = true;
 
@@ -128,15 +128,15 @@ void FreeEngineContext(EngineContext *engine)
 
     UnloadDirectoryFiles(engine->files);
 
-    UnloadRenderTexture(engine->viewport);
-    UnloadRenderTexture(engine->UI);
+    UnloadRenderTexture(engine->viewportTex);
+    UnloadRenderTexture(engine->uiTex);
     UnloadTexture(engine->resizeButton);
     UnloadTexture(engine->viewportFullscreenButton);
     UnloadTexture(engine->settingsGear);
 
     UnloadFont(engine->font);
 
-    UnloadSound(engine->save);
+    UnloadSound(engine->saveSound);
 }
 
 void AddUIElement(EngineContext *engine, UIElement element)
@@ -378,7 +378,7 @@ void DrawSlider(Vector2 pos, bool *value, Vector2 mousePos)
 
     if (*value)
     {
-        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, GREEN);
+        DrawRectangleRounded((Rectangle){pos.x, pos.y, 40, 24}, 1.0f, 8, (Color){0, 128, 0, 255});
         DrawCircle(pos.x + 28, pos.y + 12, 10, WHITE);
     }
     else
@@ -406,7 +406,7 @@ void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos, Font font)
         for (int i = 0; i < fpsCount; i++)
         {
             Rectangle optionBox = {mainBox.x - (i + 1) * 40, mainBox.y, 40, blockHeight};
-            DrawRectangle(mainBox.x - (i + 1) * 40 - 2, mainBox.y, 40, blockHeight, (*limit == fpsOptions[i]) ? GREEN : (Color){60, 60, 60, 255});
+            DrawRectangle(mainBox.x - (i + 1) * 40 - 2, mainBox.y, 40, blockHeight, (*limit == fpsOptions[i]) ? (Color){0, 128, 0, 255} : (Color){60, 60, 60, 255});
             DrawTextEx(font, TextFormat("%d", fpsOptions[i]), (Vector2){optionBox.x + 10 - 4 * fpsOptions[i] / 100, optionBox.y + 4}, 20, 1, WHITE);
 
             if (CheckCollisionPointRec(mousePos, optionBox))
@@ -611,7 +611,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 if (engine->isSoundOn)
                 {
-                    PlaySound(engine->save);
+                    PlaySound(engine->saveSound);
                 }
                 if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
                 {
@@ -862,7 +862,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 {
     engine->uiElementCount = 0;
 
-    BeginTextureMode(engine->UI);
+    BeginTextureMode(engine->uiTex);
     ClearBackground((Color){255, 255, 255, 0});
 
     if (engine->screenWidth > engine->screenHeight && engine->screenWidth > 1000)
@@ -1448,11 +1448,11 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
 bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
 {
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT) && !engine->isGameRunning)
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT) && engine->viewportMode == VIEWPORT_CG_EDITOR)
     {
         if (engine->isSoundOn)
         {
-            PlaySound(engine->save);
+            PlaySound(engine->saveSound);
         }
         if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
         {
@@ -1771,7 +1771,7 @@ int main()
     PrepareCGFilePath(&engine, fileName);
 
     interpreter.projectPath = strdup(engine.currentPath);
-    engine.projectPath = strdup(engine.currentPath); // should be moved
+    engine.projectPath = strdup(engine.currentPath);
 
     if (!LoadGraphFromFile(engine.CGFilePath, &graph))
     {
@@ -1815,11 +1815,11 @@ int main()
 
         SetEngineZoom(&engine, &editor);
 
-        Vector2 mouseInViewportTex = (Vector2){(engine.mousePos.x - engine.sideBarWidth) / engine.zoom + (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f, engine.mousePos.y / engine.zoom + (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f};
+        Vector2 mouseInViewportTex = (Vector2){(engine.mousePos.x - engine.sideBarWidth) / engine.zoom + (engine.viewportTex.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f, engine.mousePos.y / engine.zoom + (engine.viewportTex.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f};
 
         Rectangle viewportRecInViewportTex = (Rectangle){
-            (engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
-            (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
+            (engine.viewportTex.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
+            (engine.viewportTex.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
             engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
             engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
 
@@ -1845,7 +1845,7 @@ int main()
             if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || isSecondFrame))
             {
                 editor.viewportBoundary = viewportRecInViewportTex;
-                HandleEditor(&editor, &graph, &engine.viewport, mouseInViewportTex, engine.draggingResizeButtonID != 0, isSecondFrame);
+                HandleEditor(&editor, &graph, &engine.viewportTex, mouseInViewportTex, engine.draggingResizeButtonID != 0, isSecondFrame);
             }
             if (isSecondFrame)
             {
@@ -1899,7 +1899,7 @@ int main()
             {
                 interpreter.isPaused = !interpreter.isPaused;
             }
-            BeginTextureMode(engine.viewport);
+            BeginTextureMode(engine.viewportTex);
             ClearBackground(BLACK);
 
             engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, mouseInViewportTex, viewportRecInViewportTex);
@@ -1963,8 +1963,8 @@ int main()
                     UnloadImage(img);
 
                     Vector2 texPos = (Vector2){
-                        engine.viewport.texture.width / 2.0f,
-                        engine.viewport.texture.height / 2.0f};
+                        engine.viewportTex.texture.width / 2.0f,
+                        engine.viewportTex.texture.height / 2.0f};
 
                     hitboxEditor = InitHitboxEditor(tex, texPos, (Vector2){scaleX, scaleY});
 
@@ -1993,7 +1993,7 @@ int main()
                 }
             }
 
-            BeginTextureMode(engine.viewport);
+            BeginTextureMode(engine.viewportTex);
             DrawHitboxEditor(&hitboxEditor, mouseInViewportTex);
             DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 30}, 30, 1, GRAY);
             EndTextureMode();
@@ -2007,9 +2007,9 @@ int main()
         }
         }
 
-        DrawTexturePro(engine.viewport.texture,
-                       (Rectangle){(engine.viewport.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f,
-                                   (engine.viewport.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f,
+        DrawTexturePro(engine.viewportTex.texture,
+                       (Rectangle){(engine.viewportTex.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f,
+                                   (engine.viewportTex.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f,
                                    engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom,
                                    -(engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)},
                        (Rectangle){engine.isGameFullscreen ? 0 : engine.sideBarWidth,
@@ -2018,9 +2018,9 @@ int main()
                                    engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)},
                        (Vector2){0, 0}, 0.0f, WHITE);
 
-        if (engine.UI.texture.id != 0 && !engine.isGameFullscreen)
+        if (engine.uiTex.texture.id != 0 && !engine.isGameFullscreen)
         {
-            DrawTextureRec(engine.UI.texture, (Rectangle){0, 0, engine.UI.texture.width, -engine.UI.texture.height}, (Vector2){0, 0}, WHITE);
+            DrawTextureRec(engine.uiTex.texture, (Rectangle){0, 0, engine.uiTex.texture.width, -engine.uiTex.texture.height}, (Vector2){0, 0}, WHITE);
         }
 
         if(engine.viewportMode == VIEWPORT_CG_EDITOR){

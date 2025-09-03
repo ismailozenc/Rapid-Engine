@@ -3,7 +3,6 @@
 #include <direct.h>
 #include <stdlib.h>
 #include <time.h>
-#include "shell_execute.h"
 #include "CGEditor.h"
 #include "ProjectManager.h"
 #include "Engine.h"
@@ -213,18 +212,32 @@ void EmergencyExit(EngineContext *engine)
     exit(1);
 }
 
-char *SetProjectFolderPath(char *fileName)
+char *SetProjectFolderPath(const char *fileName)
 {
-    char *projectPath = malloc(260);
-    if (!projectPath)
+    if (!fileName)
+    {
         return NULL;
+    }
 
-    getcwd(projectPath, 260);
+    char cwd[MAX_FILE_PATH];
+    if (!_getcwd(cwd, sizeof(cwd)))
+    {
+        return NULL;
+    }
 
-    projectPath[strlen(projectPath) - 7] = '\0';
+    char *lastSlash = strrchr(cwd, PATH_SEPARATOR);
+    if (lastSlash)
+    {
+        *lastSlash = '\0';
+    }
 
-    strcat(projectPath, "\\Projects\\");
-    strcat(projectPath, fileName);
+    char *projectPath = malloc(MAX_FILE_PATH);
+    if (!projectPath)
+    {
+        return NULL;
+    }
+
+    snprintf(projectPath, MAX_FILE_PATH, "%s%cProjects%c%s", cwd, PATH_SEPARATOR, PATH_SEPARATOR, fileName);
 
     return projectPath;
 }
@@ -263,7 +276,7 @@ void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 
     cwd[len - 7] = '\0';
 
-    snprintf(engine->CGFilePath, MAX_FILE_PATH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
+    snprintf(engine->CGFilePath, MAX_FILE_PATH, "%s%cProjects%c%s%c%s.cg", cwd, PATH_SEPARATOR, PATH_SEPARATOR, projectName, PATH_SEPARATOR, projectName);
 
     for (int i = 0; i < engine->files.count; i++)
     {
@@ -674,7 +687,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
         case UI_ACTION_BACK_FILEPATH:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                char *lastSlash = strrchr(engine->currentPath, '\\');
+                char *lastSlash = strrchr(engine->currentPath, PATH_SEPARATOR);
                 if (lastSlash != NULL)
                 {
                     *lastSlash = '\0';
@@ -776,14 +789,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     }
                     else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
                     {
-                        char command[512];
-                        snprintf(command, sizeof(command), "start \"\" \"%s\"", engine->uiElements[engine->hoveredUIElementIndex].name);
-                        system(command);
+                        OpenFile(TextFormat("%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].name));
                     }
                     else
                     {
-                        strcat(engine->currentPath, "\\");
-                        strcat(engine->currentPath, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        snprintf(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+
                         engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
                     }
                 }
@@ -826,12 +837,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
         if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
         {
             AddUIElement(engine, (UIElement){
-                                         .name = "HoverBlink",
-                                         .shape = UIRectangle,
-                                         .type = UI_ACTION_NO_COLLISION_ACTION,
-                                         .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
-                                         .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
-                                         .layer = 99});
+                                     .name = "HoverBlink",
+                                     .shape = UIRectangle,
+                                     .type = UI_ACTION_NO_COLLISION_ACTION,
+                                     .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
+                                     .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
+                                     .layer = 99});
         }
     }
 
@@ -1340,9 +1351,10 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .color = (Color){40, 40, 40, 255},
                                  .layer = 1,
                                  .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = fileTextColor}});
-        strncpy(engine->uiElements[engine->uiElementCount - 1].name, engine->files.paths[i], 256);
-        strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, 31);
-        engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
+        strncpy(engine->uiElements[engine->uiElementCount - 1].name, GetFileName(engine->files.paths[i]), 63);
+        engine->uiElements[engine->uiElementCount - 1].name[63] = '\0';
+        strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, MAX_FILE_NAME);
+        engine->uiElements[engine->uiElementCount - 1].text.string[MAX_FILE_NAME - 1] = '\0';
 
         xOffset += 200;
         if (xOffset + 100 >= engine->screenWidth)
@@ -1634,7 +1646,8 @@ void ContextChangePerFrame(EngineContext *engine)
 
 int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
 {
-    if(engine->isAnyMenuOpen){
+    if (engine->isAnyMenuOpen)
+    {
         return MOUSE_CURSOR_ARROW;
     }
 
@@ -1749,7 +1762,7 @@ int main()
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
-    char fileName[128];
+    char fileName[MAX_FILE_NAME];
     snprintf(fileName, sizeof(fileName), "%s", developerMode ? "Tetris" : HandleProjectManager());
 
     SetTargetFPS(60);
@@ -1863,7 +1876,8 @@ int main()
                         editor.hasChanged = false;
                         AddToLog(&engine, "Auto-saved successfully!", 3);
                     }
-                    else{
+                    else
+                    {
                         AddToLog(&engine, "ERROR SAVING CHANGES!", 1);
                     }
                     engine.autoSaveTimer = 0.0f;
@@ -1931,7 +1945,7 @@ int main()
             if (hitboxEditor.texture.id == 0)
             {
                 engine.delayFrames = true;
-                char path[128];
+                char path[MAX_FILE_PATH];
                 snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
 
                 Image img = LoadImage(path);
@@ -2023,7 +2037,8 @@ int main()
             DrawTextureRec(engine.uiTex.texture, (Rectangle){0, 0, engine.uiTex.texture.width, -engine.uiTex.texture.height}, (Vector2){0, 0}, WHITE);
         }
 
-        if(engine.viewportMode == VIEWPORT_CG_EDITOR){
+        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
+        {
             DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
             DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
@@ -2033,7 +2048,6 @@ int main()
             engine.showSaveWarning = DrawSaveWarning(&engine, &graph, &editor);
             if (engine.showSaveWarning == 2)
             {
-                CloseWindow();
                 break;
             }
         }

@@ -71,7 +71,7 @@ typedef struct Logs
 
 typedef struct UIElement
 {
-    char name[256];
+    char name[64];
     UIElementShape shape;
     UIAction type;
     union
@@ -102,7 +102,7 @@ typedef struct UIElement
     int layer;
     struct
     {
-        char string[256];
+        char string[MAX_FILE_PATH];
         Vector2 textPos;
         int textSize;
         int textSpacing;

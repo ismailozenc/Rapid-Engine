@@ -644,7 +644,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
                 if (fileIndex != -1 && fileIndex < interpreter->valueCount && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
                 {
-                    char path[512];
+                    char path[MAX_FILE_PATH];
                     snprintf(path, sizeof(path), "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[fileIndex].string);
                     Texture2D tex = LoadTexture(path);
                     if (tex.id == 0)

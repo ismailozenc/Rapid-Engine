@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdlib.h>
+#include <stdio.h>
 #include "raylib.h"
 #include "local_config.h"
 
@@ -14,8 +16,31 @@ static bool developerMode = false;
 
 #ifdef _WIN32
 #define PATH_SEPARATOR '\\'
-#else
+void* __stdcall ShellExecuteA(void* hwnd, const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd);
+
+static inline void OpenFile(const char* filePath) {
+    ShellExecuteA(NULL, "open", filePath, NULL, NULL, 1);
+}
+
+#elif __APPLE__
 #define PATH_SEPARATOR '/'
+
+static inline void OpenFile(const char* filePath) {
+    char command[1024];
+    snprintf(command, sizeof(command), "open \"%s\"", filePath);
+    system(command);
+}
+
+#elif __unix__
+#define PATH_SEPARATOR '/'
+static inline void OpenFile(const char* filePath) {
+    char command[1024];
+    snprintf(command, sizeof(command), "xdg-open \"%s\"", filePath);
+    system(command);
+}
+
+#else
+#error "Rapid Engine supports only Windows, macOS, and Unix-like systems"
 #endif
 
 #define MAX_LOG_MESSAGES 32

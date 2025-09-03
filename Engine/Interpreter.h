@@ -18,7 +18,7 @@ typedef struct RuntimePin
 
     int nextNodeIndex;           // Flow
     int pickedOption;            // Dropdown
-    char textFieldValue[128];    // Field
+    char textFieldValue[256];    // Field
     int componentIndex;          // Scene Component
 } RuntimePin;
 

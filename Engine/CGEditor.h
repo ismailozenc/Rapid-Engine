@@ -59,7 +59,7 @@ typedef struct
     char nodeMenuSearch[64];
 
     bool shouldOpenHitboxEditor;
-    char hitboxEditorFileName[128];
+    char hitboxEditorFileName[MAX_FILE_NAME];
     int hitboxEditingPinID;
 } EditorContext;
 

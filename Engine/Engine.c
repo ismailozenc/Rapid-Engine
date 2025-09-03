@@ -44,9 +44,16 @@ EngineContext InitEngineContext()
 
     engine.viewportTex = LoadRenderTexture(engine.screenWidth * 2, engine.screenHeight * 2);
     engine.uiTex = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
-    engine.resizeButton = LoadTexture(TextFormat("textures%cresize_btn.png", PATH_SEPARATOR));
-    engine.viewportFullscreenButton = LoadTexture(TextFormat("textures%cviewport_fullscreen.png", PATH_SEPARATOR));
-    engine.settingsGear = LoadTexture(TextFormat("textures%csettings_gear.png", PATH_SEPARATOR));
+    Image tempImg;
+    tempImg = LoadImageFromMemory(".png", resize_btn_png, resize_btn_png_len);
+    engine.resizeButton = LoadTextureFromImage(tempImg);
+    UnloadImage(tempImg);
+    tempImg = LoadImageFromMemory(".png", viewport_fullscreen_png, viewport_fullscreen_png_len);
+    engine.viewportFullscreenButton = LoadTextureFromImage(tempImg);
+    UnloadImage(tempImg);
+    tempImg = LoadImageFromMemory(".png", settings_gear_png, settings_gear_png_len);
+    engine.settingsGear = LoadTextureFromImage(tempImg);
+    UnloadImage(tempImg);
     if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
@@ -56,10 +63,10 @@ EngineContext InitEngineContext()
     engine.delayFrames = true;
     engine.draggingResizeButtonID = 0;
 
-    engine.font = LoadFontEx(TextFormat("fonts%carialbd.ttf", PATH_SEPARATOR), 128, NULL, 0);
+    engine.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 128, NULL, 0);
     if (engine.font.texture.id == 0)
     {
-        AddToLog(&engine, "Failed to load font: fonts/arialbd.ttf", 1);
+        AddToLog(&engine, "Failed to load font", 1);
         EmergencyExit(&engine);
     }
 
@@ -71,7 +78,12 @@ EngineContext InitEngineContext()
     engine.viewportMode = VIEWPORT_CG_EDITOR;
     engine.isGameRunning = false;
 
-    engine.saveSound = LoadSound(TextFormat("sound%csave.wav", PATH_SEPARATOR));
+    engine.saveSound = LoadSoundFromWave(LoadWaveFromMemory(".wav", save_wav, save_wav_len));
+    if (engine.saveSound.frameCount == 0)
+    {
+        AddToLog(&engine, "Failed to load audio", 1);
+        EmergencyExit(&engine);
+    }
 
     engine.isSoundOn = true;
 
@@ -261,8 +273,7 @@ void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 
     if (!getcwd(cwd, sizeof(cwd)))
     {
-        perror("Failed to get current working directory");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     size_t len = strlen(cwd);
@@ -270,7 +281,7 @@ void PrepareCGFilePath(EngineContext *engine, const char *projectName)
     if (len <= 7)
     {
         fprintf(stderr, "Current directory path too short to truncate 7 chars\n");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     cwd[len - 7] = '\0';

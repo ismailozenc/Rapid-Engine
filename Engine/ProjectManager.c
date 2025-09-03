@@ -544,8 +544,12 @@ int WindowCreateProject(char *projectFileName, Font font)
 
 char *HandleProjectManager()
 {
-    Font font = LoadFontEx(TextFormat("fonts%carialbd.ttf", PATH_SEPARATOR), 256, NULL, 0);
-    Font fontRE = LoadFontEx(TextFormat("fonts%csonsie.ttf", PATH_SEPARATOR), 256, NULL, 0);
+    Font font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 256, NULL, 0);
+    Font fontRE = LoadFontFromMemory(".ttf", sonsie_ttf, sonsie_ttf_len, 256, NULL, 0);
+    if (font.texture.id == 0 || fontRE.texture.id == 0)
+    {
+        exit(1);
+    }
 
     ProjectManagerWindowMode windowMode = PROJECT_MANAGER_WINDOW_MODE_MAIN;
     char *projectFileName = malloc(MAX_FILE_NAME * sizeof(char));

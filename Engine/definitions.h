@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "raylib.h"
 #include "local_config.h"
+#include "resources/resources.h"
 
 #if DEVELOPER_MODE
 static bool developerMode = true;

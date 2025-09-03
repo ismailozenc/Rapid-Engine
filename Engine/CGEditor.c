@@ -43,19 +43,22 @@ EditorContext InitEditorContext()
     Vector2 menuPosition = {0, 0};
     Vector2 submenuPosition = {0, 0};
 
-    editor.gearTxt = LoadTexture("textures//node_gear.png");
+    Image tempImg;
+    tempImg = LoadImageFromMemory(".png", node_gear_png, node_gear_png_len);
+    editor.gearTxt = LoadTextureFromImage(tempImg);
+    UnloadImage(tempImg);
     if (editor.gearTxt.id == 0)
     {
-        // Error
+        AddToLogFromEditor(&editor, "Failed to load texture", 2);
     }
 
     editor.nodeDropdownFocused = -1;
     editor.nodeFieldPinFocused = -1;
 
-    editor.font = LoadFontEx("fonts//arialbd.ttf", 512, NULL, 0);
+    editor.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 256, NULL, 0);
     if (editor.font.texture.id == 0)
     {
-        AddToLogFromEditor(&editor, "Couldn't load font", 1);
+        AddToLogFromEditor(&editor, "Failed to load font", 2);
     }
 
     editor.newLogMessage = false;

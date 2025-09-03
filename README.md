@@ -75,5 +75,3 @@
 ## ⚠️ Note: Rapid Engine is not packaged for public release yet, but you can build and run it manually:
 
 ```gcc Engine.c ProjectManager.c CGEditor.c Nodes.c Interpreter.c HitboxEditor.c raylib/lib/libraylib.a -o RapidEngine.exe -Iraylib/include -lopengl32 -lgdi32 -lwinmm -mwindows; ./RapidEngine.exe```
-
-Currently, the engine hardcodes the opened file path, even though there is a working project manager. Loading other files requires manual code changes.

@@ -1,6 +1,13 @@
 #pragma once
 
 #include "raylib.h"
+#include "local_config.h"
+
+#if DEVELOPER_MODE
+static bool developerMode = true;
+#else
+static bool developerMode = false;
+#endif
 
 #define MAX_FILE_NAME 256
 #define MAX_FILE_PATH 2048

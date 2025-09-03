@@ -93,6 +93,13 @@ void DrawTopButtons()
     DrawLineEx((Vector2){1515, 25}, (Vector2){1535, 25}, 2, WHITE);
 }
 
+typedef enum
+{
+    MAIN_WINDOW_BUTTON_NONE,
+    MAIN_WINDOW_BUTTON_LOAD,
+    MAIN_WINDOW_BUTTON_CREATE
+} MainWindowButton;
+
 int MainWindow(Font font, Font fontRE)
 {
     Rectangle btnLoad = {0, 0, 798, 1000};
@@ -100,32 +107,31 @@ int MainWindow(Font font, Font fontRE)
 
     Vector2 mousePos = GetMousePosition();
 
-    static int isLoadBtnFocused = 0;
-    static Vector2 lastMousePos;
+    static MainWindowButton hoveredButton = MAIN_WINDOW_BUTTON_NONE;
 
     BeginDrawing();
     ClearBackground((Color){40, 42, 54, 255});
 
-    if (lastMousePos.x != GetMousePosition().x || lastMousePos.y != GetMousePosition().y)
+    if (GetMouseDelta().x != 0 || GetMouseDelta().y != 0)
     {
         if (CheckCollisionPointRec(mousePos, (Rectangle){484, 189, 632, 122}))
         {
-            isLoadBtnFocused = 0;
+            hoveredButton = MAIN_WINDOW_BUTTON_NONE;
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
         }
         else if (CheckCollisionPointRec(mousePos, btnLoad))
         {
-            isLoadBtnFocused = 1;
+            hoveredButton = MAIN_WINDOW_BUTTON_LOAD;
             SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         }
         else if (CheckCollisionPointRec(mousePos, btnCreate) && !CheckCollisionPointRec(mousePos, (Rectangle){1500, 0, 100, 50}))
         {
-            isLoadBtnFocused = 2;
+            hoveredButton = MAIN_WINDOW_BUTTON_CREATE;
             SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         }
         else
         {
-            isLoadBtnFocused = 0;
+            hoveredButton = MAIN_WINDOW_BUTTON_NONE;
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
         }
     }
@@ -133,45 +139,43 @@ int MainWindow(Font font, Font fontRE)
     {
         if (IsKeyPressed(KEY_ENTER))
         {
-            if (isLoadBtnFocused == 1)
+            if (hoveredButton == MAIN_WINDOW_BUTTON_LOAD)
             {
-                isLoadBtnFocused = 0;
-                return 1;
+                hoveredButton = MAIN_WINDOW_BUTTON_NONE;
+                return PROJECT_MANAGER_WINDOW_MODE_LOAD;
             }
-            else if (isLoadBtnFocused == 2)
+            else if (hoveredButton == MAIN_WINDOW_BUTTON_CREATE)
             {
-                isLoadBtnFocused = 0;
-                return 2;
+                hoveredButton = MAIN_WINDOW_BUTTON_NONE;
+                return PROJECT_MANAGER_WINDOW_MODE_CREATE;
             }
         }
         else if (IsKeyPressed(KEY_LEFT))
         {
-            isLoadBtnFocused = 1;
+            hoveredButton = MAIN_WINDOW_BUTTON_LOAD;
         }
         else if (IsKeyPressed(KEY_RIGHT))
         {
-            isLoadBtnFocused = 2;
+            hoveredButton = MAIN_WINDOW_BUTTON_CREATE;
         }
     }
 
-    lastMousePos = GetMousePosition();
-
-    if (isLoadBtnFocused == 1)
+    if (hoveredButton == MAIN_WINDOW_BUTTON_LOAD)
     {
         DrawRectangle(0, 0, 800, 1000, (Color){128, 128, 128, 20});
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePos, btnLoad))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && hoveredButton == MAIN_WINDOW_BUTTON_LOAD)
         {
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-            return 1;
+            return PROJECT_MANAGER_WINDOW_MODE_LOAD;
         }
     }
-    else if (isLoadBtnFocused == 2)
+    else if (hoveredButton == MAIN_WINDOW_BUTTON_CREATE)
     {
         DrawRectangle(800, 0, 1600, 1000, (Color){128, 128, 128, 20});
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePos, btnCreate) && !CheckCollisionPointRec(mousePos, (Rectangle){1500, 0, 100, 50}))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && hoveredButton == MAIN_WINDOW_BUTTON_CREATE && !CheckCollisionPointRec(mousePos, (Rectangle){1500, 0, 100, 50}))
         {
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-            return 2;
+            return PROJECT_MANAGER_WINDOW_MODE_CREATE;
         }
     }
 
@@ -235,30 +239,36 @@ int WindowLoadProject(char *projectFileName, Font font)
         DrawTextEx(font, "<", (Vector2){15, 500}, 50, 0, WHITE);
     }
 
-    if (CheckCollisionPointRec(mousePos, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-    {
-        return PROJECT_MANAGER_WINDOW_MODE_MAIN;
-    }
-
     if (CheckCollisionPointRec(mousePos, backButton))
     {
         DrawRectangleRec(backButton, CLITERAL(Color){255, 255, 255, 100});
-    }
 
-    for (int i = 0; i < files.count; i++)
-    {
-        const char *fileName = GetFileName(files.paths[i]);
-        DrawText(fileName, 100, yPosition, 35, WHITE);
-        if (CheckCollisionPointRec(mousePos, (Rectangle){20, yPosition, MeasureText(fileName, 20), 20}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            strcpy(projectFileName, fileName);
-            return PROJECT_MANAGER_WINDOW_MODE_EXIT;
+            return PROJECT_MANAGER_WINDOW_MODE_MAIN;
         }
-        yPosition += 50;
     }
 
     static float blinkTimer = 0;
     blinkTimer += GetFrameTime();
+
+    for (int i = 0; i < files.count; i++)
+    {
+        const char *fileName = GetFileName(files.paths[i]);
+        int fileNameLength = MeasureTextEx(font, fileName, 35, 1).x;
+        DrawTextEx(font, fileName, (Vector2){(GetScreenWidth() - fileNameLength) / 2, yPosition}, 35, 1, WHITE);
+        if (CheckCollisionPointRec(mousePos, (Rectangle){(GetScreenWidth() - fileNameLength) / 2 - 5, yPosition - 5, fileNameLength + 10, 45}))
+        {
+            if(GetMouseDelta().x != 0 || GetMouseDelta().y != 0){
+                selectedProject = i;
+            }
+            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+                strcpy(projectFileName, fileName);
+                return PROJECT_MANAGER_WINDOW_MODE_EXIT;
+            }
+        }
+        yPosition += 50;
+    }
 
     if (blinkTimer >= 0.3f)
     {
@@ -295,7 +305,9 @@ int WindowLoadProject(char *projectFileName, Font font)
 
     if (showSelectorArrow)
     {
-        DrawTextEx(font, ">", (Vector2){80, 80 + selectedProject * 50}, 30, 0, (Color){202, 97, 255, 255});
+        int fileNameLength = MeasureTextEx(font, GetFileName(files.paths[selectedProject]), 35, 1).x;
+        DrawTextEx(font, ">", (Vector2){(GetScreenWidth() - fileNameLength) / 2 - 30, 80 + selectedProject * 50}, 35, 0, (Color){202, 97, 255, 255});
+        DrawTextEx(font, "<", (Vector2){(GetScreenWidth() + fileNameLength) / 2 + 10, 80 + selectedProject * 50}, 35, 0, (Color){202, 97, 255, 255});
     }
 
     if (IsKeyPressed(KEY_ENTER))
@@ -508,7 +520,8 @@ int WindowCreateProject(char *projectFileName, Font font)
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 strcpy(PO.projectName, inputText);
-                if(!CreateProject(PO)){
+                if (!CreateProject(PO))
+                {
                     exit(1);
                 }
                 strcpy(projectFileName, inputText);

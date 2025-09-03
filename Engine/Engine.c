@@ -46,9 +46,9 @@ EngineContext InitEngineContext()
 
     engine.viewportTex = LoadRenderTexture(engine.screenWidth * 2, engine.screenHeight * 2);
     engine.uiTex = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
-    engine.resizeButton = LoadTexture("textures//resize_btn.png");
-    engine.viewportFullscreenButton = LoadTexture("textures//viewport_fullscreen.png");
-    engine.settingsGear = LoadTexture("textures//settings_gear.png");
+    engine.resizeButton = LoadTexture(TextFormat("textures%cresize_btn.png", PATH_SEPARATOR));
+    engine.viewportFullscreenButton = LoadTexture(TextFormat("textures%cviewport_fullscreen.png", PATH_SEPARATOR));
+    engine.settingsGear = LoadTexture(TextFormat("textures%csettings_gear.png", PATH_SEPARATOR));
     if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
@@ -58,7 +58,7 @@ EngineContext InitEngineContext()
     engine.delayFrames = true;
     engine.draggingResizeButtonID = 0;
 
-    engine.font = LoadFontEx("fonts//arialbd.ttf", 128, NULL, 0);
+    engine.font = LoadFontEx(TextFormat("fonts%carialbd.ttf", PATH_SEPARATOR), 128, NULL, 0);
     if (engine.font.texture.id == 0)
     {
         AddToLog(&engine, "Failed to load font: fonts/arialbd.ttf", 1);
@@ -73,7 +73,7 @@ EngineContext InitEngineContext()
     engine.viewportMode = VIEWPORT_CG_EDITOR;
     engine.isGameRunning = false;
 
-    engine.saveSound = LoadSound("sound//save.wav");
+    engine.saveSound = LoadSound(TextFormat("sound%csave.wav", PATH_SEPARATOR));
 
     engine.isSoundOn = true;
 
@@ -1276,7 +1276,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         switch (GetFileType(fileName))
         {
         case FILE_FOLDER:
-            fileOutlineColor = (Color){205, 205, 50, 200}; //(Color){200, 170, 50, 200}
+            fileOutlineColor = (Color){205, 205, 50, 200};
             fileTextColor = (Color){240, 240, 120, 255};
             break;
         case FILE_CG:
@@ -1618,12 +1618,13 @@ void ContextChangePerFrame(EngineContext *engine)
     engine->mousePos = GetMousePosition();
     engine->isViewportFocused = CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->sideBarWidth, 0, engine->screenWidth - engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight});
 
+    engine->screenWidth = GetScreenWidth();
+    engine->screenHeight = GetScreenHeight();
+
     if (engine->prevScreenWidth != engine->screenWidth || engine->prevScreenHeight != engine->screenHeight || engine->hasResizedBar)
     {
         engine->prevScreenWidth = engine->screenWidth;
         engine->prevScreenHeight = engine->screenHeight;
-        engine->screenWidth = GetScreenWidth();
-        engine->screenHeight = GetScreenHeight();
         engine->viewportWidth = engine->screenWidth - engine->sideBarWidth;
         engine->viewportHeight = engine->screenHeight - engine->bottomBarHeight;
         engine->hasResizedBar = false;
@@ -1744,13 +1745,12 @@ void SetEngineZoom(EngineContext *engine, EditorContext *editor)
 
 int main()
 {
-
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_UNDECORATED);
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
     char fileName[128];
-    snprintf(fileName, sizeof(fileName), "%s", HandleProjectManager()); // temporary hardcode
+    snprintf(fileName, sizeof(fileName), "%s", developerMode ? "Tetris" : HandleProjectManager());
 
     SetTargetFPS(60);
 

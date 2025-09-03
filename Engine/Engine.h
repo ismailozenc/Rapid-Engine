@@ -1,15 +1,8 @@
 #include "raylib.h"
 #include "raymath.h"
+#include "definitions.h"
 
 #define MAX_UI_ELEMENTS 100
-
-#define MAX_PATH_LENGTH 1024
-
-#ifdef _WIN32
-#define PATH_SEPARATOR '\\'
-#else
-#define PATH_SEPARATOR '/'
-#endif
 
 const double doubleClickThreshold = 0.3;
 

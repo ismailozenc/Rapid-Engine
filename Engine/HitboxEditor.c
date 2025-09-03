@@ -3,9 +3,8 @@
 #include <math.h>
 #include "HitboxEditor.h"
 
-#define MAX_VERTICES 64
 #define SNAP_DIST 10.0f
-#define TEST_RADIUS 10.0f
+#define MAX_VERTICES 64
 
 HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos, Vector2 scale)
 {

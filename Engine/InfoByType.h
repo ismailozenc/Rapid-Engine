@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_TYPE_LENGTH 16
 #define typesCount (sizeof(NodeInfoByType) / sizeof(NodeInfoByType[0]))
 #define pinTypesCount (sizeof(PinDropdownOptionsByType) / sizeof(PinDropdownOptionsByType[0])) // not named properly
 
@@ -584,7 +583,7 @@ static inline const char *NodeTypeToString(NodeType type)
     }
 }
 
-static inline NodeType StringToNodeType(char strType[MAX_TYPE_LENGTH])
+static inline NodeType StringToNodeType(const char strType[])
 {
     if (strcmp(strType, "unknown") == 0)
         return NODE_UNKNOWN;

@@ -6,16 +6,9 @@
 #include <string.h>
 #include "raylib.h"
 #include "InfoByType.h"
+#include "definitions.h"
 
 #define MAX_NODE_PINS 16
-
-#define MAX_HITBOX_VERTICES 64
-
-typedef struct {
-    Vector2 vertices[MAX_HITBOX_VERTICES];
-    int count;
-    bool isClosed;
-} Polygon;
 
 extern const char *InputsByNodeTypes[][5];
 

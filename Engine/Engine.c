@@ -65,7 +65,7 @@ EngineContext InitEngineContext()
         EmergencyExit(&engine);
     }
 
-    engine.CGFilePath = malloc(MAX_PATH_LENGTH);
+    engine.CGFilePath = malloc(MAX_FILE_PATH);
     engine.CGFilePath[0] = '\0';
 
     engine.hoveredUIElementIndex = -1;
@@ -245,7 +245,7 @@ FileType GetFileType(const char *fileName)
 
 void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 {
-    char cwd[MAX_PATH_LENGTH];
+    char cwd[MAX_FILE_PATH];
 
     if (!getcwd(cwd, sizeof(cwd)))
     {
@@ -263,7 +263,7 @@ void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 
     cwd[len - 7] = '\0';
 
-    snprintf(engine->CGFilePath, MAX_PATH_LENGTH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
+    snprintf(engine->CGFilePath, MAX_FILE_PATH, "%s\\Projects\\%s\\%s.cg", cwd, projectName, projectName);
 
     for (int i = 0; i < engine->files.count; i++)
     {
@@ -1750,7 +1750,7 @@ int main()
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
     char fileName[128];
-    snprintf(fileName, sizeof(fileName), "%s", "Tetris" /*HandleProjectManager()*/); // temporary hardcode
+    snprintf(fileName, sizeof(fileName), "%s", HandleProjectManager()); // temporary hardcode
 
     SetTargetFPS(60);
 

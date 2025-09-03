@@ -8,6 +8,19 @@
 #include "raymath.h"
 #include "rlgl.h"
 
+#define MENU_WIDTH 270
+#define MENU_ITEM_HEIGHT 40
+#define MENU_VISIBLE_ITEMS 5.5
+#define MENU_BORDER_THICKNESS 3
+#define SUBMENU_WIDTH 250
+
+typedef struct {
+    Rectangle bounds;
+    bool editing;
+    char text[256];
+    int length;
+} TextBox;
+
 void AddToLogFromEditor(EditorContext *editor, char *message, int level);
 
 EditorContext InitEditorContext()
@@ -1351,8 +1364,8 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
 
     if (editor->menuOpen)
     {
-        char createdNode[MAX_TYPE_LENGTH];
-        strcpy(createdNode, DrawNodeMenu(editor, view));
+        const char *createdNode = DrawNodeMenu(editor, view);
+
         if (strcmp(createdNode, "NULL") != 0)
         {
             NodeType newNodeType = StringToNodeType(createdNode);

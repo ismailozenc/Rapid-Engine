@@ -2,31 +2,20 @@
 #define PROJECT_MANAGER_H
 
 #include "raylib.h"
-#include "shell_execute.h"
-
-#define MAX_PROJECT_NAME 99
+#include "definitions.h"
 
 typedef struct ProjectOptions
 {
-    char projectName[MAX_PROJECT_NAME];
+    char projectName[MAX_FILE_NAME];
     bool is3D;
 } ProjectOptions;
 
-void DrawMovingDotAlongRectangle();
-
-void DrawX(Vector2 center, float size, float thickness, Color color);
-
-void DrawTopButtons();
-
-bool hasCursorMoved(Vector2 lastMousePos);
-
-int MainWindow(Vector2 mousePoint, Font font, Font fontRE);
-
-int WindowLoadProject(char *projectFileName, Font font);
-
-int CreateProject(ProjectOptions PO);
-
-int WindowCreateProject(char *projectFileName, Font font);
+typedef enum{
+    PROJECT_MANAGER_WINDOW_MODE_MAIN,
+    PROJECT_MANAGER_WINDOW_MODE_LOAD,
+    PROJECT_MANAGER_WINDOW_MODE_CREATE,
+    PROJECT_MANAGER_WINDOW_MODE_EXIT
+}ProjectManagerWindowMode;
 
 char *HandleProjectManager();
 

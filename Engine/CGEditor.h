@@ -5,21 +5,6 @@
 #include "raylib.h"
 #include "Nodes.h"
 
-#define MENU_WIDTH 270
-#define MENU_ITEM_HEIGHT 40
-#define MENU_VISIBLE_ITEMS 5.5
-#define MENU_BORDER_THICKNESS 3
-#define SUBMENU_WIDTH 250
-
-#define MAX_TYPE_LENGTH 16
-
-typedef struct {
-    Rectangle bounds;
-    bool editing;
-    char text[256];
-    int length;
-} TextBox;
-
 typedef struct
 {
     int screenWidth;

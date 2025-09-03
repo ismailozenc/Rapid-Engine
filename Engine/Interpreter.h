@@ -4,16 +4,9 @@
 #include <math.h>
 #include "raylib.h"
 #include "Nodes.h"
+#include "definitions.h"
 
-#ifdef _WIN32
-#define PATH_SEPARATOR '\\'
-#else
-#define PATH_SEPARATOR '/'
-#endif
-
-#define MAX_LINKS_PER_PIN 8
-
-#define MAX_LOG_MESSAGES 32
+#define MAX_LINKS_PER_PIN 16
 
 typedef struct RuntimePin
 {

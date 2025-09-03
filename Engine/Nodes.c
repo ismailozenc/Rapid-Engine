@@ -316,7 +316,6 @@ void CreateLink(GraphContext *graph, Pin Pin1, Pin Pin2)
     Pin inputPin = graph->pins[inputPinIndex];
     Pin outputPin = graph->pins[outputPinIndex];
 
-    // Remove existing links if needed
     for (int i = 0; i < graph->linkCount; i++)
     {
         Link l = graph->links[i];
@@ -374,7 +373,6 @@ void DeleteNode(GraphContext *graph, int nodeID)
 
         if (variableToDeleteIndex == -1)
         {
-            // Error
             return;
         }
 

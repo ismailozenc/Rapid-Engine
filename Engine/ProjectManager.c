@@ -5,7 +5,6 @@
 #include <direct.h>
 
 #include "raylib.h"
-#include "shell_execute.h"
 
 void DrawMovingDotAlongRectangle()
 {
@@ -28,25 +27,21 @@ void DrawMovingDotAlongRectangle()
 
     if (t < w)
     {
-        // Top edge
         dotX = x + t;
         dotY = y;
     }
     else if (t < w + h)
     {
-        // Right edge
         dotX = x + w;
         dotY = y + (t - w);
     }
     else if (t < w + h + w)
     {
-        // Bottom edge
         dotX = x + w - (t - w - h);
         dotY = y + h;
     }
     else
     {
-        // Left edge
         dotX = x;
         dotY = y + h - (t - w - h - w);
     }
@@ -98,15 +93,12 @@ void DrawTopButtons()
     DrawLineEx((Vector2){1515, 25}, (Vector2){1535, 25}, 2, WHITE);
 }
 
-bool hasCursorMoved(Vector2 lastMousePos)
-{
-    return lastMousePos.x != GetMousePosition().x;
-}
-
-int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
+int MainWindow(Font font, Font fontRE)
 {
     Rectangle btnLoad = {0, 0, 798, 1000};
     Rectangle btnCreate = {802, 0, 796, 1000};
+
+    Vector2 mousePos = GetMousePosition();
 
     static int isLoadBtnFocused = 0;
     static Vector2 lastMousePos;
@@ -114,19 +106,19 @@ int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
     BeginDrawing();
     ClearBackground((Color){40, 42, 54, 255});
 
-    if (hasCursorMoved(lastMousePos))
+    if (lastMousePos.x != GetMousePosition().x || lastMousePos.y != GetMousePosition().y)
     {
-        if (CheckCollisionPointRec(mousePoint, (Rectangle){484, 189, 632, 122}))
+        if (CheckCollisionPointRec(mousePos, (Rectangle){484, 189, 632, 122}))
         {
             isLoadBtnFocused = 0;
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
         }
-        else if (CheckCollisionPointRec(mousePoint, btnLoad))
+        else if (CheckCollisionPointRec(mousePos, btnLoad))
         {
             isLoadBtnFocused = 1;
             SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         }
-        else if (CheckCollisionPointRec(mousePoint, btnCreate) && !CheckCollisionPointRec(mousePoint, (Rectangle){1500, 0, 100, 50}))
+        else if (CheckCollisionPointRec(mousePos, btnCreate) && !CheckCollisionPointRec(mousePos, (Rectangle){1500, 0, 100, 50}))
         {
             isLoadBtnFocused = 2;
             SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
@@ -167,7 +159,7 @@ int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
     if (isLoadBtnFocused == 1)
     {
         DrawRectangle(0, 0, 800, 1000, (Color){128, 128, 128, 20});
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePoint, btnLoad))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePos, btnLoad))
         {
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
             return 1;
@@ -176,7 +168,7 @@ int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
     else if (isLoadBtnFocused == 2)
     {
         DrawRectangle(800, 0, 1600, 1000, (Color){128, 128, 128, 20});
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePoint, btnCreate) && !CheckCollisionPointRec(mousePoint, (Rectangle){1500, 0, 100, 50}))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(mousePos, btnCreate) && !CheckCollisionPointRec(mousePos, (Rectangle){1500, 0, 100, 50}))
         {
             SetMouseCursor(MOUSE_CURSOR_DEFAULT);
             return 2;
@@ -193,8 +185,6 @@ int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
     DrawTextEx(fontRE, "R", (Vector2){500, 180}, 130, 0, (Color){255, 255, 255, 255});
     DrawTextEx(font, "apid Engine", (Vector2){605, 200}, 100, 0, (Color){255, 255, 255, 255});
 
-    // DrawMovingDotAlongRectangle();
-
     DrawTextEx(font, "Load", (Vector2){290, 540}, 80, 0, WHITE);
     DrawTextEx(font, "project", (Vector2){260, 630}, 80, 0, WHITE);
 
@@ -203,16 +193,16 @@ int MainWindow(Vector2 mousePoint, Font font, Font fontRE)
 
     DrawMovingDotAlongRectangle();
 
-    return 0;
+    return PROJECT_MANAGER_WINDOW_MODE_MAIN;
 }
 
 int WindowLoadProject(char *projectFileName, Font font)
 {
     Rectangle backButton = {1, 0, 65, 1600};
 
-    Vector2 mousePoint = GetMousePosition();
+    Vector2 mousePos = GetMousePosition();
 
-    FilePathList files = LoadDirectoryFiles("C:\\Users\\user\\Desktop\\RapidEngine\\Projects"); //////hardcoded filepath
+    FilePathList files = LoadDirectoryFiles(TextFormat("..%cProjects", PATH_SEPARATOR));
 
     int yPosition = 80;
 
@@ -221,7 +211,7 @@ int WindowLoadProject(char *projectFileName, Font font)
 
     if (IsKeyPressed(KEY_LEFT))
     {
-        return 0;
+        return PROJECT_MANAGER_WINDOW_MODE_MAIN;
     }
 
     BeginDrawing();
@@ -231,13 +221,13 @@ int WindowLoadProject(char *projectFileName, Font font)
 
     DrawRectangleRec(backButton, CLITERAL(Color){70, 70, 70, 150});
 
-    if (CheckCollisionPointRec(mousePoint, backButton))
+    if (CheckCollisionPointRec(mousePos, backButton))
     {
         DrawRectangleRec(backButton, CLITERAL(Color){255, 255, 255, 50});
         DrawTextEx(font, "<", (Vector2){10, 490}, 70, 0, WHITE);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            return 0;
+            return PROJECT_MANAGER_WINDOW_MODE_MAIN;
         }
     }
     else
@@ -245,12 +235,12 @@ int WindowLoadProject(char *projectFileName, Font font)
         DrawTextEx(font, "<", (Vector2){15, 500}, 50, 0, WHITE);
     }
 
-    if (CheckCollisionPointRec(mousePoint, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    if (CheckCollisionPointRec(mousePos, backButton) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        return 0;
+        return PROJECT_MANAGER_WINDOW_MODE_MAIN;
     }
 
-    if (CheckCollisionPointRec(mousePoint, backButton))
+    if (CheckCollisionPointRec(mousePos, backButton))
     {
         DrawRectangleRec(backButton, CLITERAL(Color){255, 255, 255, 100});
     }
@@ -259,10 +249,10 @@ int WindowLoadProject(char *projectFileName, Font font)
     {
         const char *fileName = GetFileName(files.paths[i]);
         DrawText(fileName, 100, yPosition, 35, WHITE);
-        if (CheckCollisionPointRec(mousePoint, (Rectangle){20, yPosition, MeasureText(fileName, 20), 20}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        if (CheckCollisionPointRec(mousePos, (Rectangle){20, yPosition, MeasureText(fileName, 20), 20}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             strcpy(projectFileName, fileName);
-            return 3;
+            return PROJECT_MANAGER_WINDOW_MODE_EXIT;
         }
         yPosition += 50;
     }
@@ -270,10 +260,10 @@ int WindowLoadProject(char *projectFileName, Font font)
     static float blinkTimer = 0;
     blinkTimer += GetFrameTime();
 
-    if (blinkTimer >= 0.3f) // Half a second
+    if (blinkTimer >= 0.3f)
     {
         blinkTimer = 0;
-        showSelectorArrow = !showSelectorArrow; // Toggle visibility
+        showSelectorArrow = !showSelectorArrow;
     }
 
     if (IsKeyPressed(KEY_DOWN))
@@ -311,95 +301,81 @@ int WindowLoadProject(char *projectFileName, Font font)
     if (IsKeyPressed(KEY_ENTER))
     {
         strcpy(projectFileName, GetFileName(files.paths[selectedProject]));
-        return 3;
+        return PROJECT_MANAGER_WINDOW_MODE_EXIT;
     }
 
     UnloadDirectoryFiles(files);
 
-    return 1;
+    return PROJECT_MANAGER_WINDOW_MODE_LOAD;
 }
 
-int CreateProject(ProjectOptions PO)
+bool CreateProject(ProjectOptions PO)
 {
     char projectPath[512];
 
-    sprintf(projectPath, "C:\\Users\\user\\Desktop\\RapidEngine\\Projects\\%s", PO.projectName);
+    sprintf(projectPath, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
 
-    if (_mkdir(projectPath) == 0)
+    if (_mkdir(projectPath) != 0)
     {
-        printf("Project folder created: %s\n", projectPath);
-    }
-    else
-    {
-        printf("Failed to create folder: %s\n", projectPath);
-        return -1;
+        return false;
     }
 
     char mainPath[512];
 
-    sprintf(mainPath, "%s\\%s.c", projectPath, PO.projectName);
+    sprintf(mainPath, "%s%c%s.c", projectPath, PATH_SEPARATOR, PO.projectName);
 
     FILE *file = fopen(mainPath, "w");
 
     if (file == NULL)
     {
-        printf("Error creating file!\n");
-        return 1;
+        return false;
     }
-
-    printf("File created successfully: %s\n", mainPath);
 
     fclose(file);
 
-    sprintf(mainPath, "%s\\%s.cg", projectPath, PO.projectName);
+    sprintf(mainPath, "%s%c%s.cg", projectPath, PATH_SEPARATOR, PO.projectName);
 
     file = fopen(mainPath, "w");
 
     if (file == NULL)
     {
-        printf("Error creating file!\n");
-        return 1;
+        return false;
     }
-
-    printf("File created successfully: %s\n", mainPath);
 
     fclose(file);
 
     char foldersPath[512];
 
-    sprintf(foldersPath, "%s\\Assets", projectPath);
+    sprintf(foldersPath, "%s%cAssets", projectPath, PATH_SEPARATOR);
 
-    if (_mkdir(foldersPath) == 0)
+    if (_mkdir(foldersPath) != 0)
     {
-        printf("Project folder created: %s\n", foldersPath);
+        return false;
     }
-    else
-    {
-        printf("Failed to create folder: %s\n", foldersPath);
-        return -1;
-    }
+
+    return true;
 }
 
 int WindowCreateProject(char *projectFileName, Font font)
 {
     Rectangle backButton = {1, 0, 65, 1600};
     static Rectangle textBox = {700, 230, 250, 40};
-    static char inputText[MAX_PROJECT_NAME] = "";
+    static char inputText[MAX_FILE_NAME] = "";
     static int letterCount = 0;
     static bool isFocused = true;
 
     static ProjectOptions PO;
 
-    Vector2 mousePoint = GetMousePosition();
+    Vector2 mousePos = GetMousePosition();
 
     if (IsKeyPressed(KEY_LEFT))
     {
-        return 0;
+        return PROJECT_MANAGER_WINDOW_MODE_MAIN;
     }
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
     {
-        isFocused = CheckCollisionPointRec(mousePoint, textBox);
+        isFocused = CheckCollisionPointRec(mousePos, textBox);
     }
 
     if (isFocused)
@@ -407,7 +383,7 @@ int WindowCreateProject(char *projectFileName, Font font)
         int key = GetCharPressed();
         while (key > 0)
         {
-            if ((key >= 32) && (key <= 125) && (letterCount < MAX_PROJECT_NAME))
+            if ((key >= 32) && (key <= 125) && (letterCount < MAX_FILE_NAME))
             {
                 inputText[letterCount] = (char)key;
                 letterCount++;
@@ -430,13 +406,13 @@ int WindowCreateProject(char *projectFileName, Font font)
 
     DrawRectangleRec(backButton, CLITERAL(Color){70, 70, 70, 150});
 
-    if (CheckCollisionPointRec(mousePoint, backButton))
+    if (CheckCollisionPointRec(mousePos, backButton))
     {
         DrawRectangleRec(backButton, CLITERAL(Color){255, 255, 255, 50});
         DrawTextEx(font, "<", (Vector2){10, 490}, 70, 0, WHITE);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            return 0;
+            return PROJECT_MANAGER_WINDOW_MODE_MAIN;
         }
     }
     else
@@ -479,7 +455,7 @@ int WindowCreateProject(char *projectFileName, Font font)
     DrawTextEx(font, "2D", (Vector2){700, 330}, 30, 0, WHITE);
     DrawRectangle(750, 330, 30, 30, WHITE);
     DrawRectangleLinesEx((Rectangle){750, 330, 30, 30}, 3, BLACK);
-    if (!PO.is3D && CheckCollisionPointRec(mousePoint, (Rectangle){750, 330, 30, 30}))
+    if (!PO.is3D && CheckCollisionPointRec(mousePos, (Rectangle){750, 330, 30, 30}))
     {
         DrawX((Vector2){765, 345}, 20, 5, (Color){202, 97, 255, 255});
     }
@@ -487,7 +463,7 @@ int WindowCreateProject(char *projectFileName, Font font)
     {
         DrawX((Vector2){765, 345}, 15, 3, (Color){202, 97, 255, 255});
     }
-    if (CheckCollisionPointRec(mousePoint, (Rectangle){750, 330, 30, 30}))
+    if (CheckCollisionPointRec(mousePos, (Rectangle){750, 330, 30, 30}))
     {
         DrawRectangle(750, 330, 30, 30, (Color){255, 255, 255, 150});
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -499,7 +475,7 @@ int WindowCreateProject(char *projectFileName, Font font)
     DrawTextEx(font, "3D", (Vector2){840, 330}, 30, 0, WHITE);
     DrawRectangle(890, 330, 30, 30, WHITE);
     DrawRectangleLinesEx((Rectangle){890, 330, 30, 30}, 3, BLACK);
-    if (PO.is3D && CheckCollisionPointRec(mousePoint, (Rectangle){890, 330, 30, 30}))
+    if (PO.is3D && CheckCollisionPointRec(mousePos, (Rectangle){890, 330, 30, 30}))
     {
         DrawX((Vector2){905, 345}, 20, 5, (Color){202, 97, 255, 255});
     }
@@ -507,7 +483,7 @@ int WindowCreateProject(char *projectFileName, Font font)
     {
         DrawX((Vector2){905, 345}, 15, 3, (Color){202, 97, 255, 255});
     }
-    if (CheckCollisionPointRec(mousePoint, (Rectangle){890, 330, 30, 30}))
+    if (CheckCollisionPointRec(mousePos, (Rectangle){890, 330, 30, 30}))
     {
         DrawRectangle(890, 330, 30, 30, (Color){255, 255, 255, 150});
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -516,8 +492,8 @@ int WindowCreateProject(char *projectFileName, Font font)
         }
     }
 
-    //Temporary warning
-    if(PO.is3D){
+    if (PO.is3D)
+    {
         DrawTextEx(font, "3D mode is currently unavailable", (Vector2){690, 475}, 20, 0, RED);
     }
 
@@ -526,13 +502,17 @@ int WindowCreateProject(char *projectFileName, Font font)
         DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, (Color){202, 97, 255, 255});
         DrawRectangleRoundedLinesEx((Rectangle){700, 500, 250, 50}, 2.0f, 8, 3, WHITE);
         DrawTextEx(font, "Create project", (Vector2){730, 507}, 32, 0, WHITE);
-        if(CheckCollisionPointRec(mousePoint, (Rectangle){700, 500, 250, 50})){
+        if (CheckCollisionPointRec(mousePos, (Rectangle){700, 500, 250, 50}))
+        {
             DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, (Color){255, 255, 255, 150});
-            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
                 strcpy(PO.projectName, inputText);
-                CreateProject(PO);
+                if(!CreateProject(PO)){
+                    exit(1);
+                }
                 strcpy(projectFileName, inputText);
-                return 3;
+                return PROJECT_MANAGER_WINDOW_MODE_EXIT;
             }
         }
     }
@@ -541,43 +521,38 @@ int WindowCreateProject(char *projectFileName, Font font)
         DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, DARKGRAY);
         DrawRectangleRoundedLinesEx((Rectangle){700, 500, 250, 50}, 2.0f, 8, 3, BLACK);
         DrawTextEx(font, "Create project", (Vector2){730, 507}, 32, 0, LIGHTGRAY);
-        if(CheckCollisionPointRec(mousePoint, (Rectangle){700, 500, 250, 50}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !PO.is3D){
+        if (CheckCollisionPointRec(mousePos, (Rectangle){700, 500, 250, 50}) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !PO.is3D)
+        {
             DrawRectangleRounded(textBox, 2.0f, 8, RED);
         }
     }
 
-    return 2;
+    return PROJECT_MANAGER_WINDOW_MODE_CREATE;
 }
 
 char *HandleProjectManager()
 {
-    Font font = LoadFontEx("fonts/arialbd.ttf", 256, NULL, 0);
-    Font fontRE = LoadFontEx("fonts/sonsie.ttf", 256, NULL, 0);
+    Font font = LoadFontEx(TextFormat("fonts%carialbd.ttf", PATH_SEPARATOR), 256, NULL, 0);
+    Font fontRE = LoadFontEx(TextFormat("fonts%csonsie.ttf", PATH_SEPARATOR), 256, NULL, 0);
 
-    int windowMode = 0;
-    char *projectFileName = malloc(MAX_PROJECT_NAME * sizeof(char));
+    ProjectManagerWindowMode windowMode = PROJECT_MANAGER_WINDOW_MODE_MAIN;
+    char *projectFileName = malloc(MAX_FILE_NAME * sizeof(char));
     projectFileName[0] = '\0';
 
     while (1)
     {
-        Vector2 mousePoint = GetMousePosition();
-
-        if (windowMode == 0)
+        switch (windowMode)
         {
-            windowMode = MainWindow(mousePoint, font, fontRE);
-        }
-        else if (windowMode == 1)
-        {
+        case PROJECT_MANAGER_WINDOW_MODE_MAIN:
+            windowMode = MainWindow(font, fontRE);
+            break;
+        case PROJECT_MANAGER_WINDOW_MODE_LOAD:
             windowMode = WindowLoadProject(projectFileName, font);
-        }
-
-        else if (windowMode == 2)
-        {
+            break;
+        case PROJECT_MANAGER_WINDOW_MODE_CREATE:
             windowMode = WindowCreateProject(projectFileName, font);
-        }
-
-        else if (windowMode == 3)
-        {
+            break;
+        default:
             UnloadFont(font);
             UnloadFont(fontRE);
 

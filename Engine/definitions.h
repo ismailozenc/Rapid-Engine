@@ -16,6 +16,10 @@ static bool developerMode = false;
 
 #ifdef _WIN32
 #define PATH_SEPARATOR '\\'
+#include <direct.h>
+#define MAKE_DIR(path) _mkdir(path)
+#define GetCWD _getcwd
+
 void* __stdcall ShellExecuteA(void* hwnd, const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd);
 
 static inline void OpenFile(const char* filePath) {
@@ -24,6 +28,10 @@ static inline void OpenFile(const char* filePath) {
 
 #elif __APPLE__
 #define PATH_SEPARATOR '/'
+#include <sys/stat.h>
+#include <sys/types.h>
+#define MAKE_DIR(path) mkdir(path, 0755)
+#define GetCWD getcwd
 
 static inline void OpenFile(const char* filePath) {
     char command[1024];
@@ -33,6 +41,11 @@ static inline void OpenFile(const char* filePath) {
 
 #elif __unix__
 #define PATH_SEPARATOR '/'
+#include <sys/stat.h>
+#include <sys/types.h>
+#define MAKE_DIR(path) mkdir(path, 0755)
+#define GetCWD getcwd
+
 static inline void OpenFile(const char* filePath) {
     char command[1024];
     snprintf(command, sizeof(command), "xdg-open \"%s\"", filePath);

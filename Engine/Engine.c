@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <raylib.h>
-#include <direct.h>
 #include <stdlib.h>
 #include <time.h>
 #include "CGEditor.h"
@@ -220,7 +219,7 @@ char *SetProjectFolderPath(const char *fileName)
     }
 
     char cwd[MAX_FILE_PATH];
-    if (!_getcwd(cwd, sizeof(cwd)))
+    if (!GetCWD(cwd, sizeof(cwd)))
     {
         return NULL;
     }

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <direct.h>
 
 #include "raylib.h"
 
@@ -327,7 +326,7 @@ bool CreateProject(ProjectOptions PO)
 
     sprintf(projectPath, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
 
-    if (_mkdir(projectPath) != 0)
+    if (MAKE_DIR(projectPath) != 0)
     {
         return false;
     }
@@ -360,7 +359,7 @@ bool CreateProject(ProjectOptions PO)
 
     sprintf(foldersPath, "%s%cAssets", projectPath, PATH_SEPARATOR);
 
-    if (_mkdir(foldersPath) != 0)
+    if (MAKE_DIR(foldersPath) != 0)
     {
         return false;
     }

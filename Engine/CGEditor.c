@@ -1,5 +1,4 @@
 #include "CGEditor.h"
-#include <direct.h>
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>

@@ -103,7 +103,7 @@
 ## ⚠️ Note: Rapid Engine is not packaged for public release yet, but you can build and run it manually:
 
 ```bash
-gcc Engine.c ProjectManager.c CGEditor.c Nodes.c Interpreter.c HitboxEditor.c resources/textures.c resources/sound.c resources/fonts.c raylib/lib/libraylib.a -o RapidEngine.exe -Iraylib/include -lopengl32 -lgdi32 -lwinmm -mwindows```
+gcc Engine.c ProjectManager.c CGEditor.c Nodes.c Interpreter.c HitboxEditor.c resources/textures.c resources/sound.c resources/fonts.c raylib/lib/libraylib.a -o RapidEngine.exe -Iraylib/include -lopengl32 -lgdi32 -lwinmm -mwindows
 
-```bash
-./RapidEngine.exe```
+./RapidEngine.exe
+```

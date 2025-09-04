@@ -49,7 +49,7 @@ EditorContext InitEditorContext()
     UnloadImage(tempImg);
     if (editor.gearTxt.id == 0)
     {
-        AddToLogFromEditor(&editor, "Failed to load texture", 2);
+        AddToLogFromEditor(&editor, "Failed to load texture", LOG_LEVEL_ERROR);
     }
 
     editor.nodeDropdownFocused = -1;
@@ -58,7 +58,7 @@ EditorContext InitEditorContext()
     editor.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 256, NULL, 0);
     if (editor.font.texture.id == 0)
     {
-        AddToLogFromEditor(&editor, "Failed to load font", 2);
+        AddToLogFromEditor(&editor, "Failed to load font", LOG_LEVEL_ERROR);
     }
 
     editor.newLogMessage = false;
@@ -86,8 +86,12 @@ void FreeEditorContext(EditorContext *editor)
 
 void AddToLogFromEditor(EditorContext *editor, char *message, int level)
 {
-    strncpy(editor->logMessage, message, 128 * sizeof(char));
-    editor->logMessageLevel = level;
+    if (editor->logMessageCount >= MAX_LOG_MESSAGES)
+        return;
+
+    strncpy(editor->logMessages[editor->logMessageCount], message, 127);
+    editor->logMessageLevels[editor->logMessageCount] = level;
+    editor->logMessageCount++;
     editor->newLogMessage = true;
 }
 
@@ -739,7 +743,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else
         {
-            AddToLogFromEditor(editor, "Error drawing connection", 1);
+            AddToLogFromEditor(editor, "Error drawing connection", LOG_LEVEL_WARNING);
         }
     }
 

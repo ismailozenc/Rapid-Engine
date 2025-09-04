@@ -47,15 +47,6 @@ typedef enum
     VAR_FILTER_SPRITES
 }VarFilter;
 
-typedef enum
-{
-    LOG_LEVEL_NORMAL,
-    LOG_LEVEL_WARNING,
-    LOG_LEVEL_ERROR,
-    LOG_LEVEL_SAVE,
-    LOG_LEVEL_DEBUG
-}LogLevel;
-
 typedef struct LogEntry
 {
     char message[256];
@@ -143,6 +134,7 @@ typedef struct EngineContext
     bool isSaveButtonHovered;
     int showSaveWarning;
     bool showSettingsMenu;
+    bool shouldCloseWindow;
 
     RenderTexture2D viewportTex;
     RenderTexture2D uiTex;

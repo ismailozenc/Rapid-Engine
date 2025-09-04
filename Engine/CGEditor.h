@@ -36,8 +36,9 @@ typedef struct
     int nodeFieldPinFocused;
 
     bool newLogMessage;
-    char logMessage[128];
-    int logMessageLevel;
+    char logMessages[MAX_LOG_MESSAGES][128];
+    int logMessageLevels[MAX_LOG_MESSAGES];
+    int logMessageCount;
 
     Vector2 cameraOffset;
 

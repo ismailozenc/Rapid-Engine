@@ -110,6 +110,8 @@ EngineContext InitEngineContext()
 
     engine.isAnyMenuOpen = false;
 
+    engine.shouldCloseWindow = false;
+
     return engine;
 }
 
@@ -721,7 +723,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 }
                 else
                 {
-                    CloseWindow();
+                    engine->shouldCloseWindow = true;
                     return;
                 }
             }
@@ -1896,7 +1898,12 @@ int main()
 
             if (editor.newLogMessage)
             {
-                AddToLog(&engine, editor.logMessage, editor.logMessageLevel);
+                for (int i = 0; i < editor.logMessageCount; i++)
+                    AddToLog(&engine, editor.logMessages[i], editor.logMessageLevels[i]);
+
+                editor.newLogMessage = false;
+                editor.logMessageCount = 0;
+                engine.delayFrames = true;
             }
             if (editor.engineDelayFrames)
             {
@@ -2058,7 +2065,7 @@ int main()
             engine.showSaveWarning = DrawSaveWarning(&engine, &graph, &editor);
             if (engine.showSaveWarning == 2)
             {
-                break;
+                engine.shouldCloseWindow = true;
             }
         }
         else if (engine.showSettingsMenu)
@@ -2072,6 +2079,16 @@ int main()
         }
 
         EndDrawing();
+
+        static bool requestedClose = false;
+        if(engine.shouldCloseWindow){
+            if(requestedClose){
+                break;
+            }
+            else{
+                requestedClose = true;
+            }
+        }
     }
 
     FreeEngineContext(&engine);
@@ -2083,6 +2100,8 @@ int main()
     interpreter.projectPath = NULL;
 
     CloseAudioDevice();
+
+    CloseWindow();
 
     return 0;
 }

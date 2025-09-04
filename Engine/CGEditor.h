@@ -1,9 +1,9 @@
-#ifndef EDITOR_H
-#define EDITOR_H
+#pragma once
 
 #include <stdio.h>
 #include "raylib.h"
 #include "Nodes.h"
+#include "definitions.h"
 
 typedef struct
 {
@@ -69,5 +69,3 @@ EditorContext InitEditorContext(void);
 void FreeEditorContext(EditorContext *editor);
 
 void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled, bool isSecondFrame);
-
-#endif

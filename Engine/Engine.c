@@ -1318,9 +1318,6 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 break;
             }
 
-            strncpy(cutMessage, cutMessage, j);
-            cutMessage[j] = '\0';
-
             bool textHidden = false;
 
             if (wasCut && j < 252)

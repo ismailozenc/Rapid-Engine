@@ -1,6 +1,9 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "definitions.h"
 
 #define typesCount (sizeof(NodeInfoByType) / sizeof(NodeInfoByType[0]))
 #define dropdownTypesCount (sizeof(PinDropdownOptionsByType) / sizeof(PinDropdownOptionsByType[0]))

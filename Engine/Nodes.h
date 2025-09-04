@@ -1,5 +1,4 @@
-#ifndef NODES_H
-#define NODES_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,5 +90,3 @@ void DeleteNode(GraphContext *graph, int nodeID);
 int FindPinIndexByID(GraphContext *graph, int id);
 
 void RemoveConnections(GraphContext *graph, int pinID);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef PROJECT_MANAGER_H
-#define PROJECT_MANAGER_H
+#pragma once
 
 #include "raylib.h"
 #include "definitions.h"
@@ -18,5 +17,3 @@ typedef enum{
 }ProjectManagerWindowMode;
 
 char *HandleProjectManager();
-
-#endif

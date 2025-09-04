@@ -126,8 +126,7 @@ char *ValueToString(Value value)
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
 {
-    if (interpreter->logMessageCount >= MAX_LOG_MESSAGES)
-        return;
+    if (interpreter->logMessageCount >= MAX_LOG_MESSAGES){return;}
 
     char str[128];
 

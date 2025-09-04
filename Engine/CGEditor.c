@@ -86,8 +86,7 @@ void FreeEditorContext(EditorContext *editor)
 
 void AddToLogFromEditor(EditorContext *editor, char *message, int level)
 {
-    if (editor->logMessageCount >= MAX_LOG_MESSAGES)
-        return;
+    if (editor->logMessageCount >= MAX_LOG_MESSAGES){return;}
 
     strncpy(editor->logMessages[editor->logMessageCount], message, 127);
     editor->logMessageLevels[editor->logMessageCount] = level;

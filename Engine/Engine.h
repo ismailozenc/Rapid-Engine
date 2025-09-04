@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include "definitions.h"
 
-#define MAX_UI_ELEMENTS 100
+#define MAX_UI_ELEMENTS 128
 
 const double doubleClickThreshold = 0.3;
 

@@ -56,7 +56,7 @@ EngineContext InitEngineContext()
     UnloadImage(tempImg);
     if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
-        AddToLog(&engine, "Couldn't load textures", 2);
+        AddToLog(&engine, "Couldn't load textures", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -66,7 +66,7 @@ EngineContext InitEngineContext()
     engine.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 128, NULL, 0);
     if (engine.font.texture.id == 0)
     {
-        AddToLog(&engine, "Failed to load font", 1);
+        AddToLog(&engine, "Failed to load font", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -81,7 +81,7 @@ EngineContext InitEngineContext()
     engine.saveSound = LoadSoundFromWave(LoadWaveFromMemory(".wav", save_wav, save_wav_len));
     if (engine.saveSound.frameCount == 0)
     {
-        AddToLog(&engine, "Failed to load audio", 1);
+        AddToLog(&engine, "Failed to load audio", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -123,7 +123,7 @@ void FreeEngineContext(EngineContext *engine)
         engine->currentPath = NULL;
     }
 
-    if (engine->currentPath)
+    if (engine->projectPath)
     {
         free(engine->projectPath);
         engine->projectPath = NULL;
@@ -159,7 +159,8 @@ void AddUIElement(EngineContext *engine, UIElement element)
     }
     else
     {
-        AddToLog(engine, "UIElement limit reached", 2);
+        AddToLog(engine, "UIElement limit reached", LOG_LEVEL_ERROR);
+        EmergencyExit(engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 }
 
@@ -202,12 +203,24 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             char *level;
             switch (engine->logs.entries[i].level)
             {
-                case LOG_LEVEL_NORMAL: level = "INFO"; break;
-                case LOG_LEVEL_WARNING: level = "WARNING"; break;
-                case LOG_LEVEL_ERROR: level = "ERROR"; break;
-                case LOG_LEVEL_SAVE: level = "SAVE"; break;
-                case LOG_LEVEL_DEBUG: level = "DEBUG"; break;
-                default: level = "UNKNOWN"; break;
+            case LOG_LEVEL_NORMAL:
+                level = "INFO";
+                break;
+            case LOG_LEVEL_WARNING:
+                level = "WARNING";
+                break;
+            case LOG_LEVEL_ERROR:
+                level = "ERROR";
+                break;
+            case LOG_LEVEL_SAVE:
+                level = "SAVE";
+                break;
+            case LOG_LEVEL_DEBUG:
+                level = "DEBUG";
+                break;
+            default:
+                level = "UNKNOWN";
+                break;
             }
             fprintf(logFile, "[ENGINE %s] %s\n", level, engine->logs.entries[i].message);
         }
@@ -217,12 +230,24 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             char *level;
             switch (editor->logMessageLevels[i])
             {
-                case LOG_LEVEL_NORMAL: level = "INFO"; break;
-                case LOG_LEVEL_WARNING: level = "WARNING"; break;
-                case LOG_LEVEL_ERROR: level = "ERROR"; break;
-                case LOG_LEVEL_SAVE: level = "SAVE"; break;
-                case LOG_LEVEL_DEBUG: level = "DEBUG"; break;
-                default: level = "UNKNOWN"; break;
+            case LOG_LEVEL_NORMAL:
+                level = "INFO";
+                break;
+            case LOG_LEVEL_WARNING:
+                level = "WARNING";
+                break;
+            case LOG_LEVEL_ERROR:
+                level = "ERROR";
+                break;
+            case LOG_LEVEL_SAVE:
+                level = "SAVE";
+                break;
+            case LOG_LEVEL_DEBUG:
+                level = "DEBUG";
+                break;
+            default:
+                level = "UNKNOWN";
+                break;
             }
             fprintf(logFile, "[CGEDITOR %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), editor->logMessages[i]);
         }
@@ -232,12 +257,24 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             char *level;
             switch (interpreter->logMessageLevels[i])
             {
-                case LOG_LEVEL_NORMAL: level = "INFO"; break;
-                case LOG_LEVEL_WARNING: level = "WARNING"; break;
-                case LOG_LEVEL_ERROR: level = "ERROR"; break;
-                case LOG_LEVEL_SAVE: level = "SAVE"; break;
-                case LOG_LEVEL_DEBUG: level = "DEBUG"; break;
-                default: level = "UNKNOWN"; break;
+            case LOG_LEVEL_NORMAL:
+                level = "INFO";
+                break;
+            case LOG_LEVEL_WARNING:
+                level = "WARNING";
+                break;
+            case LOG_LEVEL_ERROR:
+                level = "ERROR";
+                break;
+            case LOG_LEVEL_SAVE:
+                level = "SAVE";
+                break;
+            case LOG_LEVEL_DEBUG:
+                level = "DEBUG";
+                break;
+            default:
+                level = "UNKNOWN";
+                break;
             }
             fprintf(logFile, "[INTERPRETER %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), interpreter->logMessages[i]);
         }
@@ -247,7 +284,7 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
 
     FreeEngineContext(engine);
     FreeEditorContext(editor);
-    //FreeGraphContext(graph);
+    // FreeGraphContext(graph);
     FreeInterpreterContext(interpreter);
 
     free(interpreter->projectPath);
@@ -274,7 +311,7 @@ char *SetProjectFolderPath(const char *fileName)
     }
 
     char *lastSlash = strrchr(cwd, PATH_SEPARATOR);
-    if (lastSlash)
+    if (lastSlash && lastSlash != cwd)
     {
         *lastSlash = '\0';
     }
@@ -290,11 +327,19 @@ char *SetProjectFolderPath(const char *fileName)
     return projectPath;
 }
 
-FileType GetFileType(const char *fileName)
+FileType GetFileType(const char *folderPath, const char *fileName)
 {
+    char fullPath[MAX_FILE_PATH];
+    snprintf(fullPath, sizeof(fullPath), "%s%c%s", folderPath, PATH_SEPARATOR, fileName);
+
     const char *ext = GetFileExtension(fileName);
     if (!ext || *(ext + 1) == '\0')
-        return FILE_FOLDER;
+    {
+        if (DirectoryExists(fullPath))
+            return FILE_FOLDER;
+        else
+            return FILE_OTHER;
+    }
 
     if (strcmp(ext + 1, "cg") == 0)
         return FILE_CG;
@@ -388,12 +433,12 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
         {
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
-                AddToLog(engine, "Saved successfully!", 3);
+                AddToLog(engine, "Saved successfully!", LOG_LEVEL_SAVE);
                 editor->hasChanged = false;
             }
             else
             {
-                AddToLog(engine, "ERROR SAVING CHANGES!", 1);
+                AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
             }
             return 2;
         }
@@ -676,10 +721,10 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
                 {
                     editor->hasChanged = false;
-                    AddToLog(engine, "Saved successfully!", 3);
+                    AddToLog(engine, "Saved successfully!", LOG_LEVEL_SAVE);
                 }
                 else
-                    AddToLog(engine, "ERROR SAVING CHANGES!", 1);
+                    AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
             }
             break;
         case UI_ACTION_STOP_GAME:
@@ -697,12 +742,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 if (editor->hasChanged)
                 {
-                    AddToLog(engine, "Project not saved!", 1);
+                    AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
                     break;
                 }
                 else if (!engine->wasBuilt)
                 {
-                    AddToLog(engine, "Project has not been built", 1);
+                    AddToLog(engine, "Project has not been built", LOG_LEVEL_WARNING);
                     break;
                 }
                 engine->viewportMode = VIEWPORT_GAME_SCREEN;
@@ -715,7 +760,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 if (editor->hasChanged)
                 {
-                    AddToLog(engine, "Project not saved!", 1);
+                    AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
                     break;
                 }
                 *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
@@ -726,12 +771,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 engine->delayFrames = true;
                 if (runtimeGraph != NULL)
                 {
-                    AddToLog(engine, "Build Successfull", 0);
+                    AddToLog(engine, "Build Successfull", LOG_LEVEL_NORMAL);
                     engine->wasBuilt = true;
                 }
                 else
                 {
-                    AddToLog(engine, "Build failed", 0);
+                    AddToLog(engine, "Build failed", LOG_LEVEL_WARNING);
                 }
             }
             break;
@@ -739,17 +784,33 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 char *lastSlash = strrchr(engine->currentPath, PATH_SEPARATOR);
-                if (lastSlash != NULL)
+                if (lastSlash && lastSlash != engine->currentPath)
                 {
                     *lastSlash = '\0';
                 }
+
+                UnloadDirectoryFiles(engine->files);
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
+                if (!engine->files.paths || engine->files.count <= 0)
+                {
+                    AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
+                    EmergencyExit(engine, editor, interpreter);
+                }
+                engine->uiElementCount = 0;
+                engine->delayFrames = true;
+                return;
             }
             break;
         case UI_ACTION_REFRESH_FILES:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
+                UnloadDirectoryFiles(engine->files);
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
+                if (!engine->files.paths || engine->files.count <= 0)
+                {
+                    AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
+                    EmergencyExit(engine, editor, interpreter);
+                }
             }
             break;
         case UI_ACTION_CLOSE_WINDOW:
@@ -823,7 +884,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
                 if (currentTime - lastClickTime <= doubleClickThreshold)
                 {
-                    if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == FILE_CG)
+                    if (GetFileType(engine->currentPath, GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == FILE_CG)
                     {
                         char *openedFileName = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
                         strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
@@ -838,7 +899,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
                         engine->viewportMode = VIEWPORT_CG_EDITOR;
                     }
-                    else if (GetFileType(GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
+                    else if (GetFileType(engine->currentPath, GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
                     {
                         OpenFile(TextFormat("%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].name));
                     }
@@ -846,7 +907,13 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     {
                         snprintf(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
 
+                        UnloadDirectoryFiles(engine->files);
                         engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
+                        if (!engine->files.paths || engine->files.count <= 0)
+                        {
+                            AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
+                            EmergencyExit(engine, editor, interpreter);
+                        }
                     }
                 }
                 lastClickTime = currentTime;
@@ -1322,20 +1389,30 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                              .color = (Color){0, 0, 0, 0},
                              .layer = 0,
                              .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
-    strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->currentPath, 256);
-    engine->uiElements[engine->uiElementCount - 1].text.string[256] = '\0';
+    strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->currentPath, 255);
+    engine->uiElements[engine->uiElementCount - 1].text.string[255] = '\0';
 
     int xOffset = 50;
     int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
 
     for (int i = 0; i < engine->files.count; i++)
     {
+        if (i > MAX_UI_ELEMENTS / 2)
+        {
+            break;
+        }
+
         const char *fileName = GetFileName(engine->files.paths[i]);
+
+        if (fileName[0] == '.')
+        {
+            continue;
+        }
 
         Color fileOutlineColor;
         Color fileTextColor;
 
-        switch (GetFileType(fileName))
+        switch (GetFileType(engine->currentPath, fileName))
         {
         case FILE_FOLDER:
             fileOutlineColor = (Color){205, 205, 50, 200};
@@ -1354,7 +1431,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             fileTextColor = (Color){220, 220, 220, 255};
             break;
         default:
-            AddToLog(engine, "File error", 2);
+            AddToLog(engine, "File error", LOG_LEVEL_ERROR);
             fileOutlineColor = (Color){160, 160, 160, 255};
             fileTextColor = (Color){220, 220, 220, 255};
             break;
@@ -1367,7 +1444,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         if (MeasureTextEx(engine->font, fileName, 25, 0).x > 135)
         {
             const char *ext = GetFileExtension(fileName);
-            int extLen = strlen(ext);
+            int extLen = ext ? strlen(ext) : 0;
             int maxLen = strlen(buff) - extLen;
 
             for (int j = maxLen - 1; j >= 0; j--)
@@ -1379,7 +1456,10 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                     {
                         buff[j - 3] = '\0';
                         strcat(buff, "...");
-                        strcat(buff, ext);
+                        if (ext)
+                        {
+                            strcat(buff, ext);
+                        }
                     }
                     break;
                 }
@@ -1511,6 +1591,11 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
 bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
 {
+    if (engine->uiElementCount == 0)
+    {
+        engine->hoveredUIElementIndex = 0;
+        return true;
+    }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT) && engine->viewportMode == VIEWPORT_CG_EDITOR)
     {
         if (engine->isSoundOn)
@@ -1520,22 +1605,22 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
         {
             editor->hasChanged = false;
-            AddToLog(engine, "Saved successfully!", 3);
+            AddToLog(engine, "Saved successfully!", LOG_LEVEL_SAVE);
         }
         else
         {
-            AddToLog(engine, "ERROR SAVING CHANGES!", 1);
+            AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
         }
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_R))
     {
         if (editor->hasChanged)
         {
-            AddToLog(engine, "Project not saved!", 1);
+            AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
         }
         else if (!engine->wasBuilt)
         {
-            AddToLog(engine, "Project has not been built", 1);
+            AddToLog(engine, "Project has not been built", LOG_LEVEL_WARNING);
         }
         else
         {
@@ -1559,7 +1644,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
     {
         if (editor->hasChanged)
         {
-            AddToLog(engine, "Project not saved!", 1);
+            AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
         }
         else
         {
@@ -1571,12 +1656,12 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
             engine->delayFrames = true;
             if (runtimeGraph != NULL)
             {
-                AddToLog(engine, "Build Successfull", 0);
+                AddToLog(engine, "Build Successfull", LOG_LEVEL_NORMAL);
                 engine->wasBuilt = true;
             }
             else
             {
-                AddToLog(engine, "Build failed", 0);
+                AddToLog(engine, "Build failed", LOG_LEVEL_ERROR);
             }
         }
     }
@@ -1835,6 +1920,11 @@ int main()
     engine.currentPath = SetProjectFolderPath(fileName);
 
     engine.files = LoadDirectoryFilesEx(engine.currentPath, NULL, false);
+    if (!engine.files.paths || engine.files.count <= 0)
+    {
+        AddToLog(&engine, "Error loading files", 2);
+        EmergencyExit(&engine, &editor, &interpreter);
+    }
 
     PrepareCGFilePath(&engine, fileName);
 

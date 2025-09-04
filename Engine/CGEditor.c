@@ -680,7 +680,7 @@ void HandleDropdownMenu(GraphContext *graph, int currPinIndex, int hoveredNodeIn
                 Color varTypeColor;
                 switch (graph->variableTypes[j])
                 {
-                case NODE_CREATE_NUMBER: // 38, 38, 38
+                case NODE_CREATE_NUMBER:
                     varTypeColor = (Color){24, 119, 149, 255};
                     break;
                 case NODE_CREATE_STRING:
@@ -816,12 +816,11 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
             roundness, segments, 2.0f / editor->zoom, WHITE);
 
         DrawTextEx(editor->font, NodeTypeToString(graph->nodes[i].type),
-                   (Vector2){x + 8 /*10*/, y + 6 /*3*/}, 28, 1, WHITE);
+                   (Vector2){x + 8, y + 6}, 28, 1, WHITE);
 
         if (getIsEditableByType(graph->nodes[i].type))
         {
             Rectangle gearRect = {graph->nodes[i].position.x + getNodeInfoByType(graph->nodes[i].type, WIDTH) - 18 - fullRadius / 5, graph->nodes[i].position.y + 5 + fullRadius / 5, 16, 16};
-            //DrawTexture(editor->gearTxt, gearRect.x, gearRect.y, WHITE);
 
             Rectangle src = {0, 0, editor->gearTxt.width, editor->gearTxt.height};
             Rectangle dst = {gearRect.x, gearRect.y, 15, 15};
@@ -963,10 +962,6 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else
         {
-            /*if(graph->pins[i].isInput){
-                DrawRectangleRounded((Rectangle){nodePos.x - 20, nodePos.y + yOffset - 10, 40, 20}, 0.6f, 8, (Color){110, 85, 40, 255});
-            }
-            // Merge literal node to input pin*/
             DrawCircle(nodePos.x + xOffset + 5, nodePos.y + yOffset, 5, WHITE);
             if (CheckCollisionPointCircle(editor->mousePos, (Vector2){nodePos.x + xOffset + 5, nodePos.y + yOffset}, 12))
             {
@@ -1026,7 +1021,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
 
     if (hoveredPinIndex == -1 && hoveredNodeIndex != -1)
     {
-        DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, WIDTH) + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, HEIGHT) + 2}, 0.2f, 8, (Color){255, 255, 255, 5}); //
+        DrawRectangleRounded((Rectangle){graph->nodes[hoveredNodeIndex].position.x - 1, graph->nodes[hoveredNodeIndex].position.y - 1, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, WIDTH) + 2, getNodeInfoByType(graph->nodes[hoveredNodeIndex].type, HEIGHT) + 2}, 0.2f, 8, (Color){255, 255, 255, 5});
         editor->delayFrames = true;
     }
 

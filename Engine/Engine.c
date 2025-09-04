@@ -19,7 +19,7 @@ Logs InitLogs()
 
 void AddToLog(EngineContext *engine, const char *newLine, int level);
 
-void EmergencyExit(EngineContext *engine);
+void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterContext *interpreter);
 
 EngineContext InitEngineContext()
 {
@@ -57,7 +57,7 @@ EngineContext InitEngineContext()
     if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
         AddToLog(&engine, "Couldn't load textures", 2);
-        EmergencyExit(&engine);
+        EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
     engine.delayFrames = true;
@@ -67,7 +67,7 @@ EngineContext InitEngineContext()
     if (engine.font.texture.id == 0)
     {
         AddToLog(&engine, "Failed to load font", 1);
-        EmergencyExit(&engine);
+        EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
     engine.CGFilePath = malloc(MAX_FILE_PATH);
@@ -82,7 +82,7 @@ EngineContext InitEngineContext()
     if (engine.saveSound.frameCount == 0)
     {
         AddToLog(&engine, "Failed to load audio", 1);
-        EmergencyExit(&engine);
+        EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
     engine.isSoundOn = true;
@@ -189,38 +189,73 @@ void AddToLog(EngineContext *engine, const char *newLine, int level)
     engine->delayFrames = true;
 }
 
-void EmergencyExit(EngineContext *engine)
+void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterContext *interpreter)
 {
+    time_t timestamp = time(NULL);
+    struct tm *tm_info = localtime(&timestamp);
+
     FILE *logFile = fopen("engine_log.txt", "w");
     if (logFile)
     {
         for (int i = 0; i < engine->logs.count; i++)
         {
-            char level[512];
+            char *level;
             switch (engine->logs.entries[i].level)
             {
-            case LOG_LEVEL_NORMAL:
-                strcpy(level, "INFO");
-                break;
-            case LOG_LEVEL_WARNING:
-                strcpy(level, "WARNING");
-                break;
-            case LOG_LEVEL_ERROR:
-                strcpy(level, "ERROR");
-                break;
-            case LOG_LEVEL_SAVE:
-                strcpy(level, "SAVE");
-                break;
-            case LOG_LEVEL_DEBUG:
-                strcpy(level, "DEBUG");
-                break;
-            default:
-                strcpy(level, "UNKNOWN");
+                case LOG_LEVEL_NORMAL: level = "INFO"; break;
+                case LOG_LEVEL_WARNING: level = "WARNING"; break;
+                case LOG_LEVEL_ERROR: level = "ERROR"; break;
+                case LOG_LEVEL_SAVE: level = "SAVE"; break;
+                case LOG_LEVEL_DEBUG: level = "DEBUG"; break;
+                default: level = "UNKNOWN"; break;
             }
-            fprintf(logFile, "[%s] %s\n", level, engine->logs.entries[i].message);
+            fprintf(logFile, "[ENGINE %s] %s\n", level, engine->logs.entries[i].message);
         }
+
+        for (int i = 0; i < editor->logMessageCount; i++)
+        {
+            char *level;
+            switch (editor->logMessageLevels[i])
+            {
+                case LOG_LEVEL_NORMAL: level = "INFO"; break;
+                case LOG_LEVEL_WARNING: level = "WARNING"; break;
+                case LOG_LEVEL_ERROR: level = "ERROR"; break;
+                case LOG_LEVEL_SAVE: level = "SAVE"; break;
+                case LOG_LEVEL_DEBUG: level = "DEBUG"; break;
+                default: level = "UNKNOWN"; break;
+            }
+            fprintf(logFile, "[CGEDITOR %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), editor->logMessages[i]);
+        }
+
+        for (int i = 0; i < interpreter->logMessageCount; i++)
+        {
+            char *level;
+            switch (interpreter->logMessageLevels[i])
+            {
+                case LOG_LEVEL_NORMAL: level = "INFO"; break;
+                case LOG_LEVEL_WARNING: level = "WARNING"; break;
+                case LOG_LEVEL_ERROR: level = "ERROR"; break;
+                case LOG_LEVEL_SAVE: level = "SAVE"; break;
+                case LOG_LEVEL_DEBUG: level = "DEBUG"; break;
+                default: level = "UNKNOWN"; break;
+            }
+            fprintf(logFile, "[INTERPRETER %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), interpreter->logMessages[i]);
+        }
+
         fclose(logFile);
     }
+
+    FreeEngineContext(engine);
+    FreeEditorContext(editor);
+    //FreeGraphContext(graph);
+    FreeInterpreterContext(interpreter);
+
+    free(interpreter->projectPath);
+    interpreter->projectPath = NULL;
+
+    CloseAudioDevice();
+
+    CloseWindow();
 
     exit(1);
 }
@@ -684,6 +719,10 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     break;
                 }
                 *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
+                if (interpreter->buildErrorOccured)
+                {
+                    EmergencyExit(engine, editor, interpreter);
+                }
                 engine->delayFrames = true;
                 if (runtimeGraph != NULL)
                 {
@@ -1525,6 +1564,10 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         else
         {
             *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
+            if (interpreter->buildErrorOccured)
+            {
+                EmergencyExit(engine, editor, interpreter);
+            }
             engine->delayFrames = true;
             if (runtimeGraph != NULL)
             {
@@ -1682,7 +1725,7 @@ int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
             // return interpreter->cursor;
             return MOUSE_CURSOR_ARROW;
         case VIEWPORT_HITBOX_EDITOR:
-            return MOUSE_CURSOR_CROSSHAIR; //
+            return MOUSE_CURSOR_CROSSHAIR;
         default:
             engine->viewportMode = VIEWPORT_CG_EDITOR;
             return editor->cursor;
@@ -1810,7 +1853,7 @@ int main()
     {
         if (!IsWindowReady())
         {
-            EmergencyExit(&engine);
+            EmergencyExit(&engine, &editor, &interpreter);
         }
 
         ContextChangePerFrame(&engine);
@@ -2081,11 +2124,14 @@ int main()
         EndDrawing();
 
         static bool requestedClose = false;
-        if(engine.shouldCloseWindow){
-            if(requestedClose){
+        if (engine.shouldCloseWindow)
+        {
+            if (requestedClose)
+            {
                 break;
             }
-            else{
+            else
+            {
                 requestedClose = true;
             }
         }

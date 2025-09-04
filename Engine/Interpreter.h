@@ -16,10 +16,10 @@ typedef struct RuntimePin
     bool isInput;
     int valueIndex;
 
-    int nextNodeIndex;           // Flow
-    int pickedOption;            // Dropdown
-    char textFieldValue[256];    // Field
-    int componentIndex;          // Scene Component
+    int nextNodeIndex;
+    int pickedOption;
+    char textFieldValue[256];
+    int componentIndex;
 } RuntimePin;
 
 typedef struct RuntimeNode
@@ -187,6 +187,7 @@ typedef struct
     bool isInfiniteLoopProtectionOn;
 
     bool buildFailed;
+    bool buildErrorOccured;
 
     bool shouldShowHitboxes;
 

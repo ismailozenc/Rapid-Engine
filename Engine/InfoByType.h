@@ -3,7 +3,7 @@
 #include <string.h>
 
 #define typesCount (sizeof(NodeInfoByType) / sizeof(NodeInfoByType[0]))
-#define pinTypesCount (sizeof(PinDropdownOptionsByType) / sizeof(PinDropdownOptionsByType[0])) // not named properly
+#define dropdownTypesCount (sizeof(PinDropdownOptionsByType) / sizeof(PinDropdownOptionsByType[0]))
 
 typedef enum
 {
@@ -339,7 +339,7 @@ static DropdownOptionsByPinType PinDropdownOptionsByType[] = {
 
 static inline DropdownOptionsByPinType getPinDropdownOptionsByType(PinType type)
 {
-    for (int i = 0; i < pinTypesCount; i++)
+    for (int i = 0; i < dropdownTypesCount; i++)
     {
         if (type == PinDropdownOptionsByType[i].type)
         {

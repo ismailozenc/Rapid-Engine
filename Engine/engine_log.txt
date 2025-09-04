@@ -1,1 +1,2 @@
-[ERROR] 23:07:04 Couldn't load textures
+[ENGINE INFO] 11:40:32 All resources loaded. Welcome!
+[INTERPRETER ERROR] 11:40:33 Value array overflow

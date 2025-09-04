@@ -1,4 +1,5 @@
 #include "Interpreter.h"
+#include "raymath.h"
 
 #define MAX_FORCES 99
 
@@ -18,6 +19,7 @@ InterpreterContext InitInterpreterContext()
     interpreter.newLogMessage = false;
 
     interpreter.buildFailed = false;
+    interpreter.buildErrorOccured = false;
 
     interpreter.isInfiniteLoopProtectionOn = true;
 
@@ -126,7 +128,10 @@ char *ValueToString(Value value)
 
 void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
 {
-    if (interpreter->logMessageCount >= MAX_LOG_MESSAGES){return;}
+    if (interpreter->logMessageCount >= MAX_LOG_MESSAGES)
+    {
+        return;
+    }
 
     char str[128];
 
@@ -178,7 +183,6 @@ void UpdateSpecialValues(InterpreterContext *interpreter, Vector2 mousePos, Rect
     interpreter->values[SPECIAL_VALUE_MOUSE_Y].number = mousePos.y;
     interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH].number = screenBoundary.width;
     interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT].number = screenBoundary.height;
-    //
 }
 
 RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter)
@@ -285,12 +289,16 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         for (int j = 0; j < node->outputCount; j++)
         {
             if (node->outputPins[j] == NULL)
+            {
                 continue;
+            }
             if (node->outputPins[j]->type != PIN_FLOW)
+            {
                 totalOutputPins++;
+            }
         }
 
-        if (node->type == NODE_DRAW_PROP_TEXTURE || node->type == NODE_DRAW_PROP_RECTANGLE || node->type == NODE_DRAW_PROP_CIRCLE || node->type == NODE_CREATE_SPRITE)
+        if (node->type == NODE_CREATE_SPRITE || node->type == NODE_DRAW_PROP_TEXTURE || node->type == NODE_DRAW_PROP_RECTANGLE || node->type == NODE_DRAW_PROP_CIRCLE)
         {
             totalComponents++;
         }
@@ -447,7 +455,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             int idx = interpreter->valueCount;
 
             bool isVariable = false;
-            if (node->type == NODE_CREATE_NUMBER || node->type == NODE_CREATE_STRING || node->type == NODE_CREATE_SPRITE || node->type == NODE_CREATE_BOOL || node->type == NODE_CREATE_COLOR)
+            if (node->type == NODE_CREATE_NUMBER || node->type == NODE_CREATE_STRING || node->type == NODE_CREATE_BOOL || node->type == NODE_CREATE_COLOR || node->type == NODE_CREATE_SPRITE)
             {
                 isVariable = true;
                 if (node->inputPins[1])
@@ -498,20 +506,15 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 interpreter->varCount++;
             }
 
-            pin->valueIndex = idx;
-            interpreter->valueCount++;
-
-            if (interpreter->valueCount >= expectedValues)
+            if (interpreter->valueCount > expectedValues)
             {
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Value array overflow"}, LOG_LEVEL_ERROR);
-                interpreter->buildFailed = true;
-                free(interpreter->values);
-                free(interpreter->varIndexes);
-                free(interpreter->components);
-                free(runtime.pins);
-                free(runtime.nodes);
+                interpreter->buildErrorOccured = true;
                 return runtime;
             }
+
+            pin->valueIndex = idx;
+            interpreter->valueCount++;
         }
     }
 
@@ -1389,10 +1392,6 @@ bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTe
 
             if (CheckCollisionLines(a1, a2, b1, b2, NULL))
             {
-                // DrawCircle(a1.x, a1.y, 5, BLUE);    // test
-                // char str[32];                       // test
-                // sprintf(str, "%d", i);              // test
-                // DrawText(str, a1.x, a1.y, 20, RED); // test
                 return true;
             }
         }
@@ -1400,25 +1399,39 @@ bool CheckCollisionPolyPoly(Polygon *a, Vector2 aPos, Vector2 aSize, Vector2 aTe
     return false;
 }
 
-bool CheckCollisionPolyCircle(Polygon *poly, Vector2 polyPos, Vector2 polySize, Vector2 polyTexSize,
+bool CheckCollisionPolyCircle(Hitbox *h, Vector2 centerPos, Vector2 spriteSize, Vector2 texSize,
                               Vector2 circlePos, float circleRadius)
 {
-    float scaleX = polySize.x / polyTexSize.x;
-    float scaleY = polySize.y / polyTexSize.y;
+    float scaleX = spriteSize.x / texSize.x;
+    float scaleY = spriteSize.y / texSize.y;
 
-    for (int i = 0; i < poly->count; i++)
+    Vector2 transformed[64];
+    for (int i = 0; i < h->polygonHitbox.count; i++)
     {
-        Vector2 p = {polyPos.x + poly->vertices[i].x * scaleX,
-                     polyPos.y + poly->vertices[i].y * scaleY};
-        if (CheckCollisionPointCircle(p, circlePos, circleRadius))
-        {
-            // DrawCircle(p.x, p.y, 5, BLUE);    // test
-            // char str[32];                     // test
-            // sprintf(str, "%d", i);            // test
-            // DrawText(str, p.x, p.y, 20, RED); // test
+        transformed[i].x = centerPos.x + h->offset.x * scaleX + h->polygonHitbox.vertices[i].x * scaleX;
+        transformed[i].y = centerPos.y + h->offset.y * scaleY + h->polygonHitbox.vertices[i].y * scaleY;
+    }
+
+    if (CheckCollisionPointPoly(circlePos, transformed, h->polygonHitbox.count)){
+        return true;
+    }
+
+    for (int i = 0; i < h->polygonHitbox.count; i++)
+    {
+        if (CheckCollisionPointCircle(transformed[i], circlePos, circleRadius)){
             return true;
         }
     }
+
+    for (int i = 0; i < h->polygonHitbox.count; i++)
+    {
+        Vector2 a = transformed[i];
+        Vector2 b = transformed[(i + 1) % h->polygonHitbox.count];
+        if (CheckCollisionCircleLine(circlePos, circleRadius, a, b)){
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -1429,7 +1442,6 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
     float scaleY = polySize.y / polyTexSize.y;
     Rectangle rect = {rectPos.x, rectPos.y, rectSize.x, rectSize.y};
 
-    // Step 1: polygon vertices inside rect
     for (int i = 0; i < poly->count; i++)
     {
         Vector2 p = {
@@ -1439,15 +1451,13 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
             return true;
     }
 
-    // Step 2: rect corners inside polygon
     Vector2 corners[4] = {
         {rect.x, rect.y},
         {rect.x + rect.width, rect.y},
         {rect.x + rect.width, rect.y + rect.height},
         {rect.x, rect.y + rect.height}};
 
-    // Build transformed polygon points
-    Vector2 transformed[64]; // assumes poly->count <= 64
+    Vector2 transformed[64];
     for (int i = 0; i < poly->count; i++)
     {
         transformed[i].x = polyPos.x + poly->vertices[i].x * scaleX;
@@ -1460,7 +1470,6 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
             return true;
     }
 
-    // Step 3: edge intersection
     for (int i = 0; i < poly->count; i++)
     {
         Vector2 a = transformed[i];
@@ -1509,7 +1518,8 @@ CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
         bool bBlocks = (layerB == COMPONENT_LAYER_BLOCKING || layerB == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
         bool bEvents = (layerB == COMPONENT_LAYER_COLLISION_EVENTS || layerB == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
 
-        if (!aBlocks && !aEvents && !bBlocks && !bEvents){
+        if (!aBlocks && !aEvents && !bBlocks && !bEvents)
+        {
             continue;
         }
 
@@ -1566,17 +1576,27 @@ CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
         }
         else if (hitA->type == HITBOX_POLY && hitB->type == HITBOX_CIRCLE)
         {
-            Vector2 cB = {posB.x + hitB->offset.x * (sizeB.x / texB.x),
-                          posB.y + hitB->offset.y * (sizeB.y / texB.y)};
-            collided = CheckCollisionPolyCircle(&hitA->polygonHitbox, posA, sizeA, texA,
-                                                cB, hitB->circleHitboxRadius * ((sizeB.x / texB.x + sizeB.y / texB.y) / 2));
+            float scaleX = texB.x != 0 ? sizeB.x / texB.x : 1.0f;
+            float scaleY = texB.y != 0 ? sizeB.y / texB.y : 1.0f;
+
+            Vector2 cB = {
+                posB.x + hitB->offset.x * scaleX,
+                posB.y + hitB->offset.y * scaleY};
+
+            collided = CheckCollisionPolyCircle(hitA, posA, sizeA, texA, cB, hitB->circleHitboxRadius * ((scaleX + scaleY) / 2));
         }
         else if (hitA->type == HITBOX_CIRCLE && hitB->type == HITBOX_POLY)
         {
-            Vector2 cA = {posA.x + hitA->offset.x * (sizeA.x / texA.x),
-                          posA.y + hitA->offset.y * (sizeA.y / texA.y)};
-            collided = CheckCollisionPolyCircle(&hitB->polygonHitbox, posB, sizeB, texB,
-                                                cA, hitA->circleHitboxRadius * ((sizeA.x / texA.x + sizeA.y / texA.y) / 2));
+            float scaleX = sizeA.x / texA.x;
+            float scaleY = sizeA.y / texA.y;
+
+            Vector2 cA = {
+                posA.x + hitA->offset.x * scaleX,
+                posA.y + hitA->offset.y * scaleY};
+
+            float radius = hitA->circleHitboxRadius * ((scaleX + scaleY) / 2);
+
+            collided = CheckCollisionPolyCircle(hitB, posB, sizeB, texB, cA, radius);
         }
         else if (hitA->type == HITBOX_POLY && hitB->type == HITBOX_RECT)
         {
@@ -1593,7 +1613,7 @@ CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
         {
             bool triggerEvent = aEvents || bEvents;
             bool triggerBlock = aBlocks && bBlocks;
-            
+
             if (triggerEvent && triggerBlock)
                 return COLLISION_RESULT_EVENT_AND_BLOCKING;
             if (triggerEvent)
@@ -1649,7 +1669,8 @@ void HandleForces(InterpreterContext *interpreter)
 
 bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
 {
-    if(interpreter->isPaused){
+    if (interpreter->isPaused)
+    {
         DrawComponents(interpreter);
         DrawRectangleRec(screenBoundary, (Color){80, 80, 80, 50});
         return true;

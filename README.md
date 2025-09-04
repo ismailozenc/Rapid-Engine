@@ -1,6 +1,5 @@
 # Rapid Engine
 
-![GitHub contributors](https://img.shields.io/github/contributors/EmilDimov93/Rapid-Engine)
 ![GitHub commits](https://img.shields.io/github/commit-activity/m/EmilDimov93/Rapid-Engine)
 ![Total Commits](https://img.shields.io/github/commit-activity/t/EmilDimov93/Rapid-Engine)
 ![GitHub last commit](https://img.shields.io/github/last-commit/EmilDimov93/Rapid-Engine)

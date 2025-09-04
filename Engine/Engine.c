@@ -791,7 +791,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
                 UnloadDirectoryFiles(engine->files);
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
-                if (!engine->files.paths || engine->files.count <= 0)
+                if (!engine->files.paths || engine->files.count < 0)
                 {
                     AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
                     EmergencyExit(engine, editor, interpreter);
@@ -806,7 +806,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 UnloadDirectoryFiles(engine->files);
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
-                if (!engine->files.paths || engine->files.count <= 0)
+                if (!engine->files.paths || engine->files.count < 0)
                 {
                     AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
                     EmergencyExit(engine, editor, interpreter);
@@ -908,8 +908,9 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                         snprintf(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
 
                         UnloadDirectoryFiles(engine->files);
+                        printf("%s\n", engine->currentPath);
                         engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
-                        if (!engine->files.paths || engine->files.count <= 0)
+                        if (!engine->files.paths || engine->files.count < 0)
                         {
                             AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
                             EmergencyExit(engine, editor, interpreter);

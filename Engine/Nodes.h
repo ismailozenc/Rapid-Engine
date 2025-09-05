@@ -16,7 +16,7 @@ extern const char *OutputsByNodeTypes[][5];
 typedef struct Node
 {
     int id;
-    char name[128];
+    char name[MAX_VARIABLE_NAME_SIZE];
     NodeType type;
     Vector2 position;
 

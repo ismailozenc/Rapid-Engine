@@ -118,7 +118,7 @@ bool LoadGraphFromFile(const char *filename, GraphContext *graph)
 
     graph->variables = malloc(sizeof(char *) * 1);
     graph->variableTypes = malloc(sizeof(NodeType) * 1);
-    graph->variables[0] = strdup("NONE");
+    graph->variables[0] = strmac(NULL, 4, "NONE");
     graph->variableTypes[0] = NODE_UNKNOWN;
     graph->variablesCount = 1;
 
@@ -127,7 +127,7 @@ bool LoadGraphFromFile(const char *filename, GraphContext *graph)
         if (graph->nodes[i].type == NODE_CREATE_NUMBER || graph->nodes[i].type == NODE_CREATE_STRING || graph->nodes[i].type == NODE_CREATE_BOOL || graph->nodes[i].type == NODE_CREATE_COLOR || graph->nodes[i].type == NODE_CREATE_SPRITE)
         {
             graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
-            graph->variables[graph->variablesCount] = strdup(graph->nodes[i].name);
+            graph->variables[graph->variablesCount] = strmac(NULL, MAX_VARIABLE_NAME_SIZE, graph->nodes[i].name);
 
             graph->variableTypes = realloc(graph->variableTypes, sizeof(int) * (graph->variablesCount + 1));
             graph->variableTypes[graph->variablesCount] = graph->nodes[i].type;
@@ -152,16 +152,16 @@ Pin CreatePin(GraphContext *graph, int nodeID, bool isInput, PinType type, int i
     switch (type)
     {
     case PIN_FIELD_NUM:
-        strcpy(pin.textFieldValue, "0");
+        strmac(pin.textFieldValue, 1, "0");
         break;
     case PIN_FIELD_BOOL:
-        strcpy(pin.textFieldValue, "false");
+        strmac(pin.textFieldValue, 5, "false");
         break;
     case PIN_FIELD_COLOR:
-        strcpy(pin.textFieldValue, "00000000");
+        strmac(pin.textFieldValue, 8, "00000000");
         break;
     case PIN_FIELD_KEY:
-        strcpy(pin.textFieldValue, "NONE");
+        strmac(pin.textFieldValue, 4, "NONE");
         break;
     default:
         break;
@@ -175,7 +175,7 @@ char *AssignAvailableVarName(GraphContext *graph, const char *baseName) {
     bool exists;
 
     do {
-        snprintf(temp, sizeof(temp), "%s %d", baseName, suffix);
+        strmac(temp, sizeof(temp), "%s %d", baseName, suffix);
         exists = false;
         for (int i = 0; i < graph->nodeCount; i++) {
             if (strcmp(temp, graph->nodes[i].name) == 0) {
@@ -187,7 +187,7 @@ char *AssignAvailableVarName(GraphContext *graph, const char *baseName) {
     } while (exists);
 
     char *name = malloc(strlen(temp) + 1);
-    strcpy(name, temp);
+    strmac(name, sizeof(temp), "%s", temp);
     return name;
 }
 
@@ -201,28 +201,28 @@ Node CreateNode(GraphContext *graph, NodeType type, Vector2 pos)
     switch (node.type)
     {
     case NODE_CREATE_NUMBER:
-        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Number"));
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "%s", AssignAvailableVarName(graph, "Number"));
         break;
     case NODE_CREATE_STRING:
-        sprintf(node.name, "%s", AssignAvailableVarName(graph, "String"));
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "%s", AssignAvailableVarName(graph, "String"));
         break;
     case NODE_CREATE_BOOL:
-        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Boolean"));
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "%s", AssignAvailableVarName(graph, "Boolean"));
         break;
     case NODE_CREATE_COLOR:
-        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Color"));
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "%s", AssignAvailableVarName(graph, "Color"));
         break;
     case NODE_CREATE_SPRITE:
-        sprintf(node.name, "%s", AssignAvailableVarName(graph, "Sprite"));
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "%s", AssignAvailableVarName(graph, "Sprite"));
         break;
     case NODE_GET_VARIABLE:
-        sprintf(node.name, "");
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "");
         break;
     case NODE_SET_VARIABLE:
-        sprintf(node.name, "");
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE, "");
         break;
     default:
-        sprintf(node.name, "Node");
+        strmac(node.name, MAX_VARIABLE_NAME_SIZE,  "Node %d", node.id);
     }
 
     if (type == NODE_UNKNOWN)

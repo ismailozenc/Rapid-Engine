@@ -264,7 +264,7 @@ int WindowLoadProject(char *projectFileName, Font font)
             }
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                strcpy(projectFileName, fileName);
+                strmac(projectFileName, MAX_FILE_NAME, "%s", fileName);
                 return PROJECT_MANAGER_WINDOW_MODE_EXIT;
             }
         }
@@ -313,7 +313,7 @@ int WindowLoadProject(char *projectFileName, Font font)
 
     if (IsKeyPressed(KEY_ENTER))
     {
-        strcpy(projectFileName, GetFileName(files.paths[selectedProject]));
+        strmac(projectFileName, MAX_FILE_NAME, "%s", GetFileName(files.paths[selectedProject]));
         return PROJECT_MANAGER_WINDOW_MODE_EXIT;
     }
 
@@ -326,7 +326,7 @@ bool CreateProject(ProjectOptions PO)
 {
     char projectPath[MAX_FILE_PATH];
 
-    snprintf(projectPath, MAX_FILE_PATH, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
+    strmac(projectPath, MAX_FILE_PATH, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
 
     if (DirectoryExists(TextFormat("..%cProjects", PATH_SEPARATOR)))
     {
@@ -341,7 +341,7 @@ bool CreateProject(ProjectOptions PO)
 
     char mainPath[MAX_FILE_PATH];
 
-    snprintf(mainPath, MAX_FILE_PATH, "%s%c%s.c", projectPath, PATH_SEPARATOR, PO.projectName);
+    strmac(mainPath, MAX_FILE_PATH, "%s%c%s.c", projectPath, PATH_SEPARATOR, PO.projectName);
 
     FILE *file = fopen(mainPath, "w");
 
@@ -352,7 +352,7 @@ bool CreateProject(ProjectOptions PO)
 
     fclose(file);
 
-    snprintf(mainPath, MAX_FILE_PATH, "%s%c%s.cg", projectPath, PATH_SEPARATOR, PO.projectName);
+    strmac(mainPath, MAX_FILE_PATH, "%s%c%s.cg", projectPath, PATH_SEPARATOR, PO.projectName);
 
     file = fopen(mainPath, "w");
 
@@ -365,7 +365,7 @@ bool CreateProject(ProjectOptions PO)
 
     char foldersPath[MAX_FILE_PATH];
 
-    sprintf(foldersPath, "%s%cAssets", projectPath, PATH_SEPARATOR);
+    strmac(foldersPath, MAX_FILE_PATH, "%s%cAssets", projectPath, PATH_SEPARATOR);
 
     if (MAKE_DIR(foldersPath) != 0)
     {
@@ -526,12 +526,12 @@ int WindowCreateProject(char *projectFileName, Font font)
             DrawRectangleRounded((Rectangle){700, 500, 250, 50}, 2.0f, 8, (Color){255, 255, 255, 150});
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                strcpy(PO.projectName, inputText);
+                strmac(PO.projectName, MAX_FILE_NAME, "%s", inputText);
                 if (!CreateProject(PO))
                 {
                     exit(1);
                 }
-                strcpy(projectFileName, inputText);
+                strmac(projectFileName, MAX_FILE_NAME, "%s", inputText);
                 return PROJECT_MANAGER_WINDOW_MODE_EXIT;
             }
         }

@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
 #include "raylib.h"
 #include "local_config.h"
 #include "resources/resources.h"
@@ -58,7 +60,8 @@ static inline void OpenFile(const char* filePath) {
 #error "Rapid Engine supports only Windows, macOS, and Unix-like systems"
 #endif
 
-#define MAX_LOG_MESSAGES 32
+#define MAX_VARIABLE_NAME_SIZE 128
+#define MAX_LITERAL_NODE_FIELD_SIZE 512
 
 #define MAX_HITBOX_VERTICES 64
 
@@ -68,6 +71,8 @@ typedef struct {
     bool isClosed;
 } Polygon;
 
+#define MAX_LOG_MESSAGE_SIZE 256
+#define MAX_LOG_MESSAGES 32 //should be higher?
 typedef enum
 {
     LOG_LEVEL_NORMAL,
@@ -76,3 +81,53 @@ typedef enum
     LOG_LEVEL_SAVE,
     LOG_LEVEL_DEBUG
 }LogLevel;
+
+extern bool STRING_ALLOCATION_FAILURE;
+
+char* strmac(char* buf, size_t max_size, const char* format, ...) {
+    static const char empty[] = "";
+
+    if (!format || max_size == 0){
+        STRING_ALLOCATION_FAILURE = true;
+        return (buf) ? buf : strdup(empty);
+    }
+
+    char* temp = buf;
+    bool needs_free = false;
+
+    if (!buf) {
+        temp = malloc(max_size);
+        if (!temp){
+            STRING_ALLOCATION_FAILURE = true;
+            return strdup(empty);
+        }
+        needs_free = true;
+    }
+
+    va_list args;
+    va_start(args, format);
+    int written = vsnprintf(temp, max_size, format, args);
+    va_end(args);
+
+    if (written < 0) {
+        if (needs_free) {
+            STRING_ALLOCATION_FAILURE = true;
+            free(temp);
+            return strdup(empty);
+        }
+        temp[0] = '\0';
+        return temp;
+    }
+
+    if ((size_t)written >= max_size) {
+        temp[max_size - 1] = '\0';
+    }
+
+    if (needs_free) {
+        char* result = strdup(temp);
+        free(temp);
+        return result;
+    }
+
+    return temp;
+}

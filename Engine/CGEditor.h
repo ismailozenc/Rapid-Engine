@@ -5,6 +5,9 @@
 #include "Nodes.h"
 #include "definitions.h"
 
+#define MAX_KEY_NAME_SIZE 12
+#define MAX_SEARCH_BAR_FIELD_SIZE 32
+
 typedef struct
 {
     int screenWidth;

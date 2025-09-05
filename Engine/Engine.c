@@ -8,6 +8,8 @@
 #include "Interpreter.h"
 #include "HitboxEditor.h"
 
+bool STRING_ALLOCATION_FAILURE = false;
+
 Logs InitLogs()
 {
     Logs logs;
@@ -179,11 +181,8 @@ void AddToLog(EngineContext *engine, const char *newLine, int level)
     time_t timestamp = time(NULL);
     struct tm *tm_info = localtime(&timestamp);
 
-    char timeStampedMessage[256];
-    snprintf(timeStampedMessage, sizeof(timeStampedMessage), "%02d:%02d:%02d %s",
-             tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, newLine);
+    strmac(engine->logs.entries[engine->logs.count].message, MAX_LOG_MESSAGE_SIZE, "%02d:%02d:%02d %s", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, newLine);
 
-    strncpy(engine->logs.entries[engine->logs.count].message, timeStampedMessage, sizeof(engine->logs.entries[0].message));
     engine->logs.entries[engine->logs.count].level = level;
 
     engine->logs.count++;
@@ -322,7 +321,7 @@ char *SetProjectFolderPath(const char *fileName)
         return NULL;
     }
 
-    snprintf(projectPath, MAX_FILE_PATH, "%s%cProjects%c%s", cwd, PATH_SEPARATOR, PATH_SEPARATOR, fileName);
+    strmac(projectPath, MAX_FILE_PATH, "%s%cProjects%c%s", cwd, PATH_SEPARATOR, PATH_SEPARATOR, fileName);
 
     return projectPath;
 }
@@ -330,7 +329,7 @@ char *SetProjectFolderPath(const char *fileName)
 FileType GetFileType(const char *folderPath, const char *fileName)
 {
     char fullPath[MAX_FILE_PATH];
-    snprintf(fullPath, sizeof(fullPath), "%s%c%s", folderPath, PATH_SEPARATOR, fileName);
+    strmac(fullPath, MAX_FILE_PATH, "%s%c%s", folderPath, PATH_SEPARATOR, fileName);
 
     const char *ext = GetFileExtension(fileName);
     if (!ext || *(ext + 1) == '\0')
@@ -341,10 +340,12 @@ FileType GetFileType(const char *folderPath, const char *fileName)
             return FILE_OTHER;
     }
 
-    if (strcmp(ext + 1, "cg") == 0)
+    if (strcmp(ext + 1, "cg") == 0){
         return FILE_CG;
-    else if (strcmp(ext + 1, "png") == 0 || strcmp(ext + 1, "jpg") == 0 || strcmp(ext + 1, "jpeg") == 0)
+    }
+    else if (strcmp(ext + 1, "png") == 0 || strcmp(ext + 1, "jpg") == 0 || strcmp(ext + 1, "jpeg") == 0){
         return FILE_IMAGE;
+    }
 
     return FILE_OTHER;
 }
@@ -368,7 +369,7 @@ void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 
     cwd[len - 7] = '\0';
 
-    snprintf(engine->CGFilePath, MAX_FILE_PATH, "%s%cProjects%c%s%c%s.cg", cwd, PATH_SEPARATOR, PATH_SEPARATOR, projectName, PATH_SEPARATOR, projectName);
+    strmac(engine->CGFilePath, MAX_FILE_PATH, "%s%cProjects%c%s%c%s.cg", cwd, PATH_SEPARATOR, PATH_SEPARATOR, projectName, PATH_SEPARATOR, projectName);
 
     for (int i = 0; i < engine->files.count; i++)
     {
@@ -864,8 +865,8 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             }
             break;
         case UI_ACTION_OPEN_FILE:
-            char tooltipText[256] = "";
-            snprintf(tooltipText, sizeof(tooltipText), "File: %s\nSize: %ld bytes", GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name), GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
+            char tooltipText[256];
+            strmac(tooltipText, MAX_FILE_TOOLTIP_SIZE, "File: %s\nSize: %d bytes", GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name), GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
             Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
             AddUIElement(engine, (UIElement){
                                      .name = "FileTooltip",
@@ -875,8 +876,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .color = DARKGRAY,
                                      .layer = 1,
                                      .text = {.string = "", .textPos = {tooltipRect.x + 10, tooltipRect.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, tooltipText, 255);
-            engine->uiElements[engine->uiElementCount - 1].text.string[255] = '\0';
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_TOOLTIP_SIZE, "%s", tooltipText);
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 double currentTime = GetTime();
@@ -886,8 +886,8 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 {
                     if (GetFileType(engine->currentPath, GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == FILE_CG)
                     {
-                        char *openedFileName = malloc(strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) + 1);
-                        strcpy(openedFileName, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        char openedFileName[MAX_FILE_NAME];
+                        strmac(openedFileName, MAX_FILE_NAME, "%s", engine->uiElements[engine->hoveredUIElementIndex].text.string);
                         openedFileName[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
 
                         *editor = InitEditorContext();
@@ -905,7 +905,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     }
                     else
                     {
-                        snprintf(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        strmac(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
 
                         UnloadDirectoryFiles(engine->files);
                         printf("%s\n", engine->currentPath);
@@ -923,7 +923,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             break;
 
         case UI_ACTION_VAR_TOOLTIP_RUNTIME:
-            sprintf(temp, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type), interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
+            strmac(temp, MAX_VARIABLE_TOOLTIP_SIZE, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type), interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
             AddUIElement(engine, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
@@ -932,7 +932,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .color = DARKGRAY,
                                      .layer = 1,
                                      .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-            sprintf(engine->uiElements[engine->uiElementCount - 1].text.string, "%s", temp);
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_VARIABLE_TOOLTIP_SIZE, "%s", temp);
             break;
 
         case UI_ACTION_CHANGE_VARS_FILTER:
@@ -1048,11 +1048,11 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                              });
         if (editor->hasChanged)
         {
-            strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save*");
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "Save*");
         }
         else
         {
-            strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, "Save");
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "Save");
         }
 
         if (engine->viewportMode == VIEWPORT_GAME_SCREEN)
@@ -1099,8 +1099,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             const char *msgNoTimestamp = engine->logs.entries[i].message + 9;
 
             char finalMsg[256];
-            strncpy(finalMsg, engine->logs.entries[i].message, 255);
-            finalMsg[255] = '\0';
+            strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "%s", engine->logs.entries[i].message);
 
             int repeatCount = 1;
             while (i - repeatCount >= 0)
@@ -1113,7 +1112,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
             if (repeatCount > 1)
             {
-                snprintf(finalMsg, sizeof(finalMsg), "[x%d] %s", repeatCount, engine->logs.entries[i].message);
+                strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "[x%d] %s", repeatCount, engine->logs.entries[i].message);
                 i -= (repeatCount - 1);
             }
 
@@ -1121,7 +1120,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             for (j = 0; j < (int)strlen(finalMsg); j++)
             {
                 char temp[256];
-                strncpy(temp, finalMsg, j);
+                strmac(temp, MAX_LOG_MESSAGE_SIZE, "%.*s", j, finalMsg);
                 temp[j] = '\0';
 
                 if (MeasureTextEx(engine->font, temp, 20, 2).x < engine->sideBarWidth - 25)
@@ -1133,8 +1132,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                     break;
                 }
             }
-            strncpy(cutMessage, finalMsg, j);
-            cutMessage[j] = '\0';
+            strmac(cutMessage, j, "%s", finalMsg);
 
             Color logColor;
             switch (engine->logs.entries[i].level)
@@ -1166,8 +1164,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = logColor},
                                      .layer = 0});
 
-            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
-            engine->uiElements[engine->uiElementCount - 1].text.string[127] = '\0';
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_LOG_MESSAGE_SIZE, cutMessage);
 
             logY -= 25;
         }
@@ -1185,32 +1182,32 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             switch (engine->varsFilter)
             {
             case VAR_FILTER_ALL:
-                strcpy(varsFilterText, "All");
+                strmac(varsFilterText, 10, "All");
                 varFilterColor = RAYWHITE;
                 break;
             case VAR_FILTER_NUMBERS:
-                strcpy(varsFilterText, "Nums");
+                strmac(varsFilterText, 10, "Nums");
                 varFilterColor = (Color){24, 119, 149, 255};
                 break;
             case VAR_FILTER_STRINGS:
-                strcpy(varsFilterText, "Strings");
+                strmac(varsFilterText, 10, "Strings");
                 varFilterColor = (Color){180, 178, 40, 255};
                 break;
             case VAR_FILTER_BOOLS:
-                strcpy(varsFilterText, "Bools");
+                strmac(varsFilterText, 10, "Bools");
                 varFilterColor = (Color){27, 64, 121, 255};
                 break;
             case VAR_FILTER_COLORS:
-                strcpy(varsFilterText, "Colors");
+                strmac(varsFilterText, 10, "Colors");
                 varFilterColor = (Color){217, 3, 104, 255};
                 break;
             case VAR_FILTER_SPRITES:
-                strcpy(varsFilterText, "Sprites");
+                strmac(varsFilterText, 10, "Sprites");
                 varFilterColor = (Color){3, 206, 164, 255};
                 break;
             default:
                 engine->varsFilter = 0;
-                strcpy(varsFilterText, "All");
+                strmac(varsFilterText, 10, "All");
                 varFilterColor = RAYWHITE;
                 break;
             }
@@ -1223,7 +1220,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .layer = 1,
                                      .text = {.textPos = {engine->sideBarWidth - 85 + (78 - MeasureTextEx(engine->font, varsFilterText, 20, 1).x) / 2, 20}, .textSize = 20, .textSpacing = 1, .textColor = varFilterColor},
                                  });
-            strcpy(engine->uiElements[engine->uiElementCount - 1].text.string, varsFilterText);
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, 10, varsFilterText);
         }
 
         int varsY = 60;
@@ -1245,7 +1242,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             }
 
             Color varColor;
-            sprintf(cutMessage, "%s", engine->isGameRunning ? interpreter->values[i].name : graph->variables[i]);
+            strmac(cutMessage, MAX_VARIABLE_NAME_SIZE, "%s", engine->isGameRunning ? interpreter->values[i].name : graph->variables[i]);
             switch (engine->isGameRunning ? interpreter->values[i].type : graph->variableTypes[i])
             {
             case VAL_NUMBER:
@@ -1307,8 +1304,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             for (j = 1; j <= strlen(cutMessage); j++)
             {
                 char temp[256];
-                strncpy(temp, cutMessage, j);
-                temp[j] = '\0';
+                strmac(temp, MAX_VARIABLE_NAME_SIZE, "%.*s", j, cutMessage);
 
                 float textWidth = MeasureTextEx(engine->font, temp, 24, 2).x;
                 if (textWidth + dotsWidth < engine->sideBarWidth - 80)
@@ -1321,8 +1317,9 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
             bool textHidden = false;
 
-            if (wasCut && j < 252)
-                strcat(cutMessage, "...");
+            if (wasCut && j < 252){
+                strmac(cutMessage, MAX_VARIABLE_NAME_SIZE, "%s...", cutMessage);
+            }
             if (wasCut && j == 0)
             {
                 cutMessage[0] = '\0';
@@ -1338,8 +1335,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
                                      .layer = 2});
 
-            strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, cutMessage, 127);
-            engine->uiElements[engine->uiElementCount - 1].text.string[128] = '\0';
+            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_VARIABLE_NAME_SIZE, "%s", cutMessage);
             varsY += 40;
         }
     }
@@ -1387,8 +1383,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                              .color = (Color){0, 0, 0, 0},
                              .layer = 0,
                              .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
-    strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, engine->currentPath, 255);
-    engine->uiElements[engine->uiElementCount - 1].text.string[255] = '\0';
+    strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "%s", engine->currentPath);
 
     int xOffset = 50;
     int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
@@ -1435,9 +1430,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             break;
         }
 
-        char buff[256];
-        strncpy(buff, fileName, sizeof(buff) - 1);
-        buff[sizeof(buff) - 1] = '\0';
+        char buff[MAX_FILE_NAME];
+        strmac(buff, MAX_FILE_NAME, "%s", fileName);
 
         if (MeasureTextEx(engine->font, fileName, 25, 0).x > 135)
         {
@@ -1453,10 +1447,10 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                     if (j > 3)
                     {
                         buff[j - 3] = '\0';
-                        strcat(buff, "...");
+                        strmac(buff, MAX_FILE_NAME, "%s...", buff);
                         if (ext)
                         {
-                            strcat(buff, ext);
+                            strmac(buff, MAX_FILE_NAME, "%s%s", buff, ext);
                         }
                     }
                     break;
@@ -1480,10 +1474,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .color = (Color){40, 40, 40, 255},
                                  .layer = 1,
                                  .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = fileTextColor}});
-        strncpy(engine->uiElements[engine->uiElementCount - 1].name, GetFileName(engine->files.paths[i]), 63);
-        engine->uiElements[engine->uiElementCount - 1].name[63] = '\0';
-        strncpy(engine->uiElements[engine->uiElementCount - 1].text.string, buff, MAX_FILE_NAME);
-        engine->uiElements[engine->uiElementCount - 1].text.string[MAX_FILE_NAME - 1] = '\0';
+        strmac(engine->uiElements[engine->uiElementCount - 1].name, MAX_FILE_PATH, "%s", engine->files.paths[i]);
+        strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "%s", buff);
 
         xOffset += 200;
         if (xOffset + 100 >= engine->screenWidth)
@@ -1901,7 +1893,7 @@ int main()
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
     char fileName[MAX_FILE_NAME];
-    snprintf(fileName, sizeof(fileName), "%s", developerMode ? "Tetris" : HandleProjectManager());
+    strmac(fileName, MAX_FILE_NAME, "%s", developerMode ? "Tetris" : HandleProjectManager());
 
     SetTargetFPS(60);
 
@@ -1926,8 +1918,8 @@ int main()
 
     PrepareCGFilePath(&engine, fileName);
 
-    interpreter.projectPath = strdup(engine.currentPath);
-    engine.projectPath = strdup(engine.currentPath);
+    interpreter.projectPath = strmac(NULL, MAX_FILE_PATH, "%s", engine.currentPath);
+    engine.projectPath = strmac(NULL, MAX_FILE_PATH, "%s", engine.currentPath);
 
     if (!LoadGraphFromFile(engine.CGFilePath, &graph))
     {
@@ -1941,6 +1933,11 @@ int main()
     {
         if (!IsWindowReady())
         {
+            EmergencyExit(&engine, &editor, &interpreter);
+        }
+
+        if(STRING_ALLOCATION_FAILURE){
+            AddToLog(&engine, "String allocation failed", LOG_LEVEL_ERROR);
             EmergencyExit(&engine, &editor, &interpreter);
         }
 
@@ -2094,7 +2091,7 @@ int main()
             {
                 engine.delayFrames = true;
                 char path[MAX_FILE_PATH];
-                snprintf(path, sizeof(path), "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
+                strmac(path, MAX_FILE_PATH, "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
 
                 Image img = LoadImage(path);
                 if (img.data == NULL)

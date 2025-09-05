@@ -5,6 +5,8 @@
 #include "definitions.h"
 
 #define MAX_UI_ELEMENTS 128
+#define MAX_FILE_TOOLTIP_SIZE 256
+#define MAX_VARIABLE_TOOLTIP_SIZE 256
 
 const double doubleClickThreshold = 0.3;
 
@@ -64,7 +66,7 @@ typedef struct Logs
 
 typedef struct UIElement
 {
-    char name[64];
+    char name[MAX_FILE_PATH];
     UIElementShape shape;
     UIAction type;
     union

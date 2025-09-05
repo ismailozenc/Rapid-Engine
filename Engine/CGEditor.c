@@ -88,7 +88,7 @@ void AddToLogFromEditor(EditorContext *editor, char *message, int level)
 {
     if (editor->logMessageCount >= MAX_LOG_MESSAGES){return;}
 
-    strncpy(editor->logMessages[editor->logMessageCount], message, 127);
+    strmac(editor->logMessages[editor->logMessageCount], MAX_LOG_MESSAGE_SIZE, "%s", message);
     editor->logMessageLevels[editor->logMessageCount] = level;
     editor->logMessageCount++;
     editor->newLogMessage = true;
@@ -180,7 +180,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
 
     bool showCursor = ((int)(GetTime() * 2) % 2) == 0;
     char buffer[130];
-    snprintf(buffer, sizeof(buffer), "%s%s", text, showCursor ? "_" : " ");
+    strmac(buffer, sizeof(buffer), "%s%s", text, showCursor ? "_" : " ");
     DrawTextEx(editor->font, buffer, (Vector2){bounds.x + 5, bounds.y + 8}, 16, 2, BLACK);
 
     int key = GetCharPressed();
@@ -218,7 +218,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
 
         graph->variables = malloc(sizeof(char *) * 1);
         graph->variableTypes = malloc(sizeof(NodeType) * 1);
-        graph->variables[0] = strdup("NONE");
+        graph->variables[0] = strmac(NULL, 4, "NONE");
         graph->variableTypes[0] = NODE_UNKNOWN;
         graph->variablesCount = 1;
 
@@ -227,7 +227,7 @@ void HandleVarTextBox(EditorContext *editor, Rectangle bounds, char *text, int i
             if (graph->nodes[i].type == NODE_CREATE_NUMBER || graph->nodes[i].type == NODE_CREATE_STRING || graph->nodes[i].type == NODE_CREATE_BOOL || graph->nodes[i].type == NODE_CREATE_COLOR || graph->nodes[i].type == NODE_CREATE_SPRITE)
             {
                 graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
-                graph->variables[graph->variablesCount] = strdup(graph->nodes[i].name);
+                graph->variables[graph->variablesCount] = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "%s", graph->nodes[i].name);
 
                 graph->variableTypes = realloc(graph->variableTypes, sizeof(int) * (graph->variablesCount + 1));
                 graph->variableTypes[graph->variablesCount] = graph->nodes[i].type;
@@ -251,10 +251,12 @@ const char *AddEllipsis(Font font, const char *text, float fontSize, float maxWi
 
     for (int c = 1; c <= len; c++)
     {
-        if (showEnd)
-            strncpy(temp, text + len - c, c);
-        else
-            strncpy(temp, text, c);
+        if (showEnd){
+            strmac(temp, c, "%s", text + len - c);
+        }
+        else{
+            strmac(temp, c, "%s", text);
+        }
 
         temp[c] = '\0';
 
@@ -269,15 +271,15 @@ const char *AddEllipsis(Font font, const char *text, float fontSize, float maxWi
 
     if (showEnd)
     {
-        strncpy(temp, text + len - maxChars, maxChars);
+        strmac(temp, maxChars, "%s", text + len - maxChars);
         temp[maxChars] = '\0';
-        snprintf(result, sizeof(result), "...%s", temp);
+        strmac(result, sizeof(result), "...%s", temp);
     }
     else
     {
-        strncpy(result, text, maxChars);
+        strmac(result, maxChars, "%s", text);
         result[maxChars] = '\0';
-        strcat(result, "...");
+        strmac(result, maxChars, "%s...", result);
     }
 
     return result;
@@ -327,10 +329,12 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
         {
             if (type == PIN_FIELD_BOOL)
             {
-                if (strcmp(graph->pins[currPinIndex].textFieldValue, "false") == 0 || strcmp(graph->pins[currPinIndex].textFieldValue, "") == 0)
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "true");
-                else
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "false");
+                if (strcmp(graph->pins[currPinIndex].textFieldValue, "false") == 0 || strcmp(graph->pins[currPinIndex].textFieldValue, "") == 0){
+                    strmac(graph->pins[currPinIndex].textFieldValue, 4, "true");
+                }
+                else{
+                    strmac(graph->pins[currPinIndex].textFieldValue, 5, "false");
+                }
             }
             else
             {
@@ -344,19 +348,19 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
             case PIN_FIELD_NUM:
                 if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
                 {
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "0");
+                    strmac(graph->pins[currPinIndex].textFieldValue, 1, "0");
                 }
                 break;
             case PIN_FIELD_STRING:
                 if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
                 {
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "");
+                    strmac(graph->pins[currPinIndex].textFieldValue, 1, "");
                 }
                 break;
             case PIN_FIELD_COLOR:
                 if (strlen(graph->pins[currPinIndex].textFieldValue) != 8)
                 {
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "00000000");
+                    strmac(graph->pins[currPinIndex].textFieldValue, 8, "00000000");
                 }
                 break;
             default:
@@ -386,7 +390,7 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
         if (fmodf(blinkTime, 1.0f) < 0.5f)
         {
             char blinking[256];
-            snprintf(blinking, sizeof(blinking), "%s_", text);
+            strmac(blinking, sizeof(blinking), "%s_", text);
             DrawTextEx(editor->font, blinking, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
         }
         else
@@ -457,19 +461,19 @@ void HandleLiteralNodeField(EditorContext *editor, GraphContext *graph, int curr
             case PIN_FIELD_NUM:
                 if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
                 {
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "0");
+                    strmac(graph->pins[currPinIndex].textFieldValue, 1, "0");
                 }
                 break;
             case PIN_FIELD_STRING:
                 if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
                 {
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "");
+                    strmac(graph->pins[currPinIndex].textFieldValue, 1, "");
                 }
                 break;
             case PIN_FIELD_COLOR:
                 if (strlen(graph->pins[currPinIndex].textFieldValue) != 8)
                 {
-                    strcpy(graph->pins[currPinIndex].textFieldValue, "00000000");
+                    strmac(graph->pins[currPinIndex].textFieldValue, 8, "00000000");
                 }
                 break;
             default:
@@ -498,7 +502,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
         {
             if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
             {
-                strcpy(graph->pins[currPinIndex].textFieldValue, "NONE");
+                strmac(graph->pins[currPinIndex].textFieldValue, 1, "NONE");
                 graph->pins[currPinIndex].pickedOption = -1;
             }
             editor->nodeFieldPinFocused = -1;
@@ -520,7 +524,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
         if (fmodf(blinkTime, 1.0f) < 0.6f)
         {
             char blinking[256];
-            snprintf(blinking, sizeof(blinking), "Press a key");
+            strmac(blinking, sizeof(blinking), "Press a key");
             DrawTextEx(editor->font, blinking, (Vector2){textbox.x + 5, textbox.y + 4}, 20, 0, BLACK);
         }
     }
@@ -535,7 +539,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
         {
             if (IsKeyPressed(key))
             {
-                strcpy(graph->pins[currPinIndex].textFieldValue, GetKeyboardKeyName(key));
+                strmac(graph->pins[currPinIndex].textFieldValue, MAX_KEY_NAME_SIZE, GetKeyboardKeyName(key));
                 graph->pins[currPinIndex].pickedOption = key;
                 editor->nodeFieldPinFocused = -1;
                 break;
@@ -546,7 +550,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
         {
             if (graph->pins[currPinIndex].textFieldValue[0] == '\0')
             {
-                strcpy(graph->pins[currPinIndex].textFieldValue, "NONE");
+                strmac(graph->pins[currPinIndex].textFieldValue, 4, "NONE");
                 graph->pins[currPinIndex].pickedOption = -1;
             }
             editor->nodeFieldPinFocused = -1;
@@ -941,7 +945,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
                                                         if (graph->pins[e].id == graph->nodes[d].inputPins[0])
                                                         {
                                                             editor->shouldOpenHitboxEditor = true;
-                                                            strcpy(editor->hitboxEditorFileName, graph->pins[e].textFieldValue);
+                                                            strmac(editor->hitboxEditorFileName, MAX_FILE_NAME, "%s", graph->pins[e].textFieldValue);
                                                             editor->hitboxEditingPinID = graph->pins[i].id;
                                                             editor->hasChanged = false;
                                                             editor->hasChangedInLastFrame = false;
@@ -1295,11 +1299,13 @@ const char *DrawNodeMenu(EditorContext *editor, RenderTexture2D view)
 
     Rectangle searchRect = {editor->menuPosition.x + 5, editor->menuPosition.y + 5, MENU_WIDTH - 10, searchBarHeight};
     DrawRectangleRec(searchRect, DARKGRAY);
-    char buff[64];
-    if (editor->nodeMenuSearch[0] == '\0')
-        strcpy(buff, "Search");
-    else
-        strcpy(buff, editor->nodeMenuSearch);
+    char buff[MAX_SEARCH_BAR_FIELD_SIZE];
+    if (editor->nodeMenuSearch[0] == '\0'){
+        strmac(buff, 6, "Search");
+    }
+    else{
+        strmac(buff, MAX_SEARCH_BAR_FIELD_SIZE, editor->nodeMenuSearch);
+    }
     DrawTextEx(editor->font, buff, (Vector2){searchRect.x + 5, searchRect.y + 5}, 20, 0, WHITE);
 
     return "NULL";
@@ -1373,7 +1379,7 @@ int DrawFullTexture(EditorContext *editor, GraphContext *graph, RenderTexture2D 
             if (newNodeType == NODE_CREATE_NUMBER || newNodeType == NODE_CREATE_STRING || newNodeType == NODE_CREATE_BOOL || newNodeType == NODE_CREATE_COLOR || newNodeType == NODE_CREATE_SPRITE)
             {
                 graph->variables = realloc(graph->variables, sizeof(char *) * (graph->variablesCount + 1));
-                graph->variables[graph->variablesCount] = strdup(graph->nodes[graph->nodeCount - 1].name);
+                graph->variables[graph->variablesCount] = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "%s", graph->nodes[graph->nodeCount - 1].name);
 
                 graph->variableTypes = realloc(graph->variableTypes, sizeof(int) * (graph->variablesCount + 1));
                 graph->variableTypes[graph->variablesCount] = graph->nodes[graph->nodeCount - 1].type;

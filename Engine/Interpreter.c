@@ -97,31 +97,31 @@ char *ValueTypeToString(ValueType type)
 
 char *ValueToString(Value value)
 {
-    char *temp = malloc(256);
+    char *temp = malloc(MAX_LOG_MESSAGE_SIZE);
     if (!temp)
         return NULL;
     switch (value.type)
     {
     case VAL_NULL:
-        sprintf(temp, "Error");
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "Error");
         break;
     case VAL_NUMBER:
-        sprintf(temp, "%.2f", value.number);
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "%.2f", value.number);
         break;
     case VAL_STRING:
-        sprintf(temp, "%s", value.string);
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "%s", value.string);
         break;
     case VAL_BOOL:
-        sprintf(temp, "%s", value.boolean ? "true" : "false");
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "%s", value.boolean ? "true" : "false");
         break;
     case VAL_COLOR:
-        sprintf(temp, "%d %d %d %d", value.color.r, value.color.g, value.color.b, value.color.a);
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "%d %d %d %d", value.color.r, value.color.g, value.color.b, value.color.a);
         break;
     case VAL_SPRITE:
-        sprintf(temp, "%s, PosX: %.0f, PosY: %.0f, Rotation: %.2f", value.sprite.isVisible ? "Visible" : "Not visible", value.sprite.position.x, value.sprite.position.y, value.sprite.rotation);
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "%s, PosX: %.0f, PosY: %.0f, Rotation: %.2f", value.sprite.isVisible ? "Visible" : "Not visible", value.sprite.position.x, value.sprite.position.y, value.sprite.rotation);
         break;
     default:
-        sprintf(temp, "Error");
+        strmac(temp, MAX_LOG_MESSAGE_SIZE, "Error");
     }
     return temp;
 }
@@ -133,28 +133,9 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
         return;
     }
 
-    char str[128];
+    char str[MAX_LOG_MESSAGE_SIZE];
 
-    switch (message.type)
-    {
-    case VAL_NUMBER:
-        sprintf(str, "%.3f", message.number);
-        break;
-    case VAL_STRING:
-        strncpy(str, message.string, 127);
-        break;
-    case VAL_BOOL:
-        strcpy(str, message.boolean ? "true" : "false");
-        break;
-    case VAL_COLOR:
-        sprintf(str, "%08X", (message.color.r << 24) | (message.color.g << 16) | (message.color.b << 8) | message.color.a);
-        break;
-    case 5:
-        sprintf(str, "Name: %s, Pos X: %.3f, Pos Y: %.3f, Width: %d, Height: %d, Rotation: %.3f, Layer: %d", message.name, message.sprite.position.x, message.sprite.position.y, message.sprite.width, message.sprite.height, message.sprite.rotation, message.sprite.layer);
-        break;
-    default:
-        strcpy(str, "Error");
-    }
+    strmac(str, MAX_LOG_MESSAGE_SIZE, "%s", ValueToString(message));
 
     str[127] = '\0';
 
@@ -315,11 +296,11 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         return runtime;
     }
 
-    interpreter->values[SPECIAL_VALUE_ERROR] = (Value){.type = VAL_STRING, .string = strdup("Error value"), .name = strdup("Error value")};
-    interpreter->values[SPECIAL_VALUE_MOUSE_X] = (Value){.type = VAL_NUMBER, .number = 0, .name = strdup("Mouse X")};
-    interpreter->values[SPECIAL_VALUE_MOUSE_Y] = (Value){.type = VAL_NUMBER, .number = 0, .name = strdup("Mouse Y")};
-    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH] = (Value){.type = VAL_NUMBER, .number = 0, .name = strdup("Screen Width")};
-    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT] = (Value){.type = VAL_NUMBER, .number = 0, .name = strdup("Screen Height")};
+    interpreter->values[SPECIAL_VALUE_ERROR] = (Value){.type = VAL_STRING, .string = strmac(NULL, 11, "Error value"), .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Error value")};
+    interpreter->values[SPECIAL_VALUE_MOUSE_X] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Mouse X")};
+    interpreter->values[SPECIAL_VALUE_MOUSE_Y] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Mouse Y")};
+    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Screen Width")};
+    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Screen Height")};
     interpreter->valueCount = SPECIAL_VALUES_COUNT;
 
     interpreter->components = calloc(totalComponents + 1, sizeof(SceneComponent));
@@ -377,7 +358,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             interpreter->values[interpreter->valueCount].number = strtof(node->inputPins[0]->textFieldValue, NULL);
             interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
             interpreter->values[interpreter->valueCount].isVariable = false;
-            interpreter->values[interpreter->valueCount].name = strdup(srcNode->name);
+            interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
             if (node->outputPins[0])
                 node->outputPins[0]->valueIndex = interpreter->valueCount;
             interpreter->valueCount++;
@@ -388,10 +369,10 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal string"}, LOG_LEVEL_ERROR);
                 break;
             }
-            interpreter->values[interpreter->valueCount].string = strdup(node->inputPins[0]->textFieldValue);
+            interpreter->values[interpreter->valueCount].string = strmac(NULL, MAX_LITERAL_NODE_FIELD_SIZE, node->inputPins[0]->textFieldValue);
             interpreter->values[interpreter->valueCount].type = VAL_STRING;
             interpreter->values[interpreter->valueCount].isVariable = false;
-            interpreter->values[interpreter->valueCount].name = strdup(srcNode->name);
+            interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
             if (node->outputPins[0])
                 node->outputPins[0]->valueIndex = interpreter->valueCount;
             interpreter->valueCount++;
@@ -412,7 +393,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             }
             interpreter->values[interpreter->valueCount].type = VAL_BOOL;
             interpreter->values[interpreter->valueCount].isVariable = false;
-            interpreter->values[interpreter->valueCount].name = strdup(srcNode->name);
+            interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
             if (node->outputPins[0])
                 node->outputPins[0]->valueIndex = interpreter->valueCount;
             interpreter->valueCount++;
@@ -430,7 +411,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 interpreter->values[interpreter->valueCount].color = color;
                 interpreter->values[interpreter->valueCount].type = VAL_COLOR;
                 interpreter->values[interpreter->valueCount].isVariable = false;
-                interpreter->values[interpreter->valueCount].name = strdup(srcNode->name);
+                interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 if (node->outputPins[0])
                     node->outputPins[0]->valueIndex = interpreter->valueCount;
                 interpreter->valueCount++;
@@ -468,31 +449,31 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 interpreter->values[idx].number = 0;
                 interpreter->values[idx].type = VAL_NUMBER;
                 interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strdup(srcNode->name);
+                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_STRING:
-                interpreter->values[idx].string = strdup("null");
+                interpreter->values[idx].string = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "null");
                 interpreter->values[idx].type = VAL_STRING;
                 interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strdup(srcNode->name);
+                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_BOOL:
                 interpreter->values[idx].boolean = false;
                 interpreter->values[idx].type = VAL_BOOL;
                 interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strdup(srcNode->name);
+                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_COLOR:
                 interpreter->values[idx].color = (Color){255, 255, 255, 255};
                 interpreter->values[idx].type = VAL_COLOR;
                 interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strdup(srcNode->name);
+                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_SPRITE:
                 interpreter->values[idx].sprite = (Sprite){0};
                 interpreter->values[idx].type = VAL_SPRITE;
                 interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strdup(srcNode->name);
+                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             default:
                 break;
@@ -647,11 +628,11 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 if (fileIndex != -1 && fileIndex < interpreter->valueCount && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
                 {
                     char path[MAX_FILE_PATH];
-                    snprintf(path, sizeof(path), "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[fileIndex].string);
+                    strmac(path, MAX_FILE_PATH, "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[fileIndex].string);
                     Texture2D tex = LoadTexture(path);
                     if (tex.id == 0)
                     {
-                        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = strdup("Failed to load texture")}, LOG_LEVEL_ERROR);
+                        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = strmac(NULL, 24, "Failed to load texture")}, LOG_LEVEL_ERROR);
                     }
                     else
                     {
@@ -660,7 +641,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 }
                 else
                 {
-                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = strdup("Invalid texture input")}, LOG_LEVEL_ERROR);
+                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = strmac(NULL, 24, "Invalid texture input")}, LOG_LEVEL_ERROR);
                 }
 
                 if (wIndex != -1 && wIndex < interpreter->valueCount)
@@ -1092,8 +1073,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
         {
             UnloadTexture(interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture);
-            char path[512];
-            snprintf(path, sizeof(path), "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[node->inputPins[2]->valueIndex].string);
+            char path[MAX_FILE_PATH];
+            strmac(path, MAX_FILE_PATH, "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[node->inputPins[2]->valueIndex].string);
             interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture = LoadTexture(path);
         }
         break;

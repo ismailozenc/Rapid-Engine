@@ -535,7 +535,7 @@ void HandleKeyNodeField(EditorContext *editor, GraphContext *graph, int currPinI
         {
             if (IsKeyPressed(key))
             {
-                strcpy(graph->pins[currPinIndex].textFieldValue, GetKeyName(key));
+                strcpy(graph->pins[currPinIndex].textFieldValue, GetKeyboardKeyName(key));
                 graph->pins[currPinIndex].pickedOption = key;
                 editor->nodeFieldPinFocused = -1;
                 break;

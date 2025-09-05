@@ -258,10 +258,12 @@ int WindowLoadProject(char *projectFileName, Font font)
         DrawTextEx(font, fileName, (Vector2){(GetScreenWidth() - fileNameLength) / 2, yPosition}, 35, 1, WHITE);
         if (CheckCollisionPointRec(mousePos, (Rectangle){(GetScreenWidth() - fileNameLength) / 2 - 5, yPosition - 5, fileNameLength + 10, 45}))
         {
-            if(GetMouseDelta().x != 0 || GetMouseDelta().y != 0){
+            if (GetMouseDelta().x != 0 || GetMouseDelta().y != 0)
+            {
                 selectedProject = i;
             }
-            if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
                 strcpy(projectFileName, fileName);
                 return PROJECT_MANAGER_WINDOW_MODE_EXIT;
             }
@@ -322,18 +324,24 @@ int WindowLoadProject(char *projectFileName, Font font)
 
 bool CreateProject(ProjectOptions PO)
 {
-    char projectPath[512];
+    char projectPath[MAX_FILE_PATH];
 
-    sprintf(projectPath, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
+    snprintf(projectPath, MAX_FILE_PATH, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
 
-    if (MAKE_DIR(projectPath) != 0)
+    if (DirectoryExists(TextFormat("..%cProjects", PATH_SEPARATOR)))
     {
-        return false;
+        if (MAKE_DIR(projectPath) != 0)
+        {
+            return false;
+        }
+    }
+    else{
+
     }
 
-    char mainPath[512];
+    char mainPath[MAX_FILE_PATH];
 
-    sprintf(mainPath, "%s%c%s.c", projectPath, PATH_SEPARATOR, PO.projectName);
+    snprintf(mainPath, MAX_FILE_PATH, "%s%c%s.c", projectPath, PATH_SEPARATOR, PO.projectName);
 
     FILE *file = fopen(mainPath, "w");
 
@@ -344,7 +352,7 @@ bool CreateProject(ProjectOptions PO)
 
     fclose(file);
 
-    sprintf(mainPath, "%s%c%s.cg", projectPath, PATH_SEPARATOR, PO.projectName);
+    snprintf(mainPath, MAX_FILE_PATH, "%s%c%s.cg", projectPath, PATH_SEPARATOR, PO.projectName);
 
     file = fopen(mainPath, "w");
 
@@ -355,7 +363,7 @@ bool CreateProject(ProjectOptions PO)
 
     fclose(file);
 
-    char foldersPath[512];
+    char foldersPath[MAX_FILE_PATH];
 
     sprintf(foldersPath, "%s%cAssets", projectPath, PATH_SEPARATOR);
 

@@ -1,1 +1,1 @@
-#define DEVELOPER_MODE false
+#define DEVELOPER_MODE true

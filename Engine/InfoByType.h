@@ -694,7 +694,7 @@ static inline NodeType StringToNodeType(const char strType[])
     return NODE_UNKNOWN;
 }
 
-static inline char *GetKeyName(KeyboardKey key)
+static inline char *GetKeyboardKeyName(KeyboardKey key)
 {
     if (key >= 'a' && key <= 'z')
         key -= 32;

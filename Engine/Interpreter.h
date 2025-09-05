@@ -176,7 +176,7 @@ typedef struct
 
     bool newLogMessage;
     char logMessages[MAX_LOG_MESSAGES][128];
-    int logMessageLevels[MAX_LOG_MESSAGES];
+    LogLevel logMessageLevels[MAX_LOG_MESSAGES];
     int logMessageCount;
 
     int *onButtonNodeIndexes;

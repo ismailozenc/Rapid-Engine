@@ -58,7 +58,7 @@ EngineContext InitEngineContext()
     UnloadImage(tempImg);
     if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
-        AddToLog(&engine, "Couldn't load textures", LOG_LEVEL_ERROR);
+        AddToLog(&engine, "Failed to load texture", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -211,7 +211,7 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             case LOG_LEVEL_ERROR:
                 level = "ERROR";
                 break;
-            case LOG_LEVEL_SAVE:
+            case LOG_LEVEL_SUCCESS:
                 level = "SAVE";
                 break;
             case LOG_LEVEL_DEBUG:
@@ -238,7 +238,7 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             case LOG_LEVEL_ERROR:
                 level = "ERROR";
                 break;
-            case LOG_LEVEL_SAVE:
+            case LOG_LEVEL_SUCCESS:
                 level = "SAVE";
                 break;
             case LOG_LEVEL_DEBUG:
@@ -265,7 +265,7 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             case LOG_LEVEL_ERROR:
                 level = "ERROR";
                 break;
-            case LOG_LEVEL_SAVE:
+            case LOG_LEVEL_SUCCESS:
                 level = "SAVE";
                 break;
             case LOG_LEVEL_DEBUG:
@@ -434,7 +434,7 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
         {
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
-                AddToLog(engine, "Saved successfully!", LOG_LEVEL_SAVE);
+                AddToLog(engine, "Saved successfully!", LOG_LEVEL_SUCCESS);
                 editor->hasChanged = false;
             }
             else
@@ -722,7 +722,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
                 {
                     editor->hasChanged = false;
-                    AddToLog(engine, "Saved successfully!", LOG_LEVEL_SAVE);
+                    AddToLog(engine, "Saved successfully!", LOG_LEVEL_SUCCESS);
                 }
                 else
                     AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
@@ -772,7 +772,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 engine->delayFrames = true;
                 if (runtimeGraph != NULL)
                 {
-                    AddToLog(engine, "Build Successfull", LOG_LEVEL_NORMAL);
+                    AddToLog(engine, "Build Successfull", LOG_LEVEL_SUCCESS);
                     engine->wasBuilt = true;
                 }
                 else
@@ -901,14 +901,13 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                     }
                     else if (GetFileType(engine->currentPath, GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
                     {
-                        OpenFile(TextFormat("%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].name));
+                        OpenFile(TextFormat("%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string));
                     }
                     else
                     {
                         strmac(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
 
                         UnloadDirectoryFiles(engine->files);
-                        printf("%s\n", engine->currentPath);
                         engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
                         if (!engine->files.paths || engine->files.count < 0)
                         {
@@ -1149,7 +1148,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             case LOG_LEVEL_DEBUG:
                 logColor = PURPLE;
                 break;
-            case LOG_LEVEL_SAVE:
+            case LOG_LEVEL_SUCCESS:
                 logColor = GREEN;
                 break;
             default:
@@ -1424,7 +1423,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             fileTextColor = (Color){220, 220, 220, 255};
             break;
         default:
-            AddToLog(engine, "File error", LOG_LEVEL_ERROR);
+            AddToLog(engine, "Out of bounds enum", LOG_LEVEL_ERROR);
             fileOutlineColor = (Color){160, 160, 160, 255};
             fileTextColor = (Color){220, 220, 220, 255};
             break;
@@ -1595,7 +1594,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
         {
             editor->hasChanged = false;
-            AddToLog(engine, "Saved successfully!", LOG_LEVEL_SAVE);
+            AddToLog(engine, "Saved successfully!", LOG_LEVEL_SUCCESS);
         }
         else
         {
@@ -1912,7 +1911,7 @@ int main()
     engine.files = LoadDirectoryFilesEx(engine.currentPath, NULL, false);
     if (!engine.files.paths || engine.files.count <= 0)
     {
-        AddToLog(&engine, "Error loading files", 2);
+        AddToLog(&engine, "Error loading files", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &editor, &interpreter);
     }
 
@@ -1923,7 +1922,7 @@ int main()
 
     if (!LoadGraphFromFile(engine.CGFilePath, &graph))
     {
-        AddToLog(&engine, "Failed to load CoreGraph file! Continuing with empty graph", LOG_ERROR);
+        AddToLog(&engine, "Failed to load CoreGraph file! Continuing with empty graph", LOG_LEVEL_ERROR);
         engine.CGFilePath[0] = '\0';
     }
 
@@ -2014,11 +2013,11 @@ int main()
                     if (SaveGraphToFile(engine.CGFilePath, &graph) == 0)
                     {
                         editor.hasChanged = false;
-                        AddToLog(&engine, "Auto-saved successfully!", 3);
+                        AddToLog(&engine, "Auto-saved successfully!", LOG_LEVEL_SUCCESS);
                     }
                     else
                     {
-                        AddToLog(&engine, "ERROR SAVING CHANGES!", 1);
+                        AddToLog(&engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
                     }
                     engine.autoSaveTimer = 0.0f;
                 }
@@ -2096,7 +2095,7 @@ int main()
                 Image img = LoadImage(path);
                 if (img.data == NULL)
                 {
-                    AddToLog(&engine, "Invalid texture file name", 2);
+                    AddToLog(&engine, "Invalid texture file name", LOG_LEVEL_ERROR);
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
                 else
@@ -2161,7 +2160,7 @@ int main()
         }
         default:
         {
-            AddToLog(&engine, "Viewport error!", LOG_ERROR);
+            AddToLog(&engine, "Out of bounds enum", LOG_ERROR);
             engine.viewportMode = VIEWPORT_CG_EDITOR;
         }
         }

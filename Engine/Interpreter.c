@@ -133,13 +133,7 @@ void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int
         return;
     }
 
-    char str[MAX_LOG_MESSAGE_SIZE];
-
-    strmac(str, MAX_LOG_MESSAGE_SIZE, "%s", ValueToString(message));
-
-    str[127] = '\0';
-
-    strncpy(interpreter->logMessages[interpreter->logMessageCount], str, 127);
+    strmac(interpreter->logMessages[interpreter->logMessageCount], MAX_LOG_MESSAGE_SIZE, "%s", ValueToString(message));
     interpreter->logMessageLevels[interpreter->logMessageCount] = level;
     interpreter->logMessageCount++;
     interpreter->newLogMessage = true;
@@ -176,6 +170,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     if (!runtime.nodes)
     {
         interpreter->buildFailed = true;
+        interpreter->buildErrorOccured = true;
         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: nodes"}, LOG_LEVEL_ERROR);
         return runtime;
     }
@@ -188,6 +183,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         free(runtime.nodes);
         runtime.nodes = NULL;
         interpreter->buildFailed = true;
+        interpreter->buildErrorOccured = true;
         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: pins"}, LOG_LEVEL_ERROR);
         return runtime;
     }
@@ -205,8 +201,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         dst->pickedOption = src->pickedOption;
         dst->nextNodeIndex = -1;
         dst->componentIndex = -1;
-        strncpy(dst->textFieldValue, src->textFieldValue, sizeof(dst->textFieldValue) - 1);
-        dst->textFieldValue[sizeof(dst->textFieldValue) - 1] = '\0';
+        strmac(dst->textFieldValue, MAX_LITERAL_NODE_FIELD_SIZE, "%s", src->textFieldValue);
     }
 
     for (int i = 0; i < graph->nodeCount; i++)
@@ -233,8 +228,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (pinIndex < 0)
             {
                 dstNode->inputPins[j] = NULL;
+                interpreter->buildErrorOccured = true;
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Input pin mapping failed"}, LOG_LEVEL_ERROR);
-                continue;
+                return runtime;
             }
             dstNode->inputPins[j] = &runtime.pins[pinIndex];
             runtime.pins[pinIndex].nodeIndex = i;
@@ -254,8 +250,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (pinIndex < 0)
             {
                 dstNode->outputPins[j] = NULL;
+                interpreter->buildErrorOccured = true;
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Output pin mapping failed"}, LOG_LEVEL_ERROR);
-                continue;
+                return runtime;
             }
             dstNode->outputPins[j] = &runtime.pins[pinIndex];
             runtime.pins[pinIndex].nodeIndex = i;
@@ -290,9 +287,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     if (!interpreter->values)
     {
         interpreter->buildFailed = true;
+        interpreter->buildErrorOccured = true;
         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: values"}, LOG_LEVEL_ERROR);
-        free(runtime.pins);
-        free(runtime.nodes);
         return runtime;
     }
 
@@ -307,10 +303,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     if (!interpreter->components)
     {
         interpreter->buildFailed = true;
+        interpreter->buildErrorOccured = true;
         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: components"}, LOG_LEVEL_ERROR);
-        free(interpreter->values);
-        free(runtime.pins);
-        free(runtime.nodes);
         return runtime;
     }
     interpreter->componentCount = 0;
@@ -319,11 +313,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     if (!interpreter->varIndexes)
     {
         interpreter->buildFailed = true;
+        interpreter->buildErrorOccured = true;
         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: varIndexes"}, LOG_LEVEL_ERROR);
-        free(interpreter->components);
-        free(interpreter->values);
-        free(runtime.pins);
-        free(runtime.nodes);
         return runtime;
     }
     interpreter->varCount = 0;
@@ -332,12 +323,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     if (!interpreter->forces)
     {
         interpreter->buildFailed = true;
+        interpreter->buildErrorOccured = true;
         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: forces"}, LOG_LEVEL_ERROR);
-        free(interpreter->varIndexes);
-        free(interpreter->components);
-        free(interpreter->values);
-        free(runtime.pins);
-        free(runtime.nodes);
         return runtime;
     }
     interpreter->forcesCount = 0;
@@ -352,8 +339,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_LITERAL_NUMBER:
             if (!node->inputPins[0])
             {
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal number"}, LOG_LEVEL_ERROR);
-                break;
+                interpreter->buildErrorOccured = true;
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node"}, LOG_LEVEL_ERROR);
+                return runtime;
             }
             interpreter->values[interpreter->valueCount].number = strtof(node->inputPins[0]->textFieldValue, NULL);
             interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
@@ -366,8 +354,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_LITERAL_STRING:
             if (!node->inputPins[0])
             {
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal string"}, LOG_LEVEL_ERROR);
-                break;
+                interpreter->buildErrorOccured = true;
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node"}, LOG_LEVEL_ERROR);
+                return runtime;
             }
             interpreter->values[interpreter->valueCount].string = strmac(NULL, MAX_LITERAL_NODE_FIELD_SIZE, node->inputPins[0]->textFieldValue);
             interpreter->values[interpreter->valueCount].type = VAL_STRING;
@@ -380,8 +369,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_LITERAL_BOOL:
             if (!node->inputPins[0])
             {
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal bool"}, LOG_LEVEL_ERROR);
-                break;
+                interpreter->buildErrorOccured = true;
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node"}, LOG_LEVEL_ERROR);
+                return runtime;
             }
             if (strcmp(node->inputPins[0]->textFieldValue, "true") == 0)
             {
@@ -401,8 +391,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_LITERAL_COLOR:
             if (!node->inputPins[0])
             {
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal color"}, LOG_LEVEL_ERROR);
-                break;
+                interpreter->buildErrorOccured = true;
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node"}, LOG_LEVEL_ERROR);
+                return runtime;
             }
             unsigned int hexValue;
             if (sscanf(node->inputPins[0]->textFieldValue, "%x", &hexValue) == 1)
@@ -412,13 +403,16 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 interpreter->values[interpreter->valueCount].type = VAL_COLOR;
                 interpreter->values[interpreter->valueCount].isVariable = false;
                 interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
-                if (node->outputPins[0])
+                if (node->outputPins[0]){
                     node->outputPins[0]->valueIndex = interpreter->valueCount;
+                }
                 interpreter->valueCount++;
             }
             else
             {
+                interpreter->buildErrorOccured = true;
                 AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Error: Invalid color"}, LOG_LEVEL_ERROR);
+                return runtime;
             }
             continue;
         default:
@@ -489,8 +483,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
             if (interpreter->valueCount > expectedValues)
             {
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Value array overflow"}, LOG_LEVEL_ERROR);
                 interpreter->buildErrorOccured = true;
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Value array overflow"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
 
@@ -585,8 +579,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
         if (inputIndex == -1 || outputIndex == -1)
         {
+            interpreter->buildErrorOccured = true;
             AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Link pin missing"}, LOG_LEVEL_ERROR);
-            continue;
+            return runtime;
         }
 
         RuntimePin *inputPin = &runtime.pins[inputIndex];
@@ -632,7 +627,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                     Texture2D tex = LoadTexture(path);
                     if (tex.id == 0)
                     {
+                        interpreter->buildErrorOccured = true;
                         AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = strmac(NULL, 24, "Failed to load texture")}, LOG_LEVEL_ERROR);
+                        return runtime;
                     }
                     else
                     {
@@ -641,7 +638,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 }
                 else
                 {
+                    interpreter->buildErrorOccured = true;
                     AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = strmac(NULL, 24, "Invalid texture input")}, LOG_LEVEL_ERROR);
+                    return runtime;
                 }
 
                 if (wIndex != -1 && wIndex < interpreter->valueCount)
@@ -693,12 +692,10 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
                             if (varPtr && valPtr)
                             {
-                                char varName[32];
-                                char valName[32];
-                                strncpy(varName, varPtr, sizeof(varName) - 1);
-                                varName[31] = '\0';
-                                strncpy(valName, valPtr, sizeof(valName) - 1);
-                                valName[31] = '\0';
+                                char varName[MAX_VARIABLE_NAME_SIZE];
+                                char valName[MAX_VARIABLE_NAME_SIZE];
+                                strmac(varName, MAX_VARIABLE_NAME_SIZE, "%s", varPtr);
+                                strmac(valName, MAX_VARIABLE_NAME_SIZE, "%s", valPtr);
 
                                 if (strcmp(varName, valName) == 0)
                                 {
@@ -983,7 +980,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
                 }
                 else
                 {
-                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected! Infinite loop protection is off!"}, LOG_LEVEL_ERROR);
+                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected! Infinite loop protection is off!"}, LOG_LEVEL_WARNING);
                 }
             }
             else
@@ -1335,7 +1332,7 @@ void DrawComponents(InterpreterContext *interpreter)
                 DrawCircle(component.prop.position.x, component.prop.position.y, component.prop.width / 2, component.prop.color);
                 break;
             default:
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Component error!"}, LOG_LEVEL_ERROR);
+                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of bounds enum"}, LOG_LEVEL_ERROR);
             }
             if (interpreter->shouldShowHitboxes)
             {

@@ -161,13 +161,14 @@ typedef struct EngineContext
     VarFilter varsFilter;
 
     Sound saveSound;
-    bool isSoundOn;
 
     int fps;
-    int fpsLimit;
-    bool shouldShowFPS;
     bool delayFrames;
     float autoSaveTimer;
+
+    bool isSoundOn;
+    int fpsLimit;
+    bool shouldShowFPS;
     bool isAutoSaveON;
 
     Logs logs;

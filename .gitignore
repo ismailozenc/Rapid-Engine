@@ -3,3 +3,4 @@ RE_resources/
 local_config.h
 RapidEngine.exe
 engine_log.txt
+error_codes.txt

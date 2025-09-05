@@ -78,7 +78,7 @@ typedef enum
     LOG_LEVEL_NORMAL,
     LOG_LEVEL_WARNING,
     LOG_LEVEL_ERROR,
-    LOG_LEVEL_SAVE,
+    LOG_LEVEL_SUCCESS,
     LOG_LEVEL_DEBUG
 }LogLevel;
 

@@ -6,7 +6,7 @@
 #include "definitions.h"
 
 #define MAX_KEY_NAME_SIZE 12
-#define MAX_SEARCH_BAR_FIELD_SIZE 32
+#define MAX_SEARCH_BAR_FIELD_SIZE 26
 
 typedef struct
 {
@@ -65,10 +65,10 @@ typedef struct
     bool shouldOpenHitboxEditor;
     char hitboxEditorFileName[MAX_FILE_NAME];
     int hitboxEditingPinID;
-} EditorContext;
+} CGEditorContext;
 
-EditorContext InitEditorContext(void);
+CGEditorContext InitEditorContext(void);
 
-void FreeEditorContext(EditorContext *editor);
+void FreeEditorContext(CGEditorContext *editor);
 
-void HandleEditor(EditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled, bool isSecondFrame);
+void HandleEditor(CGEditorContext *editor, GraphContext *graph, RenderTexture2D *viewport, Vector2 mousePos, bool draggingDisabled, bool isSecondFrame);

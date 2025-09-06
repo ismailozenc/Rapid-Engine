@@ -5,73 +5,73 @@
 
 InterpreterContext InitInterpreterContext()
 {
-    InterpreterContext interpreter = {0};
+    InterpreterContext intp = {0};
 
-    interpreter.valueCount = 0;
-    interpreter.varCount = 0;
-    interpreter.onButtonNodeIndexesCount = 0;
-    interpreter.componentCount = 0;
-    interpreter.forcesCount = 0;
-    interpreter.loopNodeIndex = -1;
+    intp.valueCount = 0;
+    intp.varCount = 0;
+    intp.onButtonNodeIndexesCount = 0;
+    intp.componentCount = 0;
+    intp.forcesCount = 0;
+    intp.loopNodeIndex = -1;
 
-    interpreter.isFirstFrame = true;
+    intp.isFirstFrame = true;
 
-    interpreter.newLogMessage = false;
+    intp.newLogMessage = false;
 
-    interpreter.buildFailed = false;
-    interpreter.buildErrorOccured = false;
+    intp.buildFailed = false;
+    intp.buildErrorOccured = false;
 
-    interpreter.isInfiniteLoopProtectionOn = true;
+    intp.isInfiniteLoopProtectionOn = true;
 
-    interpreter.backgroundColor = (Color){0, 0, 0, 255};
+    intp.backgroundColor = (Color){0, 0, 0, 255};
 
-    interpreter.fps = 60;
+    intp.fps = 60;
 
-    interpreter.shouldShowHitboxes = false;
+    intp.shouldShowHitboxes = false;
 
-    interpreter.isPaused = false;
+    intp.isPaused = false;
 
-    return interpreter;
+    return intp;
 }
 
-void FreeInterpreterContext(InterpreterContext *interpreter)
+void FreeInterpreterContext(InterpreterContext *intp)
 {
-    if (!interpreter)
+    if (!intp)
         return;
 
-    if (interpreter->values)
+    if (intp->values)
     {
-        for (int i = 0; i < interpreter->valueCount; i++)
+        for (int i = 0; i < intp->valueCount; i++)
         {
-            if (interpreter->values[i].type == VAL_STRING && interpreter->values[i].string)
+            if (intp->values[i].type == VAL_STRING && intp->values[i].string)
             {
-                free((void *)interpreter->values[i].string);
+                free((void *)intp->values[i].string);
             }
         }
-        free(interpreter->values);
+        free(intp->values);
     }
 
-    free(interpreter->onButtonNodeIndexes);
+    free(intp->onButtonNodeIndexes);
 
-    free(interpreter->forces);
+    free(intp->forces);
 
-    if (interpreter->components)
+    if (intp->components)
     {
-        for (int i = 0; i < interpreter->componentCount; i++)
+        for (int i = 0; i < intp->componentCount; i++)
         {
-            if (interpreter->components[i].isSprite && interpreter->components[i].sprite.texture.id)
+            if (intp->components[i].isSprite && intp->components[i].sprite.texture.id)
             {
-                UnloadTexture(interpreter->components[i].sprite.texture);
+                UnloadTexture(intp->components[i].sprite.texture);
             }
         }
-        free(interpreter->components);
+        free(intp->components);
     }
 
-    free(interpreter->varIndexes);
+    free(intp->varIndexes);
 
-    char *projectPath = interpreter->projectPath;
-    *interpreter = InitInterpreterContext();
-    interpreter->projectPath = projectPath;
+    char *projectPath = intp->projectPath;
+    *intp = InitInterpreterContext();
+    intp->projectPath = projectPath;
 }
 
 char *ValueTypeToString(ValueType type)
@@ -126,17 +126,17 @@ char *ValueToString(Value value)
     return temp;
 }
 
-void AddToLogFromInterpreter(InterpreterContext *interpreter, Value message, int level)
+void AddToLogFromInterpreter(InterpreterContext *intp, Value message, int level)
 {
-    if (interpreter->logMessageCount >= MAX_LOG_MESSAGES)
+    if (intp->logMessageCount >= MAX_LOG_MESSAGES)
     {
         return;
     }
 
-    strmac(interpreter->logMessages[interpreter->logMessageCount], MAX_LOG_MESSAGE_SIZE, "%s", ValueToString(message));
-    interpreter->logMessageLevels[interpreter->logMessageCount] = level;
-    interpreter->logMessageCount++;
-    interpreter->newLogMessage = true;
+    strmac(intp->logMessages[intp->logMessageCount], MAX_LOG_MESSAGE_SIZE, "%s", ValueToString(message));
+    intp->logMessageLevels[intp->logMessageCount] = level;
+    intp->logMessageCount++;
+    intp->newLogMessage = true;
 }
 
 int GetPinIndexByID(int id, GraphContext *graph)
@@ -152,15 +152,15 @@ int GetPinIndexByID(int id, GraphContext *graph)
     return -1;
 }
 
-void UpdateSpecialValues(InterpreterContext *interpreter, Vector2 mousePos, Rectangle screenBoundary)
+void UpdateSpecialValues(InterpreterContext *intp, Vector2 mousePos, Rectangle screenBoundary)
 {
-    interpreter->values[SPECIAL_VALUE_MOUSE_X].number = mousePos.x;
-    interpreter->values[SPECIAL_VALUE_MOUSE_Y].number = mousePos.y;
-    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH].number = screenBoundary.width;
-    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT].number = screenBoundary.height;
+    intp->values[SPECIAL_VALUE_MOUSE_X].number = mousePos.x;
+    intp->values[SPECIAL_VALUE_MOUSE_Y].number = mousePos.y;
+    intp->values[SPECIAL_VALUE_SCREEN_WIDTH].number = screenBoundary.width;
+    intp->values[SPECIAL_VALUE_SCREEN_HEIGHT].number = screenBoundary.height;
 }
 
-RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *interpreter)
+RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContext *intp)
 {
     RuntimeGraphContext runtime = {0};
 
@@ -169,9 +169,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
     if (!runtime.nodes)
     {
-        interpreter->buildFailed = true;
-        interpreter->buildErrorOccured = true;
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: nodes{I200}"}, LOG_LEVEL_ERROR);
+        intp->buildFailed = true;
+        intp->buildErrorOccured = true;
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of memory: nodes{I200}"}, LOG_LEVEL_ERROR);
         return runtime;
     }
 
@@ -182,9 +182,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     {
         free(runtime.nodes);
         runtime.nodes = NULL;
-        interpreter->buildFailed = true;
-        interpreter->buildErrorOccured = true;
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: pins{I201}"}, LOG_LEVEL_ERROR);
+        intp->buildFailed = true;
+        intp->buildErrorOccured = true;
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of memory: pins{I201}"}, LOG_LEVEL_ERROR);
         return runtime;
     }
 
@@ -228,8 +228,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (pinIndex < 0)
             {
                 dstNode->inputPins[j] = NULL;
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Input pin mapping failed{I202}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Input pin mapping failed{I202}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
             dstNode->inputPins[j] = &runtime.pins[pinIndex];
@@ -250,8 +250,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (pinIndex < 0)
             {
                 dstNode->outputPins[j] = NULL;
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Output pin mapping failed{I203}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Output pin mapping failed{I203}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
             dstNode->outputPins[j] = &runtime.pins[pinIndex];
@@ -283,51 +283,51 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     }
 
     int expectedValues = totalOutputPins + SPECIAL_VALUES_COUNT;
-    interpreter->values = calloc(expectedValues, sizeof(Value));
-    if (!interpreter->values)
+    intp->values = calloc(expectedValues, sizeof(Value));
+    if (!intp->values)
     {
-        interpreter->buildFailed = true;
-        interpreter->buildErrorOccured = true;
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: values{I204}"}, LOG_LEVEL_ERROR);
+        intp->buildFailed = true;
+        intp->buildErrorOccured = true;
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of memory: values{I204}"}, LOG_LEVEL_ERROR);
         return runtime;
     }
 
-    interpreter->values[SPECIAL_VALUE_ERROR] = (Value){.type = VAL_STRING, .string = strmac(NULL, 11, "Error value"), .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Error value")};
-    interpreter->values[SPECIAL_VALUE_MOUSE_X] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Mouse X")};
-    interpreter->values[SPECIAL_VALUE_MOUSE_Y] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Mouse Y")};
-    interpreter->values[SPECIAL_VALUE_SCREEN_WIDTH] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Screen Width")};
-    interpreter->values[SPECIAL_VALUE_SCREEN_HEIGHT] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Screen Height")};
-    interpreter->valueCount = SPECIAL_VALUES_COUNT;
+    intp->values[SPECIAL_VALUE_ERROR] = (Value){.type = VAL_STRING, .string = strmac(NULL, 11, "Error value"), .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Error value")};
+    intp->values[SPECIAL_VALUE_MOUSE_X] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Mouse X")};
+    intp->values[SPECIAL_VALUE_MOUSE_Y] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Mouse Y")};
+    intp->values[SPECIAL_VALUE_SCREEN_WIDTH] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Screen Width")};
+    intp->values[SPECIAL_VALUE_SCREEN_HEIGHT] = (Value){.type = VAL_NUMBER, .number = 0, .name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "Screen Height")};
+    intp->valueCount = SPECIAL_VALUES_COUNT;
 
-    interpreter->components = calloc(totalComponents + 1, sizeof(SceneComponent));
-    if (!interpreter->components)
+    intp->components = calloc(totalComponents + 1, sizeof(SceneComponent));
+    if (!intp->components)
     {
-        interpreter->buildFailed = true;
-        interpreter->buildErrorOccured = true;
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: components{I205}"}, LOG_LEVEL_ERROR);
+        intp->buildFailed = true;
+        intp->buildErrorOccured = true;
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of memory: components{I205}"}, LOG_LEVEL_ERROR);
         return runtime;
     }
-    interpreter->componentCount = 0;
+    intp->componentCount = 0;
 
-    interpreter->varIndexes = malloc(sizeof(int) * (totalOutputPins + 1));
-    if (!interpreter->varIndexes)
+    intp->varIndexes = malloc(sizeof(int) * (totalOutputPins + 1));
+    if (!intp->varIndexes)
     {
-        interpreter->buildFailed = true;
-        interpreter->buildErrorOccured = true;
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: varIndexes{I206}"}, LOG_LEVEL_ERROR);
+        intp->buildFailed = true;
+        intp->buildErrorOccured = true;
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of memory: varIndexes{I206}"}, LOG_LEVEL_ERROR);
         return runtime;
     }
-    interpreter->varCount = 0;
+    intp->varCount = 0;
 
-    interpreter->forces = calloc(MAX_FORCES, sizeof(Force));
-    if (!interpreter->forces)
+    intp->forces = calloc(MAX_FORCES, sizeof(Force));
+    if (!intp->forces)
     {
-        interpreter->buildFailed = true;
-        interpreter->buildErrorOccured = true;
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of memory: forces{I207}"}, LOG_LEVEL_ERROR);
+        intp->buildFailed = true;
+        intp->buildErrorOccured = true;
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of memory: forces{I207}"}, LOG_LEVEL_ERROR);
         return runtime;
     }
-    interpreter->forcesCount = 0;
+    intp->forcesCount = 0;
 
     for (int i = 0; i < graph->nodeCount; i++)
     {
@@ -339,79 +339,79 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         case NODE_LITERAL_NUMBER:
             if (!node->inputPins[0])
             {
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
-            interpreter->values[interpreter->valueCount].number = strtof(node->inputPins[0]->textFieldValue, NULL);
-            interpreter->values[interpreter->valueCount].type = VAL_NUMBER;
-            interpreter->values[interpreter->valueCount].isVariable = false;
-            interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+            intp->values[intp->valueCount].number = strtof(node->inputPins[0]->textFieldValue, NULL);
+            intp->values[intp->valueCount].type = VAL_NUMBER;
+            intp->values[intp->valueCount].isVariable = false;
+            intp->values[intp->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
             if (node->outputPins[0])
-                node->outputPins[0]->valueIndex = interpreter->valueCount;
-            interpreter->valueCount++;
+                node->outputPins[0]->valueIndex = intp->valueCount;
+            intp->valueCount++;
             continue;
         case NODE_LITERAL_STRING:
             if (!node->inputPins[0])
             {
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
-            interpreter->values[interpreter->valueCount].string = strmac(NULL, MAX_LITERAL_NODE_FIELD_SIZE, node->inputPins[0]->textFieldValue);
-            interpreter->values[interpreter->valueCount].type = VAL_STRING;
-            interpreter->values[interpreter->valueCount].isVariable = false;
-            interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+            intp->values[intp->valueCount].string = strmac(NULL, MAX_LITERAL_NODE_FIELD_SIZE, node->inputPins[0]->textFieldValue);
+            intp->values[intp->valueCount].type = VAL_STRING;
+            intp->values[intp->valueCount].isVariable = false;
+            intp->values[intp->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
             if (node->outputPins[0])
-                node->outputPins[0]->valueIndex = interpreter->valueCount;
-            interpreter->valueCount++;
+                node->outputPins[0]->valueIndex = intp->valueCount;
+            intp->valueCount++;
             continue;
         case NODE_LITERAL_BOOL:
             if (!node->inputPins[0])
             {
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
             if (strcmp(node->inputPins[0]->textFieldValue, "true") == 0)
             {
-                interpreter->values[interpreter->valueCount].boolean = true;
+                intp->values[intp->valueCount].boolean = true;
             }
             else
             {
-                interpreter->values[interpreter->valueCount].boolean = false;
+                intp->values[intp->valueCount].boolean = false;
             }
-            interpreter->values[interpreter->valueCount].type = VAL_BOOL;
-            interpreter->values[interpreter->valueCount].isVariable = false;
-            interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+            intp->values[intp->valueCount].type = VAL_BOOL;
+            intp->values[intp->valueCount].isVariable = false;
+            intp->values[intp->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
             if (node->outputPins[0])
-                node->outputPins[0]->valueIndex = interpreter->valueCount;
-            interpreter->valueCount++;
+                node->outputPins[0]->valueIndex = intp->valueCount;
+            intp->valueCount++;
             continue;
         case NODE_LITERAL_COLOR:
             if (!node->inputPins[0])
             {
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Missing input for literal node{I208}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
             unsigned int hexValue;
             if (sscanf(node->inputPins[0]->textFieldValue, "%x", &hexValue) == 1)
             {
                 Color color = {(hexValue >> 24) & 0xFF, (hexValue >> 16) & 0xFF, (hexValue >> 8) & 0xFF, hexValue & 0xFF};
-                interpreter->values[interpreter->valueCount].color = color;
-                interpreter->values[interpreter->valueCount].type = VAL_COLOR;
-                interpreter->values[interpreter->valueCount].isVariable = false;
-                interpreter->values[interpreter->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+                intp->values[intp->valueCount].color = color;
+                intp->values[intp->valueCount].type = VAL_COLOR;
+                intp->values[intp->valueCount].isVariable = false;
+                intp->values[intp->valueCount].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 if (node->outputPins[0]){
-                    node->outputPins[0]->valueIndex = interpreter->valueCount;
+                    node->outputPins[0]->valueIndex = intp->valueCount;
                 }
-                interpreter->valueCount++;
+                intp->valueCount++;
             }
             else
             {
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Error: Invalid color{I209}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Error: Invalid color{I209}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
             continue;
@@ -427,7 +427,7 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             if (pin->type == PIN_FLOW)
                 continue;
 
-            int idx = interpreter->valueCount;
+            int idx = intp->valueCount;
 
             bool isVariable = false;
             if (node->type == NODE_CREATE_NUMBER || node->type == NODE_CREATE_STRING || node->type == NODE_CREATE_BOOL || node->type == NODE_CREATE_COLOR || node->type == NODE_CREATE_SPRITE)
@@ -440,64 +440,64 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
             switch (pin->type)
             {
             case PIN_NUM:
-                interpreter->values[idx].number = 0;
-                interpreter->values[idx].type = VAL_NUMBER;
-                interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+                intp->values[idx].number = 0;
+                intp->values[idx].type = VAL_NUMBER;
+                intp->values[idx].isVariable = isVariable;
+                intp->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_STRING:
-                interpreter->values[idx].string = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "null");
-                interpreter->values[idx].type = VAL_STRING;
-                interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+                intp->values[idx].string = strmac(NULL, MAX_VARIABLE_NAME_SIZE, "null");
+                intp->values[idx].type = VAL_STRING;
+                intp->values[idx].isVariable = isVariable;
+                intp->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_BOOL:
-                interpreter->values[idx].boolean = false;
-                interpreter->values[idx].type = VAL_BOOL;
-                interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+                intp->values[idx].boolean = false;
+                intp->values[idx].type = VAL_BOOL;
+                intp->values[idx].isVariable = isVariable;
+                intp->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_COLOR:
-                interpreter->values[idx].color = (Color){255, 255, 255, 255};
-                interpreter->values[idx].type = VAL_COLOR;
-                interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+                intp->values[idx].color = (Color){255, 255, 255, 255};
+                intp->values[idx].type = VAL_COLOR;
+                intp->values[idx].isVariable = isVariable;
+                intp->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             case PIN_SPRITE:
-                interpreter->values[idx].sprite = (Sprite){0};
-                interpreter->values[idx].type = VAL_SPRITE;
-                interpreter->values[idx].isVariable = isVariable;
-                interpreter->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
+                intp->values[idx].sprite = (Sprite){0};
+                intp->values[idx].type = VAL_SPRITE;
+                intp->values[idx].isVariable = isVariable;
+                intp->values[idx].name = strmac(NULL, MAX_VARIABLE_NAME_SIZE, srcNode->name);
                 break;
             default:
                 break;
             }
 
-            interpreter->values[idx].componentIndex = -1;
+            intp->values[idx].componentIndex = -1;
 
             if (isVariable)
             {
-                interpreter->varIndexes[interpreter->varCount] = idx;
-                interpreter->varCount++;
+                intp->varIndexes[intp->varCount] = idx;
+                intp->varCount++;
             }
 
-            if (interpreter->valueCount > expectedValues)
+            if (intp->valueCount > expectedValues)
             {
-                interpreter->buildErrorOccured = true;
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Value array overflow{I20A}"}, LOG_LEVEL_ERROR);
+                intp->buildErrorOccured = true;
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Value array overflow{I20A}"}, LOG_LEVEL_ERROR);
                 return runtime;
             }
 
             pin->valueIndex = idx;
-            interpreter->valueCount++;
+            intp->valueCount++;
         }
     }
 
-    if (interpreter->varCount > 0)
+    if (intp->varCount > 0)
     {
-        int *tmp = realloc(interpreter->varIndexes, sizeof(int) * interpreter->varCount);
+        int *tmp = realloc(intp->varIndexes, sizeof(int) * intp->varCount);
         if (tmp)
-            interpreter->varIndexes = tmp;
+            intp->varIndexes = tmp;
     }
 
     for (int i = 0; i < graph->nodeCount; i++)
@@ -579,8 +579,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
         if (inputIndex == -1 || outputIndex == -1)
         {
-            interpreter->buildErrorOccured = true;
-            AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Link pin missing{I20B}"}, LOG_LEVEL_ERROR);
+            intp->buildErrorOccured = true;
+            AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Link pin missing{I20B}"}, LOG_LEVEL_ERROR);
             return runtime;
         }
 
@@ -603,8 +603,8 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
         switch (node->type)
         {
         case NODE_CREATE_SPRITE:
-            interpreter->components[interpreter->componentCount].isSprite = true;
-            interpreter->components[interpreter->componentCount].isVisible = false;
+            intp->components[intp->componentCount].isSprite = true;
+            intp->components[intp->componentCount].isVisible = false;
             {
                 int fileIndex = -1;
                 int wIndex = -1;
@@ -620,61 +620,61 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                 if (node->inputPins[4])
                     layerIndex = node->inputPins[4]->valueIndex;
 
-                if (fileIndex != -1 && fileIndex < interpreter->valueCount && interpreter->values[fileIndex].string && interpreter->values[fileIndex].string[0])
+                if (fileIndex != -1 && fileIndex < intp->valueCount && intp->values[fileIndex].string && intp->values[fileIndex].string[0])
                 {
                     char path[MAX_FILE_PATH];
-                    strmac(path, MAX_FILE_PATH, "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[fileIndex].string);
+                    strmac(path, MAX_FILE_PATH, "%s%c%s", intp->projectPath, PATH_SEPARATOR, intp->values[fileIndex].string);
                     Texture2D tex = LoadTexture(path);
                     if (tex.id == 0)
                     {
-                        interpreter->buildErrorOccured = true;
-                        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Failed to load texture{I20C}"}, LOG_LEVEL_ERROR);
+                        intp->buildErrorOccured = true;
+                        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Failed to load texture{I20C}"}, LOG_LEVEL_ERROR);
                         return runtime;
                     }
                     else
                     {
-                        interpreter->components[interpreter->componentCount].sprite.texture = tex;
+                        intp->components[intp->componentCount].sprite.texture = tex;
                     }
                 }
                 else
                 {
-                    interpreter->buildErrorOccured = true;
-                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Invalid texture input{I20D}"}, LOG_LEVEL_ERROR);
+                    intp->buildErrorOccured = true;
+                    AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Invalid texture input{I20D}"}, LOG_LEVEL_ERROR);
                     return runtime;
                 }
 
-                if (wIndex != -1 && wIndex < interpreter->valueCount)
-                    interpreter->components[interpreter->componentCount].sprite.width = interpreter->values[wIndex].number;
-                if (hIndex != -1 && hIndex < interpreter->valueCount)
-                    interpreter->components[interpreter->componentCount].sprite.height = interpreter->values[hIndex].number;
-                if (layerIndex != -1 && layerIndex < interpreter->valueCount)
+                if (wIndex != -1 && wIndex < intp->valueCount)
+                    intp->components[intp->componentCount].sprite.width = intp->values[wIndex].number;
+                if (hIndex != -1 && hIndex < intp->valueCount)
+                    intp->components[intp->componentCount].sprite.height = intp->values[hIndex].number;
+                if (layerIndex != -1 && layerIndex < intp->valueCount)
                 {
-                    if (interpreter->values[layerIndex].number < COMPONENT_LAYER_COUNT)
+                    if (intp->values[layerIndex].number < COMPONENT_LAYER_COUNT)
                     {
-                        interpreter->components[interpreter->componentCount].sprite.layer = interpreter->values[layerIndex].number;
+                        intp->components[intp->componentCount].sprite.layer = intp->values[layerIndex].number;
                     }
-                    else if (interpreter->values[layerIndex].number < 0)
+                    else if (intp->values[layerIndex].number < 0)
                     {
-                        interpreter->components[interpreter->componentCount].sprite.layer = 0;
+                        intp->components[intp->componentCount].sprite.layer = 0;
                     }
                     else
                     {
-                        interpreter->components[interpreter->componentCount].sprite.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
+                        intp->components[intp->componentCount].sprite.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
                     }
                 }
 
-                interpreter->components[interpreter->componentCount].sprite.hitbox.type = HITBOX_POLY; // should support all types
+                intp->components[intp->componentCount].sprite.hitbox.type = HITBOX_POLY; // should support all types
 
                 for (int j = 0; j < graph->pinCount; j++)
                 {
                     if (graph->nodes[i].inputPins[5] && graph->pins[j].id == graph->nodes[i].inputPins[5])
                     {
-                        interpreter->components[interpreter->componentCount].sprite.hitbox.polygonHitbox = graph->pins[j].hitbox;
+                        intp->components[intp->componentCount].sprite.hitbox.polygonHitbox = graph->pins[j].hitbox;
                     }
                 }
 
                 if (node->outputPins[1])
-                    node->outputPins[1]->componentIndex = interpreter->componentCount;
+                    node->outputPins[1]->componentIndex = intp->componentCount;
 
                 for (int j = 0; j < runtime.nodeCount; j++)
                 {
@@ -686,9 +686,9 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
                         {
                             const char *varPtr = graph->nodes[i].name;
                             int picked = runtime.nodes[j].inputPins[k]->pickedOption - 1;
-                            if (picked < 0 || picked >= interpreter->varCount)
+                            if (picked < 0 || picked >= intp->varCount)
                                 continue;
-                            const char *valPtr = interpreter->values[interpreter->varIndexes[picked]].name;
+                            const char *valPtr = intp->values[intp->varIndexes[picked]].name;
 
                             if (varPtr && valPtr)
                             {
@@ -699,94 +699,94 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
 
                                 if (strcmp(varName, valName) == 0)
                                 {
-                                    interpreter->values[interpreter->varIndexes[picked]].componentIndex = interpreter->componentCount;
-                                    runtime.nodes[j].inputPins[k]->valueIndex = interpreter->varIndexes[picked];
+                                    intp->values[intp->varIndexes[picked]].componentIndex = intp->componentCount;
+                                    runtime.nodes[j].inputPins[k]->valueIndex = intp->varIndexes[picked];
                                 }
                             }
                         }
                     }
                 }
 
-                interpreter->componentCount++;
+                intp->componentCount++;
             }
             break;
         case NODE_DRAW_PROP_TEXTURE:
             continue;
         case NODE_DRAW_PROP_RECTANGLE:
-            interpreter->components[interpreter->componentCount].isSprite = false;
-            interpreter->components[interpreter->componentCount].isVisible = false;
-            interpreter->components[interpreter->componentCount].prop.propType = PROP_RECTANGLE;
-            if (node->inputPins[3] && node->inputPins[3]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.width = interpreter->values[node->inputPins[3]->valueIndex].number;
-            if (node->inputPins[4] && node->inputPins[4]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.height = interpreter->values[node->inputPins[4]->valueIndex].number;
-            if (node->inputPins[1] && node->inputPins[1]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.position.x = interpreter->values[node->inputPins[1]->valueIndex].number - interpreter->components[interpreter->componentCount].prop.width / 2;
-            if (node->inputPins[2] && node->inputPins[2]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number - interpreter->components[interpreter->componentCount].prop.height / 2;
-            if (node->inputPins[5] && node->inputPins[5]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[5]->valueIndex].color;
-            if (node->inputPins[6] && node->inputPins[6]->valueIndex < interpreter->valueCount)
+            intp->components[intp->componentCount].isSprite = false;
+            intp->components[intp->componentCount].isVisible = false;
+            intp->components[intp->componentCount].prop.propType = PROP_RECTANGLE;
+            if (node->inputPins[3] && node->inputPins[3]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.width = intp->values[node->inputPins[3]->valueIndex].number;
+            if (node->inputPins[4] && node->inputPins[4]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.height = intp->values[node->inputPins[4]->valueIndex].number;
+            if (node->inputPins[1] && node->inputPins[1]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.position.x = intp->values[node->inputPins[1]->valueIndex].number - intp->components[intp->componentCount].prop.width / 2;
+            if (node->inputPins[2] && node->inputPins[2]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.position.y = intp->values[node->inputPins[2]->valueIndex].number - intp->components[intp->componentCount].prop.height / 2;
+            if (node->inputPins[5] && node->inputPins[5]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.color = intp->values[node->inputPins[5]->valueIndex].color;
+            if (node->inputPins[6] && node->inputPins[6]->valueIndex < intp->valueCount)
             {
-                if (interpreter->values[node->inputPins[6]->valueIndex].number < COMPONENT_LAYER_COUNT)
+                if (intp->values[node->inputPins[6]->valueIndex].number < COMPONENT_LAYER_COUNT)
                 {
-                    interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[6]->valueIndex].number;
+                    intp->components[intp->componentCount].prop.layer = intp->values[node->inputPins[6]->valueIndex].number;
                 }
-                else if (interpreter->values[node->inputPins[6]->valueIndex].number < 0)
+                else if (intp->values[node->inputPins[6]->valueIndex].number < 0)
                 {
-                    interpreter->components[interpreter->componentCount].prop.layer = 0;
+                    intp->components[intp->componentCount].prop.layer = 0;
                 }
                 else
                 {
-                    interpreter->components[interpreter->componentCount].prop.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
+                    intp->components[intp->componentCount].prop.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
                 }
             }
 
-            interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_RECT;
-            interpreter->components[interpreter->componentCount].prop.hitbox.rectHitboxSize = (Vector2){interpreter->components[interpreter->componentCount].prop.width, interpreter->components[interpreter->componentCount].prop.height};
-            interpreter->components[interpreter->componentCount].prop.hitbox.offset = (Vector2){0, 0};
+            intp->components[intp->componentCount].prop.hitbox.type = HITBOX_RECT;
+            intp->components[intp->componentCount].prop.hitbox.rectHitboxSize = (Vector2){intp->components[intp->componentCount].prop.width, intp->components[intp->componentCount].prop.height};
+            intp->components[intp->componentCount].prop.hitbox.offset = (Vector2){0, 0};
 
             if (node->outputPins[1])
-                node->outputPins[1]->componentIndex = interpreter->componentCount;
-            interpreter->componentCount++;
+                node->outputPins[1]->componentIndex = intp->componentCount;
+            intp->componentCount++;
             continue;
         case NODE_DRAW_PROP_CIRCLE:
-            interpreter->components[interpreter->componentCount].isSprite = false;
-            interpreter->components[interpreter->componentCount].isVisible = false;
-            interpreter->components[interpreter->componentCount].prop.propType = PROP_CIRCLE;
-            if (node->inputPins[1] && node->inputPins[1]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.position.x = interpreter->values[node->inputPins[1]->valueIndex].number;
-            if (node->inputPins[2] && node->inputPins[2]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.position.y = interpreter->values[node->inputPins[2]->valueIndex].number;
-            if (node->inputPins[3] && node->inputPins[3]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.width = interpreter->values[node->inputPins[3]->valueIndex].number * 2;
-            if (node->inputPins[3] && node->inputPins[3]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.height = interpreter->values[node->inputPins[3]->valueIndex].number * 2;
-            if (node->inputPins[4] && node->inputPins[4]->valueIndex < interpreter->valueCount)
-                interpreter->components[interpreter->componentCount].prop.color = interpreter->values[node->inputPins[4]->valueIndex].color;
-            if (node->inputPins[5] && node->inputPins[5]->valueIndex < interpreter->valueCount)
+            intp->components[intp->componentCount].isSprite = false;
+            intp->components[intp->componentCount].isVisible = false;
+            intp->components[intp->componentCount].prop.propType = PROP_CIRCLE;
+            if (node->inputPins[1] && node->inputPins[1]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.position.x = intp->values[node->inputPins[1]->valueIndex].number;
+            if (node->inputPins[2] && node->inputPins[2]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.position.y = intp->values[node->inputPins[2]->valueIndex].number;
+            if (node->inputPins[3] && node->inputPins[3]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.width = intp->values[node->inputPins[3]->valueIndex].number * 2;
+            if (node->inputPins[3] && node->inputPins[3]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.height = intp->values[node->inputPins[3]->valueIndex].number * 2;
+            if (node->inputPins[4] && node->inputPins[4]->valueIndex < intp->valueCount)
+                intp->components[intp->componentCount].prop.color = intp->values[node->inputPins[4]->valueIndex].color;
+            if (node->inputPins[5] && node->inputPins[5]->valueIndex < intp->valueCount)
             {
-                if (interpreter->values[node->inputPins[5]->valueIndex].number < COMPONENT_LAYER_COUNT)
+                if (intp->values[node->inputPins[5]->valueIndex].number < COMPONENT_LAYER_COUNT)
                 {
-                    interpreter->components[interpreter->componentCount].prop.layer = interpreter->values[node->inputPins[5]->valueIndex].number;
+                    intp->components[intp->componentCount].prop.layer = intp->values[node->inputPins[5]->valueIndex].number;
                 }
-                else if (interpreter->values[node->inputPins[5]->valueIndex].number < 0)
+                else if (intp->values[node->inputPins[5]->valueIndex].number < 0)
                 {
-                    interpreter->components[interpreter->componentCount].prop.layer = 0;
+                    intp->components[intp->componentCount].prop.layer = 0;
                 }
                 else
                 {
-                    interpreter->components[interpreter->componentCount].prop.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
+                    intp->components[intp->componentCount].prop.layer = COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING;
                 }
             }
 
-            interpreter->components[interpreter->componentCount].prop.hitbox.type = HITBOX_CIRCLE;
-            interpreter->components[interpreter->componentCount].prop.hitbox.circleHitboxRadius = interpreter->components[interpreter->componentCount].prop.width / 2;
-            interpreter->components[interpreter->componentCount].prop.hitbox.offset = (Vector2){0, 0};
+            intp->components[intp->componentCount].prop.hitbox.type = HITBOX_CIRCLE;
+            intp->components[intp->componentCount].prop.hitbox.circleHitboxRadius = intp->components[intp->componentCount].prop.width / 2;
+            intp->components[intp->componentCount].prop.hitbox.offset = (Vector2){0, 0};
 
             if (node->outputPins[1])
-                node->outputPins[1]->componentIndex = interpreter->componentCount;
-            interpreter->componentCount++;
+                node->outputPins[1]->componentIndex = intp->componentCount;
+            intp->componentCount++;
             continue;
         default:
             break;
@@ -796,17 +796,17 @@ RuntimeGraphContext ConvertToRuntimeGraph(GraphContext *graph, InterpreterContex
     return runtime;
 }
 
-int DoesForceExist(InterpreterContext *interpreter, int id)
+int DoesForceExist(InterpreterContext *intp, int id)
 {
-    for (int i = 0; i < interpreter->forcesCount; i++)
+    for (int i = 0; i < intp->forcesCount; i++)
     {
-        if (interpreter->forces[i].id == id)
+        if (intp->forces[i].id == id)
             return i;
     }
     return -1;
 }
 
-void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, RuntimeGraphContext *graph, int outFlowPinIndexInNode)
+void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *intp, RuntimeGraphContext *graph, int outFlowPinIndexInNode)
 {
     if (lastNodeIndex < 0 || lastNodeIndex >= graph->nodeCount)
         return;
@@ -826,7 +826,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
     case NODE_UNKNOWN:
     {
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Unknown node{I20E}"}, LOG_LEVEL_ERROR);
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Unknown node{I20E}"}, LOG_LEVEL_ERROR);
         break;
     }
 
@@ -834,8 +834,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            float *numToSet = &interpreter->values[node->outputPins[1]->valueIndex].number;
-            float newNum = interpreter->values[node->inputPins[1]->valueIndex].number;
+            float *numToSet = &intp->values[node->outputPins[1]->valueIndex].number;
+            float newNum = intp->values[node->inputPins[1]->valueIndex].number;
             *numToSet = newNum;
         }
         break;
@@ -845,8 +845,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            char **strToSet = &interpreter->values[node->outputPins[1]->valueIndex].string;
-            char *newStr = interpreter->values[node->inputPins[1]->valueIndex].string;
+            char **strToSet = &intp->values[node->outputPins[1]->valueIndex].string;
+            char *newStr = intp->values[node->inputPins[1]->valueIndex].string;
             *strToSet = newStr;
         }
         break;
@@ -856,8 +856,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            bool *boolToSet = &interpreter->values[node->outputPins[1]->valueIndex].boolean;
-            bool newBool = interpreter->values[node->inputPins[1]->valueIndex].boolean;
+            bool *boolToSet = &intp->values[node->outputPins[1]->valueIndex].boolean;
+            bool newBool = intp->values[node->inputPins[1]->valueIndex].boolean;
             *boolToSet = newBool;
         }
         break;
@@ -867,9 +867,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            Color *colorToSet = &interpreter->values[node->outputPins[1]->valueIndex].color;
-            Color newColor = interpreter->values[node->inputPins[1]->valueIndex].color;
-            *colorToSet = interpreter->values[node->inputPins[1]->valueIndex].color;
+            Color *colorToSet = &intp->values[node->outputPins[1]->valueIndex].color;
+            Color newColor = intp->values[node->inputPins[1]->valueIndex].color;
+            *colorToSet = intp->values[node->inputPins[1]->valueIndex].color;
         }
         break;
     }
@@ -910,8 +910,8 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
         {
             break;
         }
-        Value *valToSet = &interpreter->values[node->outputPins[1]->valueIndex];
-        Value newValue = interpreter->values[node->inputPins[2]->valueIndex];
+        Value *valToSet = &intp->values[node->outputPins[1]->valueIndex];
+        Value newValue = intp->values[node->inputPins[2]->valueIndex];
         switch (valToSet->type)
         {
         case VAL_NUMBER:
@@ -939,27 +939,27 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            interpreter->backgroundColor = interpreter->values[node->inputPins[1]->valueIndex].color;
+            intp->backgroundColor = intp->values[node->inputPins[1]->valueIndex].color;
         }
         break;
     }
 
     case NODE_SET_FPS:
     {
-        interpreter->fps = interpreter->values[node->inputPins[1]->valueIndex].number;
+        intp->fps = intp->values[node->inputPins[1]->valueIndex].number;
         break;
     }
 
     case NODE_BRANCH:
     {
-        bool *condition = &interpreter->values[node->inputPins[1]->valueIndex].boolean;
+        bool *condition = &intp->values[node->inputPins[1]->valueIndex].boolean;
         if (*condition)
         {
-            InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
+            InterpretStringOfNodes(currNodeIndex, intp, graph, 0);
         }
         else
         {
-            InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
+            InterpretStringOfNodes(currNodeIndex, intp, graph, 1);
         }
         return;
         break;
@@ -968,70 +968,70 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_LOOP:
     {
         int steps = 1000;
-        bool *condition = &interpreter->values[node->inputPins[1]->valueIndex].boolean;
+        bool *condition = &intp->values[node->inputPins[1]->valueIndex].boolean;
         while (*condition)
         {
             if (steps == 0)
             {
-                if (interpreter->isInfiniteLoopProtectionOn)
+                if (intp->isInfiniteLoopProtectionOn)
                 {
-                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected and exited! You can turn off infinite loop protection in settings{I210}"}, LOG_LEVEL_ERROR);
+                    AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected and exited! You can turn off infinite loop protection in settings{I210}"}, LOG_LEVEL_ERROR);
                     break;
                 }
                 else
                 {
-                    AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected! Infinite loop protection is off!{I101}"}, LOG_LEVEL_WARNING);
+                    AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Possible infinite loop detected! Infinite loop protection is off!{I101}"}, LOG_LEVEL_WARNING);
                 }
             }
             else
             {
                 steps--;
             }
-            InterpretStringOfNodes(currNodeIndex, interpreter, graph, 1);
+            InterpretStringOfNodes(currNodeIndex, intp, graph, 1);
         }
         break;
     }
 
     case NODE_CREATE_SPRITE:
     {
-        Sprite *sprite = &interpreter->values[node->outputPins[1]->valueIndex].sprite;
+        Sprite *sprite = &intp->values[node->outputPins[1]->valueIndex].sprite;
         if (node->inputPins[2]->valueIndex != -1)
         {
-            sprite->width = interpreter->values[node->inputPins[2]->valueIndex].number;
+            sprite->width = intp->values[node->inputPins[2]->valueIndex].number;
         }
         if (node->inputPins[3]->valueIndex != -1)
         {
-            sprite->height = interpreter->values[node->inputPins[3]->valueIndex].number;
+            sprite->height = intp->values[node->inputPins[3]->valueIndex].number;
         }
         if (node->inputPins[4]->valueIndex != -1)
         {
-            sprite->layer = interpreter->values[node->inputPins[4]->valueIndex].number;
+            sprite->layer = intp->values[node->inputPins[4]->valueIndex].number;
         }
-        Texture2D tempTex = interpreter->components[node->outputPins[1]->componentIndex].sprite.texture;
-        Polygon tempHitbox = interpreter->components[node->outputPins[1]->componentIndex].sprite.hitbox.polygonHitbox;
-        interpreter->components[node->outputPins[1]->componentIndex].sprite = *sprite;
-        interpreter->components[node->outputPins[1]->componentIndex].sprite.texture = tempTex;
-        interpreter->components[node->outputPins[1]->componentIndex].sprite.hitbox.type = HITBOX_POLY;
-        interpreter->components[node->outputPins[1]->componentIndex].sprite.hitbox.polygonHitbox = tempHitbox;
+        Texture2D tempTex = intp->components[node->outputPins[1]->componentIndex].sprite.texture;
+        Polygon tempHitbox = intp->components[node->outputPins[1]->componentIndex].sprite.hitbox.polygonHitbox;
+        intp->components[node->outputPins[1]->componentIndex].sprite = *sprite;
+        intp->components[node->outputPins[1]->componentIndex].sprite.texture = tempTex;
+        intp->components[node->outputPins[1]->componentIndex].sprite.hitbox.type = HITBOX_POLY;
+        intp->components[node->outputPins[1]->componentIndex].sprite.hitbox.polygonHitbox = tempHitbox;
         break;
     }
 
     case NODE_SPAWN_SPRITE:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = true;
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = true;
             if (node->inputPins[2]->valueIndex != -1)
             {
-                interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
+                intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = intp->values[node->inputPins[2]->valueIndex].number;
             }
             if (node->inputPins[3]->valueIndex != -1)
             {
-                interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
+                intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = intp->values[node->inputPins[3]->valueIndex].number;
             }
             if (node->inputPins[4]->valueIndex != -1)
             {
-                interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[4]->valueIndex].number - 360);
+                intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (intp->values[node->inputPins[4]->valueIndex].number - 360);
             }
         }
         break;
@@ -1039,50 +1039,50 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_DESTROY_SPRITE:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = false;
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].isVisible = false;
         }
         break;
     }
 
     case NODE_SET_SPRITE_POSITION:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = interpreter->values[node->inputPins[3]->valueIndex].number;
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.x = intp->values[node->inputPins[2]->valueIndex].number;
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.position.y = intp->values[node->inputPins[3]->valueIndex].number;
         }
         break;
     }
 
     case NODE_SET_SPRITE_ROTATION:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (interpreter->values[node->inputPins[2]->valueIndex].number - 360);
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.rotation = -1 * (intp->values[node->inputPins[2]->valueIndex].number - 360);
         }
         break;
     }
 
     case NODE_SET_SPRITE_TEXTURE:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            UnloadTexture(interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture);
+            UnloadTexture(intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture);
             char path[MAX_FILE_PATH];
-            strmac(path, MAX_FILE_PATH, "%s%c%s", interpreter->projectPath, PATH_SEPARATOR, interpreter->values[node->inputPins[2]->valueIndex].string);
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture = LoadTexture(path);
+            strmac(path, MAX_FILE_PATH, "%s%c%s", intp->projectPath, PATH_SEPARATOR, intp->values[node->inputPins[2]->valueIndex].string);
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.texture = LoadTexture(path);
         }
         break;
     }
 
     case NODE_SET_SPRITE_SIZE:
     {
-        if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.width = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex].sprite.height = interpreter->values[node->inputPins[3]->valueIndex].number;
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.width = intp->values[node->inputPins[2]->valueIndex].number;
+            intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex].sprite.height = intp->values[node->inputPins[3]->valueIndex].number;
         }
         break;
     }
@@ -1094,20 +1094,20 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_FORCE_SPRITE:
     {
-        SceneComponent *component = &interpreter->components[interpreter->values[node->inputPins[1]->valueIndex].componentIndex];
-        int forceIndex = DoesForceExist(interpreter, node->index);
+        SceneComponent *component = &intp->components[intp->values[node->inputPins[1]->valueIndex].componentIndex];
+        int forceIndex = DoesForceExist(intp, node->index);
         if (forceIndex != -1)
         {
-            interpreter->forces[forceIndex].duration = interpreter->values[node->inputPins[4]->valueIndex].number;
+            intp->forces[forceIndex].duration = intp->values[node->inputPins[4]->valueIndex].number;
         }
-        else if (interpreter->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && interpreter->values[node->inputPins[1]->valueIndex].componentIndex < interpreter->componentCount)
+        else if (intp->values[node->inputPins[1]->valueIndex].componentIndex >= 0 && intp->values[node->inputPins[1]->valueIndex].componentIndex < intp->componentCount)
         {
-            interpreter->forces[interpreter->forcesCount].id = node->index;
-            interpreter->forces[interpreter->forcesCount].componentIndex = interpreter->values[node->inputPins[1]->valueIndex].componentIndex;
-            interpreter->forces[interpreter->forcesCount].pixelsPerSecond = interpreter->values[node->inputPins[2]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].angle = interpreter->values[node->inputPins[3]->valueIndex].number;
-            interpreter->forces[interpreter->forcesCount].duration = interpreter->values[node->inputPins[4]->valueIndex].number;
-            interpreter->forcesCount++;
+            intp->forces[intp->forcesCount].id = node->index;
+            intp->forces[intp->forcesCount].componentIndex = intp->values[node->inputPins[1]->valueIndex].componentIndex;
+            intp->forces[intp->forcesCount].pixelsPerSecond = intp->values[node->inputPins[2]->valueIndex].number;
+            intp->forces[intp->forcesCount].angle = intp->values[node->inputPins[3]->valueIndex].number;
+            intp->forces[intp->forcesCount].duration = intp->values[node->inputPins[4]->valueIndex].number;
+            intp->forcesCount++;
         }
         break;
     }
@@ -1119,21 +1119,21 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_DRAW_PROP_RECTANGLE:
     {
-        interpreter->components[node->outputPins[1]->componentIndex].isVisible = true;
+        intp->components[node->outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
     case NODE_DRAW_PROP_CIRCLE:
     {
-        interpreter->components[node->outputPins[1]->componentIndex].isVisible = true;
+        intp->components[node->outputPins[1]->componentIndex].isVisible = true;
         break;
     }
 
     case NODE_COMPARISON:
     {
-        float numA = interpreter->values[node->inputPins[2]->valueIndex].number;
-        float numB = interpreter->values[node->inputPins[3]->valueIndex].number;
-        bool *result = &interpreter->values[node->outputPins[1]->valueIndex].boolean;
+        float numA = intp->values[node->inputPins[2]->valueIndex].number;
+        float numB = intp->values[node->inputPins[3]->valueIndex].number;
+        bool *result = &intp->values[node->outputPins[1]->valueIndex].boolean;
         switch (node->inputPins[1]->pickedOption)
         {
         case EQUAL_TO:
@@ -1153,9 +1153,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_GATE:
     {
-        bool boolA = interpreter->values[node->inputPins[2]->valueIndex].boolean;
-        bool boolB = interpreter->values[node->inputPins[3]->valueIndex].boolean;
-        bool *result = &interpreter->values[node->outputPins[1]->valueIndex].boolean;
+        bool boolA = intp->values[node->inputPins[2]->valueIndex].boolean;
+        bool boolB = intp->values[node->inputPins[3]->valueIndex].boolean;
+        bool *result = &intp->values[node->outputPins[1]->valueIndex].boolean;
         switch (node->inputPins[1]->pickedOption)
         {
         case AND:
@@ -1184,9 +1184,9 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
 
     case NODE_ARITHMETIC:
     {
-        float numA = interpreter->values[node->inputPins[2]->valueIndex].number;
-        float numB = interpreter->values[node->inputPins[3]->valueIndex].number;
-        float *result = &interpreter->values[node->outputPins[1]->valueIndex].number;
+        float numA = intp->values[node->inputPins[2]->valueIndex].number;
+        float numB = intp->values[node->inputPins[3]->valueIndex].number;
+        float *result = &intp->values[node->outputPins[1]->valueIndex].number;
         switch (node->inputPins[1]->pickedOption)
         {
         case ADD:
@@ -1214,7 +1214,7 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     {
         if (node->inputPins[1]->valueIndex != -1)
         {
-            AddToLogFromInterpreter(interpreter, interpreter->values[node->inputPins[1]->valueIndex], LOG_LEVEL_DEBUG);
+            AddToLogFromInterpreter(intp, intp->values[node->inputPins[1]->valueIndex], LOG_LEVEL_DEBUG);
         }
         break;
     }
@@ -1222,18 +1222,18 @@ void InterpretStringOfNodes(int lastNodeIndex, InterpreterContext *interpreter, 
     case NODE_DRAW_DEBUG_LINE:
     {
         DrawLine(
-            interpreter->values[node->inputPins[1]->valueIndex].number,
-            interpreter->values[node->inputPins[2]->valueIndex].number,
-            interpreter->values[node->inputPins[3]->valueIndex].number,
-            interpreter->values[node->inputPins[4]->valueIndex].number,
-            interpreter->values[node->inputPins[5]->valueIndex].color);
+            intp->values[node->inputPins[1]->valueIndex].number,
+            intp->values[node->inputPins[2]->valueIndex].number,
+            intp->values[node->inputPins[3]->valueIndex].number,
+            intp->values[node->inputPins[4]->valueIndex].number,
+            intp->values[node->inputPins[5]->valueIndex].color);
         break;
     }
     }
 
     if (currNodeIndex != lastNodeIndex)
     {
-        InterpretStringOfNodes(currNodeIndex, interpreter, graph, 0);
+        InterpretStringOfNodes(currNodeIndex, intp, graph, 0);
     }
 }
 
@@ -1284,13 +1284,13 @@ void DrawHitbox(Hitbox *h, Vector2 centerPos, Vector2 spriteSize, Vector2 texSiz
     }
 }
 
-void DrawComponents(InterpreterContext *interpreter)
+void DrawComponents(InterpreterContext *intp)
 {
-    ClearBackground(interpreter->backgroundColor);
+    ClearBackground(intp->backgroundColor);
 
-    for (int i = 0; i < interpreter->componentCount; i++)
+    for (int i = 0; i < intp->componentCount; i++)
     {
-        SceneComponent component = interpreter->components[i];
+        SceneComponent component = intp->components[i];
         if (!component.isVisible)
         {
             continue;
@@ -1308,7 +1308,7 @@ void DrawComponents(InterpreterContext *interpreter)
                 (Vector2){component.sprite.width / 2.0f, component.sprite.height / 2.0f},
                 component.sprite.rotation,
                 WHITE);
-            if (interpreter->shouldShowHitboxes)
+            if (intp->shouldShowHitboxes)
             {
                 DrawHitbox(
                     &component.sprite.hitbox,
@@ -1332,9 +1332,9 @@ void DrawComponents(InterpreterContext *interpreter)
                 DrawCircle(component.prop.position.x, component.prop.position.y, component.prop.width / 2, component.prop.color);
                 break;
             default:
-                AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "Out of bounds enum{O201}"}, LOG_LEVEL_ERROR);
+                AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "Out of bounds enum{O201}"}, LOG_LEVEL_ERROR);
             }
-            if (interpreter->shouldShowHitboxes)
+            if (intp->shouldShowHitboxes)
             {
                 DrawHitbox(
                     &component.prop.hitbox,
@@ -1469,12 +1469,12 @@ bool CheckCollisionPolyRect(Polygon *poly, Vector2 polyPos, Vector2 polySize, Ve
     return false;
 }
 
-CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
+CollisionResult CheckCollisions(InterpreterContext *intp, int index)
 {
-    if (index < 0 || index >= interpreter->componentCount)
+    if (index < 0 || index >= intp->componentCount)
         return false;
 
-    SceneComponent *a = &interpreter->components[index];
+    SceneComponent *a = &intp->components[index];
     int layerA = a->isSprite ? a->sprite.layer : a->prop.layer;
 
     Hitbox *hitA = a->isSprite ? &a->sprite.hitbox : &a->prop.hitbox;
@@ -1482,12 +1482,12 @@ CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
     Vector2 sizeA = a->isSprite ? (Vector2){a->sprite.width, a->sprite.height} : (Vector2){a->prop.width, a->prop.height};
     Vector2 texA = a->isSprite ? (Vector2){a->sprite.texture.width, a->sprite.texture.height} : (Vector2){a->prop.texture.width, a->prop.texture.height};
 
-    for (int j = 0; j < interpreter->componentCount; j++)
+    for (int j = 0; j < intp->componentCount; j++)
     {
         if (j == index)
             continue;
 
-        SceneComponent *b = &interpreter->components[j];
+        SceneComponent *b = &intp->components[j];
         int layerB = b->isSprite ? b->sprite.layer : b->prop.layer;
 
         bool aBlocks = (layerA == COMPONENT_LAYER_BLOCKING || layerA == COMPONENT_LAYER_COLLISION_EVENTS_AND_BLOCKING);
@@ -1604,13 +1604,13 @@ CollisionResult CheckCollisions(InterpreterContext *interpreter, int index)
     return COLLISION_RESULT_NONE;
 }
 
-void HandleForces(InterpreterContext *interpreter)
+void HandleForces(InterpreterContext *intp)
 {
     int i = 0;
-    while (i < interpreter->forcesCount)
+    while (i < intp->forcesCount)
     {
-        Force *f = &interpreter->forces[i];
-        Vector2 *pos = &interpreter->components[f->componentIndex].sprite.position;
+        Force *f = &intp->forces[i];
+        Vector2 *pos = &intp->components[f->componentIndex].sprite.position;
 
         float speed = f->pixelsPerSecond;
         float angle = f->angle * (PI / 180.0f);
@@ -1625,7 +1625,7 @@ void HandleForces(InterpreterContext *interpreter)
 
         f->duration -= deltaTime;
 
-        CollisionResult a = CheckCollisions(interpreter, f->componentIndex);
+        CollisionResult a = CheckCollisions(intp, f->componentIndex);
         if (a == COLLISION_RESULT_BLOCKING || a == COLLISION_RESULT_EVENT_AND_BLOCKING)
         {
             *pos = prevPos;
@@ -1633,11 +1633,11 @@ void HandleForces(InterpreterContext *interpreter)
 
         if (f->duration <= 0)
         {
-            for (int j = i; j < interpreter->forcesCount - 1; j++)
+            for (int j = i; j < intp->forcesCount - 1; j++)
             {
-                interpreter->forces[j] = interpreter->forces[j + 1];
+                intp->forces[j] = intp->forces[j + 1];
             }
-            interpreter->forcesCount--;
+            intp->forcesCount--;
             continue;
         }
 
@@ -1645,50 +1645,50 @@ void HandleForces(InterpreterContext *interpreter)
     }
 }
 
-bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
+bool HandleGameScreen(InterpreterContext *intp, RuntimeGraphContext *graph, Vector2 mousePos, Rectangle screenBoundary)
 {
-    if (interpreter->isPaused)
+    if (intp->isPaused)
     {
-        DrawComponents(interpreter);
+        DrawComponents(intp);
         DrawRectangleRec(screenBoundary, (Color){80, 80, 80, 50});
         return true;
     }
 
-    UpdateSpecialValues(interpreter, mousePos, screenBoundary);
+    UpdateSpecialValues(intp, mousePos, screenBoundary);
 
-    if (interpreter->isFirstFrame)
+    if (intp->isFirstFrame)
     {
-        interpreter->onButtonNodeIndexes = malloc(sizeof(int) * graph->nodeCount);
+        intp->onButtonNodeIndexes = malloc(sizeof(int) * graph->nodeCount);
         for (int i = 0; i < graph->nodeCount; i++)
         {
             switch (graph->nodes[i].type)
             {
             case NODE_EVENT_START:
-                InterpretStringOfNodes(i, interpreter, graph, 0);
+                InterpretStringOfNodes(i, intp, graph, 0);
                 break;
             case NODE_EVENT_TICK:
-                if (interpreter->loopNodeIndex == -1)
+                if (intp->loopNodeIndex == -1)
                 {
-                    interpreter->loopNodeIndex = i;
+                    intp->loopNodeIndex = i;
                 }
                 break;
             case NODE_EVENT_ON_BUTTON:
-                interpreter->onButtonNodeIndexes[interpreter->onButtonNodeIndexesCount++] = i;
+                intp->onButtonNodeIndexes[intp->onButtonNodeIndexesCount++] = i;
                 break;
             }
         }
-        interpreter->onButtonNodeIndexes = realloc(interpreter->onButtonNodeIndexes, sizeof(int) * interpreter->onButtonNodeIndexesCount);
+        intp->onButtonNodeIndexes = realloc(intp->onButtonNodeIndexes, sizeof(int) * intp->onButtonNodeIndexesCount);
 
-        interpreter->isFirstFrame = false;
+        intp->isFirstFrame = false;
     }
     else
     {
-        interpreter->newLogMessage = false;
+        intp->newLogMessage = false;
     }
 
-    for (int i = 0; i < interpreter->onButtonNodeIndexesCount; i++)
+    for (int i = 0; i < intp->onButtonNodeIndexesCount; i++)
     {
-        int nodeIndex = interpreter->onButtonNodeIndexes[i];
+        int nodeIndex = intp->onButtonNodeIndexes[i];
         KeyboardKey key = graph->nodes[nodeIndex].inputPins[0]->pickedOption;
         KeyAction action = graph->nodes[nodeIndex].inputPins[1]->pickedOption;
 
@@ -1711,30 +1711,30 @@ bool HandleGameScreen(InterpreterContext *interpreter, RuntimeGraphContext *grap
 
         if (triggered)
         {
-            InterpretStringOfNodes(nodeIndex, interpreter, graph, 0);
+            InterpretStringOfNodes(nodeIndex, intp, graph, 0);
         }
     }
 
-    if (interpreter->loopNodeIndex == -1)
+    if (intp->loopNodeIndex == -1)
     {
-        AddToLogFromInterpreter(interpreter, (Value){.type = VAL_STRING, .string = "No loop node found{I211}"}, LOG_LEVEL_ERROR);
+        AddToLogFromInterpreter(intp, (Value){.type = VAL_STRING, .string = "No loop node found{I211}"}, LOG_LEVEL_ERROR);
         return false;
     }
     else
     {
-        InterpretStringOfNodes(interpreter->loopNodeIndex, interpreter, graph, 0);
+        InterpretStringOfNodes(intp->loopNodeIndex, intp, graph, 0);
     }
 
-    HandleForces(interpreter);
+    HandleForces(intp);
 
-    DrawComponents(interpreter);
+    DrawComponents(intp);
 
-    for (int i = 0; i < interpreter->valueCount; i++)
+    for (int i = 0; i < intp->valueCount; i++)
     {
-        if (interpreter->values[i].type == VAL_SPRITE)
+        if (intp->values[i].type == VAL_SPRITE)
         {
-            interpreter->components[interpreter->values[i].componentIndex].sprite.isVisible = interpreter->components[interpreter->values[i].componentIndex].isVisible;
-            interpreter->values[i].sprite = interpreter->components[interpreter->values[i].componentIndex].sprite;
+            intp->components[intp->values[i].componentIndex].sprite.isVisible = intp->components[intp->values[i].componentIndex].isVisible;
+            intp->values[i].sprite = intp->components[intp->values[i].componentIndex].sprite;
         }
     }
 

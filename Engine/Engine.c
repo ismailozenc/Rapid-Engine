@@ -19,160 +19,160 @@ Logs InitLogs()
     return logs;
 }
 
-void AddToLog(EngineContext *engine, const char *newLine, int level);
+void AddToLog(EngineContext *eng, const char *newLine, int level);
 
-void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterContext *interpreter);
+void EmergencyExit(EngineContext *eng, CGEditorContext *cgEd, InterpreterContext *intp);
 
 EngineContext InitEngineContext()
 {
-    EngineContext engine = {0};
+    EngineContext eng = {0};
 
-    engine.logs = InitLogs();
+    eng.logs = InitLogs();
 
-    engine.screenWidth = GetScreenWidth();
-    engine.screenHeight = GetScreenHeight();
-    engine.sideBarWidth = engine.screenWidth * 0.2;
-    engine.bottomBarHeight = engine.screenHeight * 0.25;
+    eng.screenWidth = GetScreenWidth();
+    eng.screenHeight = GetScreenHeight();
+    eng.sideBarWidth = eng.screenWidth * 0.2;
+    eng.bottomBarHeight = eng.screenHeight * 0.25;
 
-    engine.prevScreenWidth = engine.screenWidth;
-    engine.prevScreenHeight = engine.screenHeight;
+    eng.prevScreenWidth = eng.screenWidth;
+    eng.prevScreenHeight = eng.screenHeight;
 
-    engine.viewportWidth = engine.screenWidth - engine.sideBarWidth;
-    engine.viewportHeight = engine.screenHeight - engine.bottomBarHeight;
+    eng.viewportWidth = eng.screenWidth - eng.sideBarWidth;
+    eng.viewportHeight = eng.screenHeight - eng.bottomBarHeight;
 
-    engine.sideBarMiddleY = (engine.screenHeight - engine.bottomBarHeight) / 2 + 20;
+    eng.sideBarMiddleY = (eng.screenHeight - eng.bottomBarHeight) / 2 + 20;
 
-    engine.mousePos = GetMousePosition();
+    eng.mousePos = GetMousePosition();
 
-    engine.viewportTex = LoadRenderTexture(engine.screenWidth * 2, engine.screenHeight * 2);
-    engine.uiTex = LoadRenderTexture(engine.screenWidth, engine.screenHeight);
+    eng.viewportTex = LoadRenderTexture(eng.screenWidth * 2, eng.screenHeight * 2);
+    eng.uiTex = LoadRenderTexture(eng.screenWidth, eng.screenHeight);
     Image tempImg;
     tempImg = LoadImageFromMemory(".png", resize_btn_png, resize_btn_png_len);
-    engine.resizeButton = LoadTextureFromImage(tempImg);
+    eng.resizeButton = LoadTextureFromImage(tempImg);
     UnloadImage(tempImg);
     tempImg = LoadImageFromMemory(".png", viewport_fullscreen_png, viewport_fullscreen_png_len);
-    engine.viewportFullscreenButton = LoadTextureFromImage(tempImg);
+    eng.viewportFullscreenButton = LoadTextureFromImage(tempImg);
     UnloadImage(tempImg);
     tempImg = LoadImageFromMemory(".png", settings_gear_png, settings_gear_png_len);
-    engine.settingsGear = LoadTextureFromImage(tempImg);
+    eng.settingsGear = LoadTextureFromImage(tempImg);
     UnloadImage(tempImg);
-    if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
+    if (eng.uiTex.id == 0 || eng.viewportTex.id == 0 || eng.resizeButton.id == 0 || eng.viewportFullscreenButton.id == 0)
     {
-        AddToLog(&engine, "Failed to load texture{E223}", LOG_LEVEL_ERROR);
-        EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
+        AddToLog(&eng, "Failed to load texture{E223}", LOG_LEVEL_ERROR);
+        EmergencyExit(&eng, &(CGEditorContext){0}, &(InterpreterContext){0});
     }
 
-    engine.delayFrames = true;
-    engine.draggingResizeButtonID = 0;
+    eng.delayFrames = true;
+    eng.draggingResizeButtonID = 0;
 
-    engine.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 128, NULL, 0);
-    if (engine.font.texture.id == 0)
+    eng.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 128, NULL, 0);
+    if (eng.font.texture.id == 0)
     {
-        AddToLog(&engine, "Failed to load font{E224}", LOG_LEVEL_ERROR);
-        EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
+        AddToLog(&eng, "Failed to load font{E224}", LOG_LEVEL_ERROR);
+        EmergencyExit(&eng, &(CGEditorContext){0}, &(InterpreterContext){0});
     }
 
-    engine.CGFilePath = malloc(MAX_FILE_PATH);
-    engine.CGFilePath[0] = '\0';
+    eng.CGFilePath = malloc(MAX_FILE_PATH);
+    eng.CGFilePath[0] = '\0';
 
-    engine.hoveredUIElementIndex = -1;
+    eng.hoveredUIElementIndex = -1;
 
-    engine.viewportMode = VIEWPORT_CG_EDITOR;
-    engine.isGameRunning = false;
+    eng.viewportMode = VIEWPORT_CG_EDITOR;
+    eng.isGameRunning = false;
 
-    engine.saveSound = LoadSoundFromWave(LoadWaveFromMemory(".wav", save_wav, save_wav_len));
-    if (engine.saveSound.frameCount == 0)
+    eng.saveSound = LoadSoundFromWave(LoadWaveFromMemory(".wav", save_wav, save_wav_len));
+    if (eng.saveSound.frameCount == 0)
     {
-        AddToLog(&engine, "Failed to load audio{E225}", LOG_LEVEL_ERROR);
-        EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
+        AddToLog(&eng, "Failed to load audio{E225}", LOG_LEVEL_ERROR);
+        EmergencyExit(&eng, &(CGEditorContext){0}, &(InterpreterContext){0});
     }
 
-    engine.isSoundOn = true;
+    eng.isSoundOn = true;
 
-    engine.sideBarHalfSnap = false;
+    eng.sideBarHalfSnap = false;
 
-    engine.zoom = 1.0f;
+    eng.zoom = 1.0f;
 
-    engine.wasBuilt = false;
+    eng.wasBuilt = false;
 
-    engine.showSaveWarning = 0;
-    engine.showSettingsMenu = false;
+    eng.showSaveWarning = 0;
+    eng.showSettingsMenu = false;
 
-    engine.varsFilter = 0;
+    eng.varsFilter = 0;
 
-    engine.isGameFullscreen = false;
+    eng.isGameFullscreen = false;
 
-    engine.isSaveButtonHovered = false;
+    eng.isSaveButtonHovered = false;
 
-    engine.isAutoSaveON = false;
-    engine.autoSaveTimer = 0.0f;
+    eng.isAutoSaveON = false;
+    eng.autoSaveTimer = 0.0f;
 
-    engine.fpsLimit = 240;
-    engine.shouldShowFPS = false;
+    eng.fpsLimit = 240;
+    eng.shouldShowFPS = false;
 
-    engine.isAnyMenuOpen = false;
+    eng.isAnyMenuOpen = false;
 
-    engine.shouldCloseWindow = false;
+    eng.shouldCloseWindow = false;
 
-    return engine;
+    return eng;
 }
 
-void FreeEngineContext(EngineContext *engine)
+void FreeEngineContext(EngineContext *eng)
 {
-    if (engine->currentPath)
+    if (eng->currentPath)
     {
-        free(engine->currentPath);
-        engine->currentPath = NULL;
+        free(eng->currentPath);
+        eng->currentPath = NULL;
     }
 
-    if (engine->projectPath)
+    if (eng->projectPath)
     {
-        free(engine->projectPath);
-        engine->projectPath = NULL;
+        free(eng->projectPath);
+        eng->projectPath = NULL;
     }
 
-    if (engine->CGFilePath)
-        free(engine->CGFilePath);
+    if (eng->CGFilePath)
+        free(eng->CGFilePath);
 
-    if (engine->logs.entries)
+    if (eng->logs.entries)
     {
-        free(engine->logs.entries);
-        engine->logs.entries = NULL;
+        free(eng->logs.entries);
+        eng->logs.entries = NULL;
     }
 
-    UnloadDirectoryFiles(engine->files);
+    UnloadDirectoryFiles(eng->files);
 
-    UnloadRenderTexture(engine->viewportTex);
-    UnloadRenderTexture(engine->uiTex);
-    UnloadTexture(engine->resizeButton);
-    UnloadTexture(engine->viewportFullscreenButton);
-    UnloadTexture(engine->settingsGear);
+    UnloadRenderTexture(eng->viewportTex);
+    UnloadRenderTexture(eng->uiTex);
+    UnloadTexture(eng->resizeButton);
+    UnloadTexture(eng->viewportFullscreenButton);
+    UnloadTexture(eng->settingsGear);
 
-    UnloadFont(engine->font);
+    UnloadFont(eng->font);
 
-    UnloadSound(engine->saveSound);
+    UnloadSound(eng->saveSound);
 }
 
-void AddUIElement(EngineContext *engine, UIElement element)
+void AddUIElement(EngineContext *eng, UIElement element)
 {
-    if (engine->uiElementCount < MAX_UI_ELEMENTS)
+    if (eng->uiElementCount < MAX_UI_ELEMENTS)
     {
-        engine->uiElements[engine->uiElementCount++] = element;
+        eng->uiElements[eng->uiElementCount++] = element;
     }
     else
     {
-        AddToLog(engine, "UIElement limit reached{E212}", LOG_LEVEL_ERROR);
-        EmergencyExit(engine, &(EditorContext){0}, &(InterpreterContext){0});
+        AddToLog(eng, "UIElement limit reached{E212}", LOG_LEVEL_ERROR);
+        EmergencyExit(eng, &(CGEditorContext){0}, &(InterpreterContext){0});
     }
 }
 
-void AddToLog(EngineContext *engine, const char *newLine, int level)
+void AddToLog(EngineContext *eng, const char *newLine, int level)
 {
-    if (engine->logs.count >= engine->logs.capacity)
+    if (eng->logs.count >= eng->logs.capacity)
     {
-        engine->logs.capacity += 100;
-        engine->logs.entries = realloc(engine->logs.entries, sizeof(LogEntry) * engine->logs.capacity);
-        if (!engine->logs.entries)
+        eng->logs.capacity += 100;
+        eng->logs.entries = realloc(eng->logs.entries, sizeof(LogEntry) * eng->logs.capacity);
+        if (!eng->logs.entries)
         {
             exit(1);
         }
@@ -181,15 +181,15 @@ void AddToLog(EngineContext *engine, const char *newLine, int level)
     time_t timestamp = time(NULL);
     struct tm *tm_info = localtime(&timestamp);
 
-    strmac(engine->logs.entries[engine->logs.count].message, MAX_LOG_MESSAGE_SIZE, "%02d:%02d:%02d %s", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, newLine);
+    strmac(eng->logs.entries[eng->logs.count].message, MAX_LOG_MESSAGE_SIZE, "%02d:%02d:%02d %s", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, newLine);
 
-    engine->logs.entries[engine->logs.count].level = level;
+    eng->logs.entries[eng->logs.count].level = level;
 
-    engine->logs.count++;
-    engine->delayFrames = true;
+    eng->logs.count++;
+    eng->delayFrames = true;
 }
 
-void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterContext *interpreter)
+void EmergencyExit(EngineContext *eng, CGEditorContext *cgEd, InterpreterContext *intp)
 {
     time_t timestamp = time(NULL);
     struct tm *tm_info = localtime(&timestamp);
@@ -197,10 +197,10 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
     FILE *logFile = fopen("engine_log.txt", "w");
     if (logFile)
     {
-        for (int i = 0; i < engine->logs.count; i++)
+        for (int i = 0; i < eng->logs.count; i++)
         {
             char *level;
-            switch (engine->logs.entries[i].level)
+            switch (eng->logs.entries[i].level)
             {
             case LOG_LEVEL_NORMAL:
                 level = "INFO";
@@ -221,13 +221,13 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
                 level = "UNKNOWN";
                 break;
             }
-            fprintf(logFile, "[ENGINE %s] %s\n", level, engine->logs.entries[i].message);
+            fprintf(logFile, "[eng %s] %s\n", level, eng->logs.entries[i].message);
         }
 
-        for (int i = 0; i < editor->logMessageCount; i++)
+        for (int i = 0; i < cgEd->logMessageCount; i++)
         {
             char *level;
-            switch (editor->logMessageLevels[i])
+            switch (cgEd->logMessageLevels[i])
             {
             case LOG_LEVEL_NORMAL:
                 level = "INFO";
@@ -248,13 +248,13 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
                 level = "UNKNOWN";
                 break;
             }
-            fprintf(logFile, "[CGEDITOR %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), editor->logMessages[i]);
+            fprintf(logFile, "[CGEDITOR %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), cgEd->logMessages[i]);
         }
 
-        for (int i = 0; i < interpreter->logMessageCount; i++)
+        for (int i = 0; i < intp->logMessageCount; i++)
         {
             char *level;
-            switch (interpreter->logMessageLevels[i])
+            switch (intp->logMessageLevels[i])
             {
             case LOG_LEVEL_NORMAL:
                 level = "INFO";
@@ -275,7 +275,7 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
                 level = "UNKNOWN";
                 break;
             }
-            fprintf(logFile, "[INTERPRETER %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), interpreter->logMessages[i]);
+            fprintf(logFile, "[INTERPRETER %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), intp->logMessages[i]);
         }
 
         fprintf(logFile, "\nTo submit a crash report, please email support@rapidengine.eu");
@@ -285,13 +285,13 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
 
     OpenFile("engine_log.txt");
 
-    FreeEngineContext(engine);
-    FreeEditorContext(editor);
+    FreeEngineContext(eng);
+    FreeEditorContext(cgEd);
     // FreeGraphContext(graph);
-    FreeInterpreterContext(interpreter);
+    FreeInterpreterContext(intp);
 
-    free(interpreter->projectPath);
-    interpreter->projectPath = NULL;
+    free(intp->projectPath);
+    intp->projectPath = NULL;
 
     CloseAudioDevice();
 
@@ -354,7 +354,7 @@ FileType GetFileType(const char *folderPath, const char *fileName)
     return FILE_OTHER;
 }
 
-void PrepareCGFilePath(EngineContext *engine, const char *projectName)
+void PrepareCGFilePath(EngineContext *eng, const char *projectName)
 {
     char cwd[MAX_FILE_PATH];
 
@@ -373,35 +373,35 @@ void PrepareCGFilePath(EngineContext *engine, const char *projectName)
 
     cwd[len - 7] = '\0';
 
-    strmac(engine->CGFilePath, MAX_FILE_PATH, "%s%cProjects%c%s%c%s.cg", cwd, PATH_SEPARATOR, PATH_SEPARATOR, projectName, PATH_SEPARATOR, projectName);
+    strmac(eng->CGFilePath, MAX_FILE_PATH, "%s%cProjects%c%s%c%s.cg", cwd, PATH_SEPARATOR, PATH_SEPARATOR, projectName, PATH_SEPARATOR, projectName);
 
-    for (int i = 0; i < engine->files.count; i++)
+    for (int i = 0; i < eng->files.count; i++)
     {
-        if (strcmp(engine->CGFilePath, engine->files.paths[i]) == 0)
+        if (strcmp(eng->CGFilePath, eng->files.paths[i]) == 0)
         {
             return;
         }
     }
 
-    FILE *f = fopen(engine->CGFilePath, "w");
+    FILE *f = fopen(eng->CGFilePath, "w");
     if (f)
     {
         fclose(f);
     }
 }
 
-int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *editor)
+int DrawSaveWarning(EngineContext *eng, GraphContext *graph, CGEditorContext *cgEd)
 {
-    engine->isViewportFocused = false;
+    eng->isViewportFocused = false;
     int popupWidth = 500;
     int popupHeight = 150;
-    int screenWidth = engine->screenWidth;
-    int screenHeight = engine->screenHeight;
+    int screenWidth = eng->screenWidth;
+    int screenHeight = eng->screenHeight;
     int popupX = (screenWidth - popupWidth) / 2;
     int popupY = (screenHeight - popupHeight) / 2 - 100;
 
     const char *message = "Save changes before exiting?";
-    int textWidth = MeasureTextEx(engine->font, message, 30, 0).x;
+    int textWidth = MeasureTextEx(eng->font, message, 30, 0).x;
 
     int btnWidth = 120;
     int btnHeight = 30;
@@ -420,35 +420,35 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
     DrawRectangleRounded((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, (Color){30, 30, 30, 255});
     DrawRectangleRoundedLines((Rectangle){popupX, popupY, popupWidth, popupHeight}, 0.4f, 8, (Color){200, 200, 200, 255});
 
-    DrawTextEx(engine->font, message, (Vector2){popupX + (popupWidth - textWidth) / 2, popupY + 20}, 30, 0, WHITE);
+    DrawTextEx(eng->font, message, (Vector2){popupX + (popupWidth - textWidth) / 2, popupY + 20}, 30, 0, WHITE);
 
     DrawRectangleRounded(saveBtn, 0.2f, 2, DARKGREEN);
-    DrawTextEx(engine->font, "Save", (Vector2){saveBtn.x + 35, saveBtn.y + 4}, 24, 0, WHITE);
+    DrawTextEx(eng->font, "Save", (Vector2){saveBtn.x + 35, saveBtn.y + 4}, 24, 0, WHITE);
 
     DrawRectangleRounded(closeBtn, 0.2f, 2, (Color){210, 21, 35, 255});
-    DrawTextEx(engine->font, "Don't save", (Vector2){closeBtn.x + 18, closeBtn.y + 4}, 24, 0, WHITE);
+    DrawTextEx(eng->font, "Don't save", (Vector2){closeBtn.x + 18, closeBtn.y + 4}, 24, 0, WHITE);
 
     DrawRectangleRounded(cancelBtn, 0.2f, 2, (Color){80, 80, 80, 255});
-    DrawTextEx(engine->font, "Cancel", (Vector2){cancelBtn.x + 25, cancelBtn.y + 4}, 24, 0, WHITE);
+    DrawTextEx(eng->font, "Cancel", (Vector2){cancelBtn.x + 25, cancelBtn.y + 4}, 24, 0, WHITE);
 
-    if (CheckCollisionPointRec(engine->mousePos, saveBtn))
+    if (CheckCollisionPointRec(eng->mousePos, saveBtn))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
-            if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
+            if (SaveGraphToFile(eng->CGFilePath, graph) == 0)
             {
-                AddToLog(engine, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
-                editor->hasChanged = false;
+                AddToLog(eng, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
+                cgEd->hasChanged = false;
             }
             else
             {
-                AddToLog(engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
+                AddToLog(eng, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
             }
             return 2;
         }
     }
-    else if (CheckCollisionPointRec(engine->mousePos, closeBtn))
+    else if (CheckCollisionPointRec(eng->mousePos, closeBtn))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -456,7 +456,7 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
             return 2;
         }
     }
-    else if (CheckCollisionPointRec(engine->mousePos, cancelBtn))
+    else if (CheckCollisionPointRec(eng->mousePos, cancelBtn))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -545,20 +545,20 @@ void DrawFPSLimitDropdown(Vector2 pos, int *limit, Vector2 mousePos, Font font)
     }
 }
 
-bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
+bool DrawSettingsMenu(EngineContext *eng, InterpreterContext *intp)
 {
 
-    DrawRectangle(0, 0, engine->screenWidth, engine->screenHeight, (Color){0, 0, 0, 150});
+    DrawRectangle(0, 0, eng->screenWidth, eng->screenHeight, (Color){0, 0, 0, 150});
 
     static SettingsMode settingsMode = SETTINGS_MODE_ENGINE;
 
-    DrawRectangleRounded((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 255});
-    DrawRectangleRoundedLines((Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}, 0.08f, 4, WHITE);
+    DrawRectangleRounded((Rectangle){eng->screenWidth / 4, 100, eng->screenWidth * 2 / 4, eng->screenHeight - 200}, 0.08f, 4, (Color){30, 30, 30, 255});
+    DrawRectangleRoundedLines((Rectangle){eng->screenWidth / 4, 100, eng->screenWidth * 2 / 4, eng->screenHeight - 200}, 0.08f, 4, WHITE);
 
     static bool skipClickOnFirstFrame = true;
-    DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 140}, (Vector2){engine->screenWidth * 3 / 4 - 30, 160}, 3, WHITE);
-    DrawLineEx((Vector2){engine->screenWidth * 3 / 4 - 50, 160}, (Vector2){engine->screenWidth * 3 / 4 - 30, 140}, 3, WHITE);
-    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){engine->screenWidth * 3 / 4 - 50, 140, 20, 20}))
+    DrawLineEx((Vector2){eng->screenWidth * 3 / 4 - 50, 140}, (Vector2){eng->screenWidth * 3 / 4 - 30, 160}, 3, WHITE);
+    DrawLineEx((Vector2){eng->screenWidth * 3 / 4 - 50, 160}, (Vector2){eng->screenWidth * 3 / 4 - 30, 140}, 3, WHITE);
+    if (CheckCollisionPointRec(GetMousePosition(), (Rectangle){eng->screenWidth * 3 / 4 - 50, 140, 20, 20}))
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -567,7 +567,7 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
             return false;
         }
     }
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4, 100, engine->screenWidth * 2 / 4, engine->screenHeight - 200}))
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && !CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->screenWidth / 4, 100, eng->screenWidth * 2 / 4, eng->screenHeight - 200}))
     {
         if (skipClickOnFirstFrame)
         {
@@ -580,11 +580,11 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         }
     }
 
-    DrawTextEx(engine->font, "Settings", (Vector2){engine->screenWidth / 2 - MeasureTextEx(engine->font, "Settings", 50, 1).x / 2, 130}, 50, 1, WHITE);
+    DrawTextEx(eng->font, "Settings", (Vector2){eng->screenWidth / 2 - MeasureTextEx(eng->font, "Settings", 50, 1).x / 2, 130}, 50, 1, WHITE);
 
-    DrawTextEx(engine->font, "Engine", (Vector2){engine->screenWidth / 4 + 30, 300}, 30, 1, settingsMode == SETTINGS_MODE_ENGINE ? WHITE : GRAY);
+    DrawTextEx(eng->font, "Engine", (Vector2){eng->screenWidth / 4 + 30, 300}, 30, 1, settingsMode == SETTINGS_MODE_ENGINE ? WHITE : GRAY);
 
-    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 290, MeasureTextEx(engine->font, "Engine", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_ENGINE)
+    if (CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->screenWidth / 4 + 20, 290, MeasureTextEx(eng->font, "eng", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_ENGINE)
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -593,9 +593,9 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         }
     }
 
-    DrawTextEx(engine->font, "Game", (Vector2){engine->screenWidth / 4 + 30, 350}, 30, 1, settingsMode == SETTINGS_MODE_GAME ? WHITE : GRAY);
+    DrawTextEx(eng->font, "Game", (Vector2){eng->screenWidth / 4 + 30, 350}, 30, 1, settingsMode == SETTINGS_MODE_GAME ? WHITE : GRAY);
 
-    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 340, MeasureTextEx(engine->font, "Game", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_GAME)
+    if (CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->screenWidth / 4 + 20, 340, MeasureTextEx(eng->font, "Game", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_GAME)
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -604,9 +604,9 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         }
     }
 
-    DrawTextEx(engine->font, "Keybinds", (Vector2){engine->screenWidth / 4 + 30, 400}, 30, 1, settingsMode == SETTINGS_MODE_KEYBINDS ? WHITE : GRAY);
+    DrawTextEx(eng->font, "Keybinds", (Vector2){eng->screenWidth / 4 + 30, 400}, 30, 1, settingsMode == SETTINGS_MODE_KEYBINDS ? WHITE : GRAY);
 
-    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 390, MeasureTextEx(engine->font, "Keybinds", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_KEYBINDS)
+    if (CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->screenWidth / 4 + 20, 390, MeasureTextEx(eng->font, "Keybinds", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_KEYBINDS)
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -615,9 +615,9 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         }
     }
 
-    DrawTextEx(engine->font, "Export", (Vector2){engine->screenWidth / 4 + 30, 450}, 30, 1, settingsMode == SETTINGS_MODE_EXPORT ? WHITE : GRAY);
+    DrawTextEx(eng->font, "Export", (Vector2){eng->screenWidth / 4 + 30, 450}, 30, 1, settingsMode == SETTINGS_MODE_EXPORT ? WHITE : GRAY);
 
-    if (CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->screenWidth / 4 + 20, 440, MeasureTextEx(engine->font, "Export", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_EXPORT)
+    if (CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->screenWidth / 4 + 20, 440, MeasureTextEx(eng->font, "Export", 30, 1).x + 20, 50}) && settingsMode != SETTINGS_MODE_EXPORT)
     {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
@@ -626,29 +626,29 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
         }
     }
 
-    DrawRectangleGradientV(engine->screenWidth / 4 + 180, 300, 2, engine->screenHeight - 400, (Color){100, 100, 100, 255}, (Color){30, 30, 30, 255});
+    DrawRectangleGradientV(eng->screenWidth / 4 + 180, 300, 2, eng->screenHeight - 400, (Color){100, 100, 100, 255}, (Color){30, 30, 30, 255});
 
     switch (settingsMode)
     {
     case SETTINGS_MODE_ENGINE:
-        DrawTextEx(engine->font, "Sound", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
-        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &engine->isSoundOn, engine->mousePos);
+        DrawTextEx(eng->font, "Sound", (Vector2){eng->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
+        DrawSlider((Vector2){eng->screenWidth * 3 / 4 - 70, 305}, &eng->isSoundOn, eng->mousePos);
 
-        DrawTextEx(engine->font, "Auto Save Every 2 Minutes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
-        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &engine->isAutoSaveON, engine->mousePos);
+        DrawTextEx(eng->font, "Auto Save Every 2 Minutes", (Vector2){eng->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
+        DrawSlider((Vector2){eng->screenWidth * 3 / 4 - 70, 355}, &eng->isAutoSaveON, eng->mousePos);
 
-        DrawTextEx(engine->font, "FPS Limit", (Vector2){engine->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
-        DrawFPSLimitDropdown((Vector2){engine->screenWidth * 3 / 4 - 100, 405}, &engine->fpsLimit, engine->mousePos, engine->font);
+        DrawTextEx(eng->font, "FPS Limit", (Vector2){eng->screenWidth / 4 + 200, 400}, 28, 1, WHITE);
+        DrawFPSLimitDropdown((Vector2){eng->screenWidth * 3 / 4 - 100, 405}, &eng->fpsLimit, eng->mousePos, eng->font);
 
-        DrawTextEx(engine->font, "Show FPS", (Vector2){engine->screenWidth / 4 + 200, 450}, 28, 1, WHITE);
-        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 455}, &engine->shouldShowFPS, engine->mousePos);
+        DrawTextEx(eng->font, "Show FPS", (Vector2){eng->screenWidth / 4 + 200, 450}, 28, 1, WHITE);
+        DrawSlider((Vector2){eng->screenWidth * 3 / 4 - 70, 455}, &eng->shouldShowFPS, eng->mousePos);
         break;
     case SETTINGS_MODE_GAME:
-        DrawTextEx(engine->font, "Infinite Loop Protection", (Vector2){engine->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
-        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 305}, &interpreter->isInfiniteLoopProtectionOn, engine->mousePos);
+        DrawTextEx(eng->font, "Infinite Loop Protection", (Vector2){eng->screenWidth / 4 + 200, 300}, 28, 1, WHITE);
+        DrawSlider((Vector2){eng->screenWidth * 3 / 4 - 70, 305}, &intp->isInfiniteLoopProtectionOn, eng->mousePos);
 
-        DrawTextEx(engine->font, "Show Hitboxes", (Vector2){engine->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
-        DrawSlider((Vector2){engine->screenWidth * 3 / 4 - 70, 355}, &interpreter->shouldShowHitboxes, engine->mousePos);
+        DrawTextEx(eng->font, "Show Hitboxes", (Vector2){eng->screenWidth / 4 + 200, 350}, 28, 1, WHITE);
+        DrawSlider((Vector2){eng->screenWidth * 3 / 4 - 70, 355}, &intp->shouldShowHitboxes, eng->mousePos);
         break;
     case SETTINGS_MODE_KEYBINDS:
         break;
@@ -661,36 +661,36 @@ bool DrawSettingsMenu(EngineContext *engine, InterpreterContext *interpreter)
     return true;
 }
 
-void CountingSortByLayer(EngineContext *engine)
+void CountingSortByLayer(EngineContext *eng)
 {
     int **elements = malloc(MAX_LAYER_COUNT * sizeof(int *));
     int *layerCount = calloc(MAX_LAYER_COUNT, sizeof(int));
     for (int i = 0; i < MAX_LAYER_COUNT; i++)
     {
-        elements[i] = malloc(engine->uiElementCount * sizeof(int));
+        elements[i] = malloc(eng->uiElementCount * sizeof(int));
     }
 
-    for (int i = 0; i < engine->uiElementCount; i++)
+    for (int i = 0; i < eng->uiElementCount; i++)
     {
-        if (engine->uiElements[i].layer < MAX_LAYER_COUNT)
+        if (eng->uiElements[i].layer < MAX_LAYER_COUNT)
         {
-            elements[engine->uiElements[i].layer][layerCount[engine->uiElements[i].layer]] = i;
-            layerCount[engine->uiElements[i].layer]++;
+            elements[eng->uiElements[i].layer][layerCount[eng->uiElements[i].layer]] = i;
+            layerCount[eng->uiElements[i].layer]++;
         }
     }
 
-    UIElement *sorted = malloc(sizeof(UIElement) * engine->uiElementCount);
+    UIElement *sorted = malloc(sizeof(UIElement) * eng->uiElementCount);
     int sortedCount = 0;
 
     for (int i = 0; i < MAX_LAYER_COUNT; i++)
     {
         for (int j = 0; j < layerCount[i]; j++)
         {
-            sorted[sortedCount++] = engine->uiElements[elements[i][j]];
+            sorted[sortedCount++] = eng->uiElements[elements[i][j]];
         }
     }
 
-    memcpy(engine->uiElements, sorted, sizeof(UIElement) * sortedCount);
+    memcpy(eng->uiElements, sorted, sizeof(UIElement) * sortedCount);
     free(sorted);
     free(layerCount);
 
@@ -701,140 +701,140 @@ void CountingSortByLayer(EngineContext *engine)
     free(elements);
 }
 
-void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
+void DrawUIElements(EngineContext *eng, GraphContext *graph, CGEditorContext *cgEd, InterpreterContext *intp, RuntimeGraphContext *runtimeGraph)
 {
-    engine->isSaveButtonHovered = false;
+    eng->isSaveButtonHovered = false;
     char temp[256];
-    if (engine->hoveredUIElementIndex != -1 && !engine->isAnyMenuOpen)
+    if (eng->hoveredUIElementIndex != -1 && !eng->isAnyMenuOpen)
     {
-        switch (engine->uiElements[engine->hoveredUIElementIndex].type)
+        switch (eng->uiElements[eng->hoveredUIElementIndex].type)
         {
         case UI_ACTION_NO_COLLISION_ACTION:
             break;
         case UI_ACTION_SAVE_CG:
-            engine->isSaveButtonHovered = true;
-            if (engine->viewportMode != VIEWPORT_CG_EDITOR)
+            eng->isSaveButtonHovered = true;
+            if (eng->viewportMode != VIEWPORT_CG_EDITOR)
             {
                 break;
             }
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
-                if (engine->isSoundOn)
+                if (eng->isSoundOn)
                 {
-                    PlaySound(engine->saveSound);
+                    PlaySound(eng->saveSound);
                 }
-                if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
+                if (SaveGraphToFile(eng->CGFilePath, graph) == 0)
                 {
-                    editor->hasChanged = false;
-                    AddToLog(engine, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
+                    cgEd->hasChanged = false;
+                    AddToLog(eng, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
                 }
                 else
-                    AddToLog(engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
+                    AddToLog(eng, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
             }
             break;
         case UI_ACTION_STOP_GAME:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                engine->viewportMode = VIEWPORT_CG_EDITOR;
-                editor->isFirstFrame = true;
-                engine->isGameRunning = false;
-                engine->wasBuilt = false;
-                FreeInterpreterContext(interpreter);
+                eng->viewportMode = VIEWPORT_CG_EDITOR;
+                cgEd->isFirstFrame = true;
+                eng->isGameRunning = false;
+                eng->wasBuilt = false;
+                FreeInterpreterContext(intp);
             }
             break;
         case UI_ACTION_RUN_GAME:
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
-                if (editor->hasChanged)
+                if (cgEd->hasChanged)
                 {
-                    AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
+                    AddToLog(eng, "Project not saved!{I102}", LOG_LEVEL_WARNING);
                     break;
                 }
-                else if (!engine->wasBuilt)
+                else if (!eng->wasBuilt)
                 {
-                    AddToLog(engine, "Project has not been built{I103}", LOG_LEVEL_WARNING);
+                    AddToLog(eng, "Project has not been built{I103}", LOG_LEVEL_WARNING);
                     break;
                 }
-                engine->viewportMode = VIEWPORT_GAME_SCREEN;
-                engine->isGameRunning = true;
-                interpreter->isFirstFrame = true;
+                eng->viewportMode = VIEWPORT_GAME_SCREEN;
+                eng->isGameRunning = true;
+                intp->isFirstFrame = true;
             }
             break;
         case UI_ACTION_BUILD_GRAPH:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                if (editor->hasChanged)
+                if (cgEd->hasChanged)
                 {
-                    AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
+                    AddToLog(eng, "Project not saved!{I102}", LOG_LEVEL_WARNING);
                     break;
                 }
-                *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
-                if (interpreter->buildErrorOccured)
+                *runtimeGraph = ConvertToRuntimeGraph(graph, intp);
+                if (intp->buildErrorOccured)
                 {
-                    EmergencyExit(engine, editor, interpreter);
+                    EmergencyExit(eng, cgEd, intp);
                 }
-                engine->delayFrames = true;
+                eng->delayFrames = true;
                 if (runtimeGraph != NULL)
                 {
-                    AddToLog(engine, "Build successful{I300}", LOG_LEVEL_SUCCESS);
-                    engine->wasBuilt = true;
+                    AddToLog(eng, "Build successful{I300}", LOG_LEVEL_SUCCESS);
+                    eng->wasBuilt = true;
                 }
                 else
                 {
-                    AddToLog(engine, "Build failed{I100}", LOG_LEVEL_WARNING);
+                    AddToLog(eng, "Build failed{I100}", LOG_LEVEL_WARNING);
                 }
             }
             break;
         case UI_ACTION_BACK_FILEPATH:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                char *lastSlash = strrchr(engine->currentPath, PATH_SEPARATOR);
-                if (lastSlash && lastSlash != engine->currentPath)
+                char *lastSlash = strrchr(eng->currentPath, PATH_SEPARATOR);
+                if (lastSlash && lastSlash != eng->currentPath)
                 {
                     *lastSlash = '\0';
                 }
 
-                UnloadDirectoryFiles(engine->files);
-                engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
-                if (!engine->files.paths || engine->files.count < 0)
+                UnloadDirectoryFiles(eng->files);
+                eng->files = LoadDirectoryFilesEx(eng->currentPath, NULL, false);
+                if (!eng->files.paths || eng->files.count < 0)
                 {
-                    AddToLog(engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
-                    EmergencyExit(engine, editor, interpreter);
+                    AddToLog(eng, "Error loading files{E201}", LOG_LEVEL_ERROR);
+                    EmergencyExit(eng, cgEd, intp);
                 }
-                engine->uiElementCount = 0;
-                engine->delayFrames = true;
+                eng->uiElementCount = 0;
+                eng->delayFrames = true;
                 return;
             }
             break;
         case UI_ACTION_REFRESH_FILES:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                UnloadDirectoryFiles(engine->files);
-                engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
-                if (!engine->files.paths || engine->files.count < 0)
+                UnloadDirectoryFiles(eng->files);
+                eng->files = LoadDirectoryFilesEx(eng->currentPath, NULL, false);
+                if (!eng->files.paths || eng->files.count < 0)
                 {
-                    AddToLog(engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
-                    EmergencyExit(engine, editor, interpreter);
+                    AddToLog(eng, "Error loading files{E201}", LOG_LEVEL_ERROR);
+                    EmergencyExit(eng, cgEd, intp);
                 }
             }
             break;
         case UI_ACTION_CLOSE_WINDOW:
-            engine->isViewportFocused = false;
+            eng->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                if (editor->hasChanged)
+                if (cgEd->hasChanged)
                 {
-                    engine->showSaveWarning = true;
+                    eng->showSaveWarning = true;
                 }
                 else
                 {
-                    engine->shouldCloseWindow = true;
+                    eng->shouldCloseWindow = true;
                     return;
                 }
             }
             break;
         case UI_ACTION_MINIMIZE_WINDOW:
-            engine->isViewportFocused = false;
+            eng->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 MinimizeWindow();
@@ -843,36 +843,36 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
         case UI_ACTION_OPEN_SETTINGS:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                engine->showSettingsMenu = true;
+                eng->showSettingsMenu = true;
             }
-            engine->isViewportFocused = false;
+            eng->isViewportFocused = false;
             break;
         case UI_ACTION_RESIZE_BOTTOM_BAR:
-            engine->isViewportFocused = false;
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
+            eng->isViewportFocused = false;
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && eng->draggingResizeButtonID == 0)
             {
-                engine->draggingResizeButtonID = 1;
+                eng->draggingResizeButtonID = 1;
             }
             break;
         case UI_ACTION_RESIZE_SIDE_BAR:
-            engine->isViewportFocused = false;
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
+            eng->isViewportFocused = false;
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && eng->draggingResizeButtonID == 0)
             {
-                engine->draggingResizeButtonID = 2;
+                eng->draggingResizeButtonID = 2;
             }
             break;
         case UI_ACTION_RESIZE_SIDE_BAR_MIDDLE:
-            engine->isViewportFocused = false;
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && engine->draggingResizeButtonID == 0)
+            eng->isViewportFocused = false;
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && eng->draggingResizeButtonID == 0)
             {
-                engine->draggingResizeButtonID = 3;
+                eng->draggingResizeButtonID = 3;
             }
             break;
         case UI_ACTION_OPEN_FILE:
             char tooltipText[256];
-            strmac(tooltipText, MAX_FILE_TOOLTIP_SIZE, "File: %s\nSize: %d bytes", GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name), GetFileLength(engine->uiElements[engine->hoveredUIElementIndex].name));
-            Rectangle tooltipRect = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(engine->font, tooltipText, 20, 0).x + 20, 60};
-            AddUIElement(engine, (UIElement){
+            strmac(tooltipText, MAX_FILE_TOOLTIP_SIZE, "File: %s\nSize: %d bytes", GetFileName(eng->uiElements[eng->hoveredUIElementIndex].name), GetFileLength(eng->uiElements[eng->hoveredUIElementIndex].name));
+            Rectangle tooltipRect = {eng->uiElements[eng->hoveredUIElementIndex].rect.pos.x + 10, eng->uiElements[eng->hoveredUIElementIndex].rect.pos.y - 61, MeasureTextEx(eng->font, tooltipText, 20, 0).x + 20, 60};
+            AddUIElement(eng, (UIElement){
                                      .name = "FileTooltip",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_NO_COLLISION_ACTION,
@@ -880,7 +880,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                                      .color = DARKGRAY,
                                      .layer = 1,
                                      .text = {.string = "", .textPos = {tooltipRect.x + 10, tooltipRect.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_TOOLTIP_SIZE, "%s", tooltipText);
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_FILE_TOOLTIP_SIZE, "%s", tooltipText);
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
                 double currentTime = GetTime();
@@ -888,35 +888,35 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
                 if (currentTime - lastClickTime <= doubleClickThreshold)
                 {
-                    if (GetFileType(engine->currentPath, GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) == FILE_CG)
+                    if (GetFileType(eng->currentPath, GetFileName(eng->uiElements[eng->hoveredUIElementIndex].name)) == FILE_CG)
                     {
                         char openedFileName[MAX_FILE_NAME];
-                        strmac(openedFileName, MAX_FILE_NAME, "%s", engine->uiElements[engine->hoveredUIElementIndex].text.string);
-                        openedFileName[strlen(engine->uiElements[engine->hoveredUIElementIndex].text.string) - 3] = '\0';
+                        strmac(openedFileName, MAX_FILE_NAME, "%s", eng->uiElements[eng->hoveredUIElementIndex].text.string);
+                        openedFileName[strlen(eng->uiElements[eng->hoveredUIElementIndex].text.string) - 3] = '\0';
 
-                        *editor = InitEditorContext();
+                        *cgEd = InitEditorContext();
                         *graph = InitGraphContext();
 
-                        PrepareCGFilePath(engine, openedFileName);
+                        PrepareCGFilePath(eng, openedFileName);
 
-                        LoadGraphFromFile(engine->CGFilePath, graph);
+                        LoadGraphFromFile(eng->CGFilePath, graph);
 
-                        engine->viewportMode = VIEWPORT_CG_EDITOR;
+                        eng->viewportMode = VIEWPORT_CG_EDITOR;
                     }
-                    else if (GetFileType(engine->currentPath, GetFileName(engine->uiElements[engine->hoveredUIElementIndex].name)) != FILE_FOLDER)
+                    else if (GetFileType(eng->currentPath, GetFileName(eng->uiElements[eng->hoveredUIElementIndex].name)) != FILE_FOLDER)
                     {
-                        OpenFile(TextFormat("%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string));
+                        OpenFile(TextFormat("%s%c%s", eng->currentPath, PATH_SEPARATOR, eng->uiElements[eng->hoveredUIElementIndex].text.string));
                     }
                     else
                     {
-                        strmac(engine->currentPath, MAX_FILE_PATH, "%s%c%s", engine->currentPath, PATH_SEPARATOR, engine->uiElements[engine->hoveredUIElementIndex].text.string);
+                        strmac(eng->currentPath, MAX_FILE_PATH, "%s%c%s", eng->currentPath, PATH_SEPARATOR, eng->uiElements[eng->hoveredUIElementIndex].text.string);
 
-                        UnloadDirectoryFiles(engine->files);
-                        engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
-                        if (!engine->files.paths || engine->files.count < 0)
+                        UnloadDirectoryFiles(eng->files);
+                        eng->files = LoadDirectoryFilesEx(eng->currentPath, NULL, false);
+                        if (!eng->files.paths || eng->files.count < 0)
                         {
-                            AddToLog(engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
-                            EmergencyExit(engine, editor, interpreter);
+                            AddToLog(eng, "Error loading files{E201}", LOG_LEVEL_ERROR);
+                            EmergencyExit(eng, cgEd, intp);
                         }
                     }
                 }
@@ -926,51 +926,51 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             break;
 
         case UI_ACTION_VAR_TOOLTIP_RUNTIME:
-            strmac(temp, MAX_VARIABLE_TOOLTIP_SIZE, "%s %s = %s", ValueTypeToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].type), interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex].name, ValueToString(interpreter->values[engine->uiElements[engine->hoveredUIElementIndex].valueIndex]));
-            AddUIElement(engine, (UIElement){
+            strmac(temp, MAX_VARIABLE_TOOLTIP_SIZE, "%s %s = %s", ValueTypeToString(intp->values[eng->uiElements[eng->hoveredUIElementIndex].valueIndex].type), intp->values[eng->uiElements[eng->hoveredUIElementIndex].valueIndex].name, ValueToString(intp->values[eng->uiElements[eng->hoveredUIElementIndex].valueIndex]));
+            AddUIElement(eng, (UIElement){
                                      .name = "VarTooltip",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_NO_COLLISION_ACTION,
-                                     .rect = {.pos = {engine->sideBarWidth, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {MeasureTextEx(engine->font, temp, 20, 0).x + 20, 40}, .roundness = 0.4f, .roundSegments = 8},
+                                     .rect = {.pos = {eng->sideBarWidth, eng->uiElements[eng->hoveredUIElementIndex].rect.pos.y}, .recSize = {MeasureTextEx(eng->font, temp, 20, 0).x + 20, 40}, .roundness = 0.4f, .roundSegments = 8},
                                      .color = DARKGRAY,
                                      .layer = 1,
-                                     .text = {.textPos = {engine->sideBarWidth + 10, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_VARIABLE_TOOLTIP_SIZE, "%s", temp);
+                                     .text = {.textPos = {eng->sideBarWidth + 10, eng->uiElements[eng->hoveredUIElementIndex].rect.pos.y + 10}, .textSize = 20, .textSpacing = 0, .textColor = WHITE}});
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_VARIABLE_TOOLTIP_SIZE, "%s", temp);
             break;
 
         case UI_ACTION_CHANGE_VARS_FILTER:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                engine->varsFilter++;
-                if (engine->varsFilter > 5)
+                eng->varsFilter++;
+                if (eng->varsFilter > 5)
                 {
-                    engine->varsFilter = 0;
+                    eng->varsFilter = 0;
                 }
             }
             break;
         case UI_ACTION_FULLSCREEN_BUTTON_VIEWPORT:
-            engine->isViewportFocused = false;
+            eng->isViewportFocused = false;
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                engine->isGameFullscreen = true;
+                eng->isGameFullscreen = true;
             }
         }
 
-        if (engine->uiElements[engine->hoveredUIElementIndex].shape == 0)
+        if (eng->uiElements[eng->hoveredUIElementIndex].shape == 0)
         {
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "HoverBlink",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_NO_COLLISION_ACTION,
-                                     .rect = {.pos = {engine->uiElements[engine->hoveredUIElementIndex].rect.pos.x, engine->uiElements[engine->hoveredUIElementIndex].rect.pos.y}, .recSize = {engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.x, engine->uiElements[engine->hoveredUIElementIndex].rect.recSize.y}, .roundness = engine->uiElements[engine->hoveredUIElementIndex].rect.roundness, .roundSegments = engine->uiElements[engine->hoveredUIElementIndex].rect.roundSegments},
-                                     .color = engine->uiElements[engine->hoveredUIElementIndex].rect.hoverColor,
+                                     .rect = {.pos = {eng->uiElements[eng->hoveredUIElementIndex].rect.pos.x, eng->uiElements[eng->hoveredUIElementIndex].rect.pos.y}, .recSize = {eng->uiElements[eng->hoveredUIElementIndex].rect.recSize.x, eng->uiElements[eng->hoveredUIElementIndex].rect.recSize.y}, .roundness = eng->uiElements[eng->hoveredUIElementIndex].rect.roundness, .roundSegments = eng->uiElements[eng->hoveredUIElementIndex].rect.roundSegments},
+                                     .color = eng->uiElements[eng->hoveredUIElementIndex].rect.hoverColor,
                                      .layer = 99});
         }
     }
 
-    for (int i = 0; i < engine->uiElementCount; i++)
+    for (int i = 0; i < eng->uiElementCount; i++)
     {
-        UIElement *el = &engine->uiElements[i];
+        UIElement *el = &eng->uiElements[i];
         switch (el->shape)
         {
         case UIRectangle:
@@ -986,131 +986,131 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
 
         if (el->text.string[0] != '\0')
         {
-            DrawTextEx(engine->font, el->text.string, el->text.textPos, el->text.textSize, el->text.textSpacing, el->text.textColor);
+            DrawTextEx(eng->font, el->text.string, el->text.textPos, el->text.textSize, el->text.textSpacing, el->text.textColor);
         }
     }
 }
 
-void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *editor, InterpreterContext *interpreter, RuntimeGraphContext *runtimeGraph)
+void BuildUITexture(EngineContext *eng, GraphContext *graph, CGEditorContext *cgEd, InterpreterContext *intp, RuntimeGraphContext *runtimeGraph)
 {
-    engine->uiElementCount = 0;
+    eng->uiElementCount = 0;
 
-    BeginTextureMode(engine->uiTex);
+    BeginTextureMode(eng->uiTex);
     ClearBackground((Color){255, 255, 255, 0});
 
-    if (engine->screenWidth > engine->screenHeight && engine->screenWidth > 1000)
+    if (eng->screenWidth > eng->screenHeight && eng->screenWidth > 1000)
     {
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "SideBarVars",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_NO_COLLISION_ACTION,
-                                 .rect = {.pos = {0, 0}, .recSize = {engine->sideBarWidth, engine->sideBarMiddleY}, .roundness = 0.0f, .roundSegments = 0},
+                                 .rect = {.pos = {0, 0}, .recSize = {eng->sideBarWidth, eng->sideBarMiddleY}, .roundness = 0.0f, .roundSegments = 0},
                                  .color = (Color){28, 28, 28, 255},
                                  .layer = 0,
                              });
 
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "SideBarLog",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_NO_COLLISION_ACTION,
-                                 .rect = {.pos = {0, engine->sideBarMiddleY}, .recSize = {engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight}, .roundness = 0.0f, .roundSegments = 0},
+                                 .rect = {.pos = {0, eng->sideBarMiddleY}, .recSize = {eng->sideBarWidth, eng->screenHeight - eng->bottomBarHeight}, .roundness = 0.0f, .roundSegments = 0},
                                  .color = (Color){15, 15, 15, 255},
                                  .layer = 0,
                              });
 
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "SideBarMiddleLine",
                                  .shape = UILine,
                                  .type = UI_ACTION_NO_COLLISION_ACTION,
-                                 .line = {.startPos = {engine->sideBarWidth, 0}, .engPos = {engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight}, .thickness = 2},
+                                 .line = {.startPos = {eng->sideBarWidth, 0}, .engPos = {eng->sideBarWidth, eng->screenHeight - eng->bottomBarHeight}, .thickness = 2},
                                  .color = WHITE,
                                  .layer = 0,
                              });
 
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "SideBarFromViewportDividerLine",
                                  .shape = UILine,
                                  .type = UI_ACTION_NO_COLLISION_ACTION,
-                                 .line = {.startPos = {0, engine->sideBarMiddleY}, .engPos = {engine->sideBarWidth, engine->sideBarMiddleY}, .thickness = 2},
+                                 .line = {.startPos = {0, eng->sideBarMiddleY}, .engPos = {eng->sideBarWidth, eng->sideBarMiddleY}, .thickness = 2},
                                  .color = WHITE,
                                  .layer = 0,
                              });
 
         Vector2 saveButtonPos = {
-            engine->sideBarHalfSnap ? engine->sideBarWidth - 70 : engine->sideBarWidth - 145,
-            engine->sideBarHalfSnap ? engine->sideBarMiddleY + 60 : engine->sideBarMiddleY + 15};
+            eng->sideBarHalfSnap ? eng->sideBarWidth - 70 : eng->sideBarWidth - 145,
+            eng->sideBarHalfSnap ? eng->sideBarMiddleY + 60 : eng->sideBarMiddleY + 15};
 
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "SaveButton",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_SAVE_CG,
-                                 .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = (engine->viewportMode == VIEWPORT_CG_EDITOR ? Fade(WHITE, 0.6f) : (Color){0, 0, 0, 0})},
+                                 .rect = {.pos = saveButtonPos, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = (eng->viewportMode == VIEWPORT_CG_EDITOR ? Fade(WHITE, 0.6f) : (Color){0, 0, 0, 0})},
                                  .color = (Color){70, 70, 70, 200},
                                  .layer = 1,
-                                 .text = {.textPos = {editor->hasChanged ? saveButtonPos.x + 5 : saveButtonPos.x + 8, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = (engine->viewportMode == VIEWPORT_CG_EDITOR ? WHITE : GRAY)},
+                                 .text = {.textPos = {cgEd->hasChanged ? saveButtonPos.x + 5 : saveButtonPos.x + 8, saveButtonPos.y + 5}, .textSize = 20, .textSpacing = 2, .textColor = (eng->viewportMode == VIEWPORT_CG_EDITOR ? WHITE : GRAY)},
                              });
-        if (editor->hasChanged)
+        if (cgEd->hasChanged)
         {
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "Save*");
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_FILE_PATH, "Save*");
         }
         else
         {
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "Save");
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_FILE_PATH, "Save");
         }
 
-        if (engine->viewportMode == VIEWPORT_GAME_SCREEN)
+        if (eng->viewportMode == VIEWPORT_GAME_SCREEN)
         {
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "StopButton",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_STOP_GAME,
-                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .rect = {.pos = {eng->sideBarWidth - 70, eng->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = RED,
                                      .layer = 1,
-                                     .text = {.string = "Stop", .textPos = {engine->sideBarWidth - 62, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                     .text = {.string = "Stop", .textPos = {eng->sideBarWidth - 62, eng->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                  });
         }
-        else if (engine->wasBuilt)
+        else if (eng->wasBuilt)
         {
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "RunButton",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_RUN_GAME,
-                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .rect = {.pos = {eng->sideBarWidth - 70, eng->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = DARKGREEN,
                                      .layer = 1,
-                                     .text = {.string = "Run", .textPos = {engine->sideBarWidth - 56, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                     .text = {.string = "Run", .textPos = {eng->sideBarWidth - 56, eng->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                  });
         }
         else
         {
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "BuildButton",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_BUILD_GRAPH,
-                                     .rect = {.pos = {engine->sideBarWidth - 70, engine->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .rect = {.pos = {eng->sideBarWidth - 70, eng->sideBarMiddleY + 15}, .recSize = {64, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){70, 70, 70, 200},
                                      .layer = 1,
-                                     .text = {.string = "Build", .textPos = {engine->sideBarWidth - 64, engine->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                     .text = {.string = "Build", .textPos = {eng->sideBarWidth - 64, eng->sideBarMiddleY + 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                  });
         }
 
-        int logY = engine->screenHeight - engine->bottomBarHeight - 30;
+        int logY = eng->screenHeight - eng->bottomBarHeight - 30;
         char cutMessage[256];
-        for (int i = engine->logs.count - 1; i >= 0 && logY > engine->sideBarMiddleY + 60 + engine->sideBarHalfSnap * 40; i--)
+        for (int i = eng->logs.count - 1; i >= 0 && logY > eng->sideBarMiddleY + 60 + eng->sideBarHalfSnap * 40; i--)
         {
-            const char *msgNoTimestamp = engine->logs.entries[i].message + 9;
+            const char *msgNoTimestamp = eng->logs.entries[i].message + 9;
 
             char finalMsg[256];
-            strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "%s", engine->logs.entries[i].message);
-            if(engine->logs.entries[i].level != LOG_LEVEL_DEBUG){
+            strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "%s", eng->logs.entries[i].message);
+            if(eng->logs.entries[i].level != LOG_LEVEL_DEBUG){
                 finalMsg[strlen(finalMsg) - 6] = '\0';
             }
 
             int repeatCount = 1;
             while (i - repeatCount >= 0)
             {
-                const char *prevMsgNoTimestamp = engine->logs.entries[i - repeatCount].message + 9;
+                const char *prevMsgNoTimestamp = eng->logs.entries[i - repeatCount].message + 9;
                 if (strcmp(msgNoTimestamp, prevMsgNoTimestamp) != 0)
                     break;
                 repeatCount++;
@@ -1118,7 +1118,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
             if (repeatCount > 1)
             {
-                strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "[x%d] %s", repeatCount, engine->logs.entries[i].message);
+                strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "[x%d] %s", repeatCount, eng->logs.entries[i].message);
                 i -= (repeatCount - 1);
             }
 
@@ -1129,7 +1129,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 strmac(temp, MAX_LOG_MESSAGE_SIZE, "%.*s", j, finalMsg);
                 temp[j] = '\0';
 
-                if (MeasureTextEx(engine->font, temp, 20, 2).x < engine->sideBarWidth - 25)
+                if (MeasureTextEx(eng->font, temp, 20, 2).x < eng->sideBarWidth - 25)
                 {
                     continue;
                 }
@@ -1141,7 +1141,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             strmac(cutMessage, MAX_LOG_MESSAGE_SIZE, "%.*s", j, finalMsg);
 
             Color logColor;
-            switch (engine->logs.entries[i].level)
+            switch (eng->logs.entries[i].level)
             {
             case LOG_LEVEL_NORMAL:
                 logColor = WHITE;
@@ -1163,29 +1163,29 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 break;
             }
 
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "LogText",
                                      .shape = UIText,
                                      .type = UI_ACTION_NO_COLLISION_ACTION,
                                      .text = {.textPos = {10, logY}, .textSize = 20, .textSpacing = 2, .textColor = logColor},
                                      .layer = 0});
 
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_LOG_MESSAGE_SIZE, cutMessage);
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_LOG_MESSAGE_SIZE, cutMessage);
 
             logY -= 25;
         }
 
-        if (engine->sideBarMiddleY > 45)
+        if (eng->sideBarMiddleY > 45)
         {
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "VarsFilterShowText",
                                      .shape = UIText,
                                      .type = UI_ACTION_NO_COLLISION_ACTION,
-                                     .text = {.string = "Show:", .textPos = {engine->sideBarWidth - 155, 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
+                                     .text = {.string = "Show:", .textPos = {eng->sideBarWidth - 155, 20}, .textSize = 20, .textSpacing = 2, .textColor = WHITE},
                                      .layer = 0});
             char varsFilterText[10];
             Color varFilterColor;
-            switch (engine->varsFilter)
+            switch (eng->varsFilter)
             {
             case VAR_FILTER_ALL:
                 strmac(varsFilterText, 10, "All");
@@ -1212,29 +1212,29 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 varFilterColor = (Color){3, 206, 164, 255};
                 break;
             default:
-                engine->varsFilter = 0;
+                eng->varsFilter = 0;
                 strmac(varsFilterText, 10, "All");
                 varFilterColor = RAYWHITE;
                 break;
             }
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "VarsFilterButton",
                                      .shape = UIRectangle,
                                      .type = UI_ACTION_CHANGE_VARS_FILTER,
-                                     .rect = {.pos = {engine->sideBarWidth - 85, 15}, .recSize = {78, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .rect = {.pos = {eng->sideBarWidth - 85, 15}, .recSize = {78, 30}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){70, 70, 70, 200},
                                      .layer = 1,
-                                     .text = {.textPos = {engine->sideBarWidth - 85 + (78 - MeasureTextEx(engine->font, varsFilterText, 20, 1).x) / 2, 20}, .textSize = 20, .textSpacing = 1, .textColor = varFilterColor},
+                                     .text = {.textPos = {eng->sideBarWidth - 85 + (78 - MeasureTextEx(eng->font, varsFilterText, 20, 1).x) / 2, 20}, .textSize = 20, .textSpacing = 1, .textColor = varFilterColor},
                                  });
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, 10, varsFilterText);
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, 10, varsFilterText);
         }
 
         int varsY = 60;
-        for (int i = 0; i < (engine->isGameRunning ? interpreter->valueCount : graph->variablesCount) && varsY < engine->sideBarMiddleY - 40; i++)
+        for (int i = 0; i < (eng->isGameRunning ? intp->valueCount : graph->variablesCount) && varsY < eng->sideBarMiddleY - 40; i++)
         {
-            if (engine->isGameRunning)
+            if (eng->isGameRunning)
             {
-                if (!interpreter->values[i].isVariable)
+                if (!intp->values[i].isVariable)
                 {
                     continue;
                 }
@@ -1248,13 +1248,13 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             }
 
             Color varColor;
-            strmac(cutMessage, MAX_VARIABLE_NAME_SIZE, "%s", engine->isGameRunning ? interpreter->values[i].name : graph->variables[i]);
-            switch (engine->isGameRunning ? interpreter->values[i].type : graph->variableTypes[i])
+            strmac(cutMessage, MAX_VARIABLE_NAME_SIZE, "%s", eng->isGameRunning ? intp->values[i].name : graph->variables[i]);
+            switch (eng->isGameRunning ? intp->values[i].type : graph->variableTypes[i])
             {
             case VAL_NUMBER:
             case NODE_CREATE_NUMBER:
                 varColor = (Color){24, 119, 149, 255};
-                if (engine->varsFilter != VAR_FILTER_NUMBERS && engine->varsFilter != VAR_FILTER_ALL)
+                if (eng->varsFilter != VAR_FILTER_NUMBERS && eng->varsFilter != VAR_FILTER_ALL)
                 {
                     continue;
                 }
@@ -1262,7 +1262,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             case VAL_STRING:
             case NODE_CREATE_STRING:
                 varColor = (Color){180, 178, 40, 255};
-                if (engine->varsFilter != VAR_FILTER_STRINGS && engine->varsFilter != VAR_FILTER_ALL)
+                if (eng->varsFilter != VAR_FILTER_STRINGS && eng->varsFilter != VAR_FILTER_ALL)
                 {
                     continue;
                 }
@@ -1270,7 +1270,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             case VAL_BOOL:
             case NODE_CREATE_BOOL:
                 varColor = (Color){27, 64, 121, 255};
-                if (engine->varsFilter != VAR_FILTER_BOOLS && engine->varsFilter != VAR_FILTER_ALL)
+                if (eng->varsFilter != VAR_FILTER_BOOLS && eng->varsFilter != VAR_FILTER_ALL)
                 {
                     continue;
                 }
@@ -1278,7 +1278,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             case VAL_COLOR:
             case NODE_CREATE_COLOR:
                 varColor = (Color){217, 3, 104, 255};
-                if (engine->varsFilter != VAR_FILTER_COLORS && engine->varsFilter != VAR_FILTER_ALL)
+                if (eng->varsFilter != VAR_FILTER_COLORS && eng->varsFilter != VAR_FILTER_ALL)
                 {
                     continue;
                 }
@@ -1286,7 +1286,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             case VAL_SPRITE:
             case NODE_CREATE_SPRITE:
                 varColor = (Color){3, 206, 164, 255};
-                if (engine->varsFilter != VAR_FILTER_SPRITES && engine->varsFilter != VAR_FILTER_ALL)
+                if (eng->varsFilter != VAR_FILTER_SPRITES && eng->varsFilter != VAR_FILTER_ALL)
                 {
                     continue;
                 }
@@ -1295,16 +1295,16 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 varColor = LIGHTGRAY;
             }
 
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "Variable Background",
                                      .shape = UIRectangle,
-                                     .type = engine->isGameRunning ? UI_ACTION_VAR_TOOLTIP_RUNTIME : UI_ACTION_NO_COLLISION_ACTION,
-                                     .rect = {.pos = {15, varsY - 5}, .recSize = {engine->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
+                                     .type = eng->isGameRunning ? UI_ACTION_VAR_TOOLTIP_RUNTIME : UI_ACTION_NO_COLLISION_ACTION,
+                                     .rect = {.pos = {15, varsY - 5}, .recSize = {eng->sideBarWidth - 25, 35}, .roundness = 0.6f, .roundSegments = 8, .hoverColor = Fade(WHITE, 0.6f)},
                                      .color = (Color){59, 59, 59, 255},
                                      .layer = 1,
                                      .valueIndex = i});
 
-            float dotsWidth = MeasureTextEx(engine->font, "...", 24, 2).x;
+            float dotsWidth = MeasureTextEx(eng->font, "...", 24, 2).x;
             int j;
             bool wasCut = false;
             for (j = 1; j <= strlen(cutMessage); j++)
@@ -1312,8 +1312,8 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 char temp[256];
                 strmac(temp, MAX_VARIABLE_NAME_SIZE, "%.*s", j, cutMessage);
 
-                float textWidth = MeasureTextEx(engine->font, temp, 24, 2).x;
-                if (textWidth + dotsWidth < engine->sideBarWidth - 80)
+                float textWidth = MeasureTextEx(eng->font, temp, 24, 2).x;
+                if (textWidth + dotsWidth < eng->sideBarWidth - 80)
                     continue;
 
                 wasCut = true;
@@ -1332,76 +1332,76 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                 textHidden = true;
             }
 
-            AddUIElement(engine, (UIElement){
+            AddUIElement(eng, (UIElement){
                                      .name = "Variable",
                                      .shape = UICircle,
                                      .type = UI_ACTION_NO_COLLISION_ACTION,
-                                     .circle = {.center = (Vector2){textHidden ? engine->sideBarWidth / 2 + 3 : engine->sideBarWidth - 25, varsY + 14}, .radius = 8},
+                                     .circle = {.center = (Vector2){textHidden ? eng->sideBarWidth / 2 + 3 : eng->sideBarWidth - 25, varsY + 14}, .radius = 8},
                                      .color = varColor,
                                      .text = {.textPos = {20, varsY}, .textSize = 24, .textSpacing = 2, .textColor = WHITE},
                                      .layer = 2});
 
-            strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_VARIABLE_NAME_SIZE, "%s", cutMessage);
+            strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_VARIABLE_NAME_SIZE, "%s", cutMessage);
             varsY += 40;
         }
     }
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "BottomBar",
                              .shape = UIRectangle,
                              .type = UI_ACTION_NO_COLLISION_ACTION,
-                             .rect = {.pos = {0, engine->screenHeight - engine->bottomBarHeight}, .recSize = {engine->screenWidth, engine->bottomBarHeight}, .roundness = 0.0f, .roundSegments = 0},
+                             .rect = {.pos = {0, eng->screenHeight - eng->bottomBarHeight}, .recSize = {eng->screenWidth, eng->bottomBarHeight}, .roundness = 0.0f, .roundSegments = 0},
                              .color = (Color){28, 28, 28, 255},
                              .layer = 0,
                          });
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "BottomBarFromViewportDividerLine",
                              .shape = UILine,
                              .type = UI_ACTION_NO_COLLISION_ACTION,
-                             .line = {.startPos = {0, engine->screenHeight - engine->bottomBarHeight}, .engPos = {engine->screenWidth, engine->screenHeight - engine->bottomBarHeight}, .thickness = 2},
+                             .line = {.startPos = {0, eng->screenHeight - eng->bottomBarHeight}, .engPos = {eng->screenWidth, eng->screenHeight - eng->bottomBarHeight}, .thickness = 2},
                              .color = WHITE,
                              .layer = 0,
                          });
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "BackButton",
                              .shape = UIRectangle,
                              .type = UI_ACTION_BACK_FILEPATH,
-                             .rect = {.pos = {30, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {65, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
+                             .rect = {.pos = {30, eng->screenHeight - eng->bottomBarHeight + 10}, .recSize = {65, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
                              .color = (Color){70, 70, 70, 150},
                              .layer = 1,
-                             .text = {.string = "Back", .textPos = {35, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
+                             .text = {.string = "Back", .textPos = {35, eng->screenHeight - eng->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "RefreshButton",
                              .shape = UIRectangle,
                              .type = UI_ACTION_REFRESH_FILES,
-                             .rect = {.pos = {110, engine->screenHeight - engine->bottomBarHeight + 10}, .recSize = {100, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
+                             .rect = {.pos = {110, eng->screenHeight - eng->bottomBarHeight + 10}, .recSize = {100, 30}, .roundness = 0, .roundSegments = 0, .hoverColor = Fade(WHITE, 0.6f)},
                              .color = (Color){70, 70, 70, 150},
                              .layer = 1,
-                             .text = {.string = "Refresh", .textPos = {119, engine->screenHeight - engine->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
+                             .text = {.string = "Refresh", .textPos = {119, eng->screenHeight - eng->bottomBarHeight + 12}, .textSize = 25, .textSpacing = 0, .textColor = WHITE}});
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "CurrentPath",
                              .shape = UIText,
                              .type = UI_ACTION_NO_COLLISION_ACTION,
                              .color = (Color){0, 0, 0, 0},
                              .layer = 0,
-                             .text = {.string = "", .textPos = {230, engine->screenHeight - engine->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
-    strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "%s", engine->currentPath);
+                             .text = {.string = "", .textPos = {230, eng->screenHeight - eng->bottomBarHeight + 15}, .textSize = 22, .textSpacing = 2, .textColor = WHITE}});
+    strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_FILE_PATH, "%s", eng->currentPath);
 
     int xOffset = 50;
-    int yOffset = engine->screenHeight - engine->bottomBarHeight + 70;
+    int yOffset = eng->screenHeight - eng->bottomBarHeight + 70;
 
-    for (int i = 0; i < engine->files.count; i++)
+    for (int i = 0; i < eng->files.count; i++)
     {
         if (i > MAX_UI_ELEMENTS / 2)
         {
             break;
         }
 
-        const char *fileName = GetFileName(engine->files.paths[i]);
+        const char *fileName = GetFileName(eng->files.paths[i]);
 
         if (fileName[0] == '.')
         {
@@ -1411,7 +1411,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         Color fileOutlineColor;
         Color fileTextColor;
 
-        switch (GetFileType(engine->currentPath, fileName))
+        switch (GetFileType(eng->currentPath, fileName))
         {
         case FILE_FOLDER:
             fileOutlineColor = (Color){205, 205, 50, 200};
@@ -1430,7 +1430,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             fileTextColor = (Color){220, 220, 220, 255};
             break;
         default:
-            AddToLog(engine, "Out of bounds enum{O201}", LOG_LEVEL_ERROR);
+            AddToLog(eng, "Out of bounds enum{O201}", LOG_LEVEL_ERROR);
             fileOutlineColor = (Color){160, 160, 160, 255};
             fileTextColor = (Color){220, 220, 220, 255};
             break;
@@ -1439,7 +1439,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
         char buff[MAX_FILE_NAME];
         strmac(buff, MAX_FILE_NAME, "%s", fileName);
 
-        if (MeasureTextEx(engine->font, fileName, 25, 0).x > 135)
+        if (MeasureTextEx(eng->font, fileName, 25, 0).x > 135)
         {
             const char *ext = GetFileExtension(fileName);
             int extLen = ext ? strlen(ext) : 0;
@@ -1464,7 +1464,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             }
         }
 
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "FileOutline",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_NO_COLLISION_ACTION,
@@ -1472,7 +1472,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .color = fileOutlineColor,
                                  .layer = 0});
 
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "File",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_OPEN_FILE,
@@ -1480,345 +1480,345 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                                  .color = (Color){40, 40, 40, 255},
                                  .layer = 1,
                                  .text = {.string = "", .textPos = {xOffset + 10, yOffset + 16}, .textSize = 25, .textSpacing = 0, .textColor = fileTextColor}});
-        strmac(engine->uiElements[engine->uiElementCount - 1].name, MAX_FILE_PATH, "%s", engine->files.paths[i]);
-        strmac(engine->uiElements[engine->uiElementCount - 1].text.string, MAX_FILE_PATH, "%s", buff);
+        strmac(eng->uiElements[eng->uiElementCount - 1].name, MAX_FILE_PATH, "%s", eng->files.paths[i]);
+        strmac(eng->uiElements[eng->uiElementCount - 1].text.string, MAX_FILE_PATH, "%s", buff);
 
         xOffset += 200;
-        if (xOffset + 100 >= engine->screenWidth)
+        if (xOffset + 100 >= eng->screenWidth)
         {
             xOffset = 50;
             yOffset += 120;
         }
     }
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "TopBarClose",
                              .shape = UIRectangle,
                              .type = UI_ACTION_CLOSE_WINDOW,
-                             .rect = {.pos = {engine->screenWidth - 50, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = RED},
+                             .rect = {.pos = {eng->screenWidth - 50, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = RED},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
                          });
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "TopBarMinimize",
                              .shape = UIRectangle,
                              .type = UI_ACTION_MINIMIZE_WINDOW,
-                             .rect = {.pos = {engine->screenWidth - 100, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
+                             .rect = {.pos = {eng->screenWidth - 100, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
                          });
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "TopBarSettings",
                              .shape = UIRectangle,
                              .type = UI_ACTION_OPEN_SETTINGS,
-                             .rect = {.pos = {engine->screenWidth - 150, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
+                             .rect = {.pos = {eng->screenWidth - 150, 0}, .recSize = {50, 50}, .roundness = 0.0f, .roundSegments = 0, .hoverColor = GRAY},
                              .color = (Color){0, 0, 0, 0},
                              .layer = 1,
                          });
 
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "BottomBarResizeButton",
                              .shape = UICircle,
                              .type = UI_ACTION_RESIZE_BOTTOM_BAR,
-                             .circle = {.center = (Vector2){engine->screenWidth / 2, engine->screenHeight - engine->bottomBarHeight}, .radius = 10},
+                             .circle = {.center = (Vector2){eng->screenWidth / 2, eng->screenHeight - eng->bottomBarHeight}, .radius = 10},
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
                          });
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "SideBarResizeButton",
                              .shape = UICircle,
                              .type = UI_ACTION_RESIZE_SIDE_BAR,
-                             .circle = {.center = (Vector2){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2}, .radius = 10},
+                             .circle = {.center = (Vector2){eng->sideBarWidth, (eng->screenHeight - eng->bottomBarHeight) / 2}, .radius = 10},
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
                          });
-    AddUIElement(engine, (UIElement){
+    AddUIElement(eng, (UIElement){
                              .name = "SideBarMiddleResizeButton",
                              .shape = UICircle,
                              .type = UI_ACTION_RESIZE_SIDE_BAR_MIDDLE,
-                             .circle = {.center = (Vector2){engine->sideBarWidth / 2, engine->sideBarMiddleY}, .radius = 10},
+                             .circle = {.center = (Vector2){eng->sideBarWidth / 2, eng->sideBarMiddleY}, .radius = 10},
                              .color = (Color){255, 255, 255, 1},
                              .layer = 1,
                          });
 
-    if (engine->isGameRunning)
+    if (eng->isGameRunning)
     {
-        AddUIElement(engine, (UIElement){
+        AddUIElement(eng, (UIElement){
                                  .name = "ViewportFullscreenButton",
                                  .shape = UIRectangle,
                                  .type = UI_ACTION_FULLSCREEN_BUTTON_VIEWPORT,
-                                 .rect = {.pos = {engine->sideBarWidth + 8, 10}, .recSize = {50, 50}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = GRAY},
+                                 .rect = {.pos = {eng->sideBarWidth + 8, 10}, .recSize = {50, 50}, .roundness = 0.2f, .roundSegments = 8, .hoverColor = GRAY},
                                  .color = (Color){60, 60, 60, 255},
                                  .layer = 1,
                              });
     }
 
-    CountingSortByLayer(engine);
+    CountingSortByLayer(eng);
 
-    DrawUIElements(engine, graph, editor, interpreter, runtimeGraph);
+    DrawUIElements(eng, graph, cgEd, intp, runtimeGraph);
 
     // special symbols and textures
-    DrawRectangleLinesEx((Rectangle){0, 0, engine->screenWidth, engine->screenHeight}, 4.0f, WHITE);
+    DrawRectangleLinesEx((Rectangle){0, 0, eng->screenWidth, eng->screenHeight}, 4.0f, WHITE);
 
-    DrawLineEx((Vector2){engine->screenWidth - 35, 15}, (Vector2){engine->screenWidth - 15, 35}, 2, WHITE);
-    DrawLineEx((Vector2){engine->screenWidth - 35, 35}, (Vector2){engine->screenWidth - 15, 15}, 2, WHITE);
+    DrawLineEx((Vector2){eng->screenWidth - 35, 15}, (Vector2){eng->screenWidth - 15, 35}, 2, WHITE);
+    DrawLineEx((Vector2){eng->screenWidth - 35, 35}, (Vector2){eng->screenWidth - 15, 15}, 2, WHITE);
 
-    DrawLineEx((Vector2){engine->screenWidth - 85, 25}, (Vector2){engine->screenWidth - 65, 25}, 2, WHITE);
+    DrawLineEx((Vector2){eng->screenWidth - 85, 25}, (Vector2){eng->screenWidth - 65, 25}, 2, WHITE);
 
-    Rectangle src = {0, 0, engine->settingsGear.width, engine->settingsGear.height};
-    Rectangle dst = {engine->screenWidth - 140, 12, 30, 30};
+    Rectangle src = {0, 0, eng->settingsGear.width, eng->settingsGear.height};
+    Rectangle dst = {eng->screenWidth - 140, 12, 30, 30};
     Vector2 origin = {0, 0};
-    DrawTexturePro(engine->settingsGear, src, dst, origin, 0.0f, WHITE);
+    DrawTexturePro(eng->settingsGear, src, dst, origin, 0.0f, WHITE);
 
-    DrawTexture(engine->resizeButton, engine->screenWidth / 2 - 10, engine->screenHeight - engine->bottomBarHeight - 10, WHITE);
-    DrawTexturePro(engine->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){engine->sideBarWidth, (engine->screenHeight - engine->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
-    if (engine->sideBarWidth > 150)
+    DrawTexture(eng->resizeButton, eng->screenWidth / 2 - 10, eng->screenHeight - eng->bottomBarHeight - 10, WHITE);
+    DrawTexturePro(eng->resizeButton, (Rectangle){0, 0, 20, 20}, (Rectangle){eng->sideBarWidth, (eng->screenHeight - eng->bottomBarHeight) / 2, 20, 20}, (Vector2){10, 10}, 90.0f, WHITE);
+    if (eng->sideBarWidth > 150)
     {
-        DrawTexture(engine->resizeButton, engine->sideBarWidth / 2 - 10, engine->sideBarMiddleY - 10, WHITE);
+        DrawTexture(eng->resizeButton, eng->sideBarWidth / 2 - 10, eng->sideBarMiddleY - 10, WHITE);
     }
 
-    if (engine->isGameRunning)
+    if (eng->isGameRunning)
     {
-        DrawTexturePro(engine->viewportFullscreenButton, (Rectangle){0, 0, engine->viewportFullscreenButton.width, engine->viewportFullscreenButton.height}, (Rectangle){engine->sideBarWidth + 8, 10, 50, 50}, (Vector2){0, 0}, 0, WHITE);
+        DrawTexturePro(eng->viewportFullscreenButton, (Rectangle){0, 0, eng->viewportFullscreenButton.width, eng->viewportFullscreenButton.height}, (Rectangle){eng->sideBarWidth + 8, 10, 50, 50}, (Vector2){0, 0}, 0, WHITE);
     }
 
     EndTextureMode();
 }
 
-bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterContext *interpreter, EditorContext *editor, RuntimeGraphContext *runtimeGraph)
+bool HandleUICollisions(EngineContext *eng, GraphContext *graph, InterpreterContext *intp, CGEditorContext *cgEd, RuntimeGraphContext *runtimeGraph)
 {
-    if (engine->uiElementCount == 0)
+    if (eng->uiElementCount == 0)
     {
-        engine->hoveredUIElementIndex = 0;
+        eng->hoveredUIElementIndex = 0;
         return true;
     }
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT) && engine->viewportMode == VIEWPORT_CG_EDITOR)
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && !IsKeyDown(KEY_LEFT_SHIFT) && eng->viewportMode == VIEWPORT_CG_EDITOR)
     {
-        if (engine->isSoundOn)
+        if (eng->isSoundOn)
         {
-            PlaySound(engine->saveSound);
+            PlaySound(eng->saveSound);
         }
-        if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
+        if (SaveGraphToFile(eng->CGFilePath, graph) == 0)
         {
-            editor->hasChanged = false;
-            AddToLog(engine, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
+            cgEd->hasChanged = false;
+            AddToLog(eng, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
         }
         else
         {
-            AddToLog(engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
+            AddToLog(eng, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
         }
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_R))
     {
-        if (editor->hasChanged)
+        if (cgEd->hasChanged)
         {
-            AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
+            AddToLog(eng, "Project not saved!{I102}", LOG_LEVEL_WARNING);
         }
-        else if (!engine->wasBuilt)
+        else if (!eng->wasBuilt)
         {
-            AddToLog(engine, "Project has not been built!{I103}", LOG_LEVEL_WARNING);
+            AddToLog(eng, "Project has not been built!{I103}", LOG_LEVEL_WARNING);
         }
         else
         {
-            engine->viewportMode = VIEWPORT_GAME_SCREEN;
-            engine->isGameRunning = true;
-            interpreter->isFirstFrame = true;
+            eng->viewportMode = VIEWPORT_GAME_SCREEN;
+            eng->isGameRunning = true;
+            intp->isFirstFrame = true;
         }
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_E))
     {
-        editor->delayFrames = true;
-        engine->delayFrames = true;
-        engine->viewportMode = VIEWPORT_CG_EDITOR;
-        editor->isFirstFrame = true;
-        engine->isGameRunning = false;
-        engine->wasBuilt = false;
-        engine->isGameFullscreen = false;
-        FreeInterpreterContext(interpreter);
+        cgEd->delayFrames = true;
+        eng->delayFrames = true;
+        eng->viewportMode = VIEWPORT_CG_EDITOR;
+        cgEd->isFirstFrame = true;
+        eng->isGameRunning = false;
+        eng->wasBuilt = false;
+        eng->isGameFullscreen = false;
+        FreeInterpreterContext(intp);
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_B))
     {
-        if (editor->hasChanged)
+        if (cgEd->hasChanged)
         {
-            AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
+            AddToLog(eng, "Project not saved!{I102}", LOG_LEVEL_WARNING);
         }
         else
         {
-            *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
-            if (interpreter->buildErrorOccured)
+            *runtimeGraph = ConvertToRuntimeGraph(graph, intp);
+            if (intp->buildErrorOccured)
             {
-                EmergencyExit(engine, editor, interpreter);
+                EmergencyExit(eng, cgEd, intp);
             }
-            engine->delayFrames = true;
+            eng->delayFrames = true;
             if (runtimeGraph != NULL)
             {
-                AddToLog(engine, "Build successful{I300}", LOG_LEVEL_NORMAL);
-                engine->wasBuilt = true;
+                AddToLog(eng, "Build successful{I300}", LOG_LEVEL_NORMAL);
+                eng->wasBuilt = true;
             }
             else
             {
-                AddToLog(engine, "Build failed{I100}", LOG_LEVEL_ERROR);
+                AddToLog(eng, "Build failed{I100}", LOG_LEVEL_ERROR);
             }
         }
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_SHIFT))
     {
-        editor->delayFrames = true;
-        engine->delayFrames = true;
-        engine->viewportMode = VIEWPORT_CG_EDITOR;
-        editor->isFirstFrame = true;
-        engine->isGameRunning = false;
-        engine->wasBuilt = false;
-        engine->isGameFullscreen = false;
-        FreeInterpreterContext(interpreter);
+        cgEd->delayFrames = true;
+        eng->delayFrames = true;
+        eng->viewportMode = VIEWPORT_CG_EDITOR;
+        cgEd->isFirstFrame = true;
+        eng->isGameRunning = false;
+        eng->wasBuilt = false;
+        eng->isGameFullscreen = false;
+        FreeInterpreterContext(intp);
     }
     else if (IsKeyPressed(KEY_ESCAPE))
     {
-        engine->isGameFullscreen = false;
+        eng->isGameFullscreen = false;
     }
 
-    if (engine->draggingResizeButtonID != 0)
+    if (eng->draggingResizeButtonID != 0)
     {
         if (IsMouseButtonUp(MOUSE_LEFT_BUTTON))
         {
-            engine->draggingResizeButtonID = 0;
+            eng->draggingResizeButtonID = 0;
         }
 
-        engine->hasResizedBar = true;
+        eng->hasResizedBar = true;
 
-        switch (engine->draggingResizeButtonID)
+        switch (eng->draggingResizeButtonID)
         {
         case 0:
             break;
         case 1:
-            engine->bottomBarHeight -= GetMouseDelta().y;
-            if (engine->bottomBarHeight <= 5)
+            eng->bottomBarHeight -= GetMouseDelta().y;
+            if (eng->bottomBarHeight <= 5)
             {
-                engine->bottomBarHeight = 5;
+                eng->bottomBarHeight = 5;
             }
-            else if (engine->bottomBarHeight >= 3 * engine->screenHeight / 4)
+            else if (eng->bottomBarHeight >= 3 * eng->screenHeight / 4)
             {
-                engine->bottomBarHeight = 3 * engine->screenHeight / 4;
+                eng->bottomBarHeight = 3 * eng->screenHeight / 4;
             }
             else
             {
-                engine->sideBarMiddleY += GetMouseDelta().y / 2;
+                eng->sideBarMiddleY += GetMouseDelta().y / 2;
             }
             break;
         case 2:
-            engine->sideBarWidth += GetMouseDelta().x;
+            eng->sideBarWidth += GetMouseDelta().x;
 
-            if (engine->sideBarWidth < 160 && GetMouseDelta().x < 0)
+            if (eng->sideBarWidth < 160 && GetMouseDelta().x < 0)
             {
-                engine->sideBarWidth = 80;
-                engine->sideBarHalfSnap = true;
+                eng->sideBarWidth = 80;
+                eng->sideBarHalfSnap = true;
             }
-            else if (engine->sideBarWidth > 110)
+            else if (eng->sideBarWidth > 110)
             {
-                engine->sideBarHalfSnap = false;
-                if (engine->sideBarWidth >= 3 * engine->screenWidth / 4)
+                eng->sideBarHalfSnap = false;
+                if (eng->sideBarWidth >= 3 * eng->screenWidth / 4)
                 {
-                    engine->sideBarWidth = 3 * engine->screenWidth / 4;
+                    eng->sideBarWidth = 3 * eng->screenWidth / 4;
                 }
             }
             break;
         case 3:
-            engine->sideBarMiddleY += GetMouseDelta().y;
+            eng->sideBarMiddleY += GetMouseDelta().y;
             break;
         default:
             break;
         }
 
-        if (engine->sideBarMiddleY >= engine->screenHeight - engine->bottomBarHeight - 60 - engine->sideBarHalfSnap * 40)
+        if (eng->sideBarMiddleY >= eng->screenHeight - eng->bottomBarHeight - 60 - eng->sideBarHalfSnap * 40)
         {
-            engine->sideBarMiddleY = engine->screenHeight - engine->bottomBarHeight - 60 - engine->sideBarHalfSnap * 40;
+            eng->sideBarMiddleY = eng->screenHeight - eng->bottomBarHeight - 60 - eng->sideBarHalfSnap * 40;
         }
-        else if (engine->sideBarMiddleY <= 5)
+        else if (eng->sideBarMiddleY <= 5)
         {
-            engine->sideBarMiddleY = 5;
+            eng->sideBarMiddleY = 5;
         }
     }
 
-    for (int i = 0; i < engine->uiElementCount; i++)
+    for (int i = 0; i < eng->uiElementCount; i++)
     {
-        if (engine->uiElements[i].layer != 0)
+        if (eng->uiElements[i].layer != 0)
         {
-            if (engine->uiElements[i].shape == UIRectangle && CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->uiElements[i].rect.pos.x, engine->uiElements[i].rect.pos.y, engine->uiElements[i].rect.recSize.x, engine->uiElements[i].rect.recSize.y}))
+            if (eng->uiElements[i].shape == UIRectangle && CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->uiElements[i].rect.pos.x, eng->uiElements[i].rect.pos.y, eng->uiElements[i].rect.recSize.x, eng->uiElements[i].rect.recSize.y}))
             {
-                engine->hoveredUIElementIndex = i;
+                eng->hoveredUIElementIndex = i;
                 return true;
             }
-            else if (engine->uiElements[i].shape == UICircle && CheckCollisionPointCircle(engine->mousePos, engine->uiElements[i].circle.center, engine->uiElements[i].circle.radius))
+            else if (eng->uiElements[i].shape == UICircle && CheckCollisionPointCircle(eng->mousePos, eng->uiElements[i].circle.center, eng->uiElements[i].circle.radius))
             {
-                engine->hoveredUIElementIndex = i;
+                eng->hoveredUIElementIndex = i;
                 return true;
             }
         }
     }
 
-    engine->hoveredUIElementIndex = -1;
+    eng->hoveredUIElementIndex = -1;
 
     return false;
 }
 
-void ContextChangePerFrame(EngineContext *engine)
+void ContextChangePerFrame(EngineContext *eng)
 {
-    engine->mousePos = GetMousePosition();
-    engine->isViewportFocused = CheckCollisionPointRec(engine->mousePos, (Rectangle){engine->sideBarWidth, 0, engine->screenWidth - engine->sideBarWidth, engine->screenHeight - engine->bottomBarHeight});
+    eng->mousePos = GetMousePosition();
+    eng->isViewportFocused = CheckCollisionPointRec(eng->mousePos, (Rectangle){eng->sideBarWidth, 0, eng->screenWidth - eng->sideBarWidth, eng->screenHeight - eng->bottomBarHeight});
 
-    engine->screenWidth = GetScreenWidth();
-    engine->screenHeight = GetScreenHeight();
+    eng->screenWidth = GetScreenWidth();
+    eng->screenHeight = GetScreenHeight();
 
-    if (engine->prevScreenWidth != engine->screenWidth || engine->prevScreenHeight != engine->screenHeight || engine->hasResizedBar)
+    if (eng->prevScreenWidth != eng->screenWidth || eng->prevScreenHeight != eng->screenHeight || eng->hasResizedBar)
     {
-        engine->prevScreenWidth = engine->screenWidth;
-        engine->prevScreenHeight = engine->screenHeight;
-        engine->viewportWidth = engine->screenWidth - engine->sideBarWidth;
-        engine->viewportHeight = engine->screenHeight - engine->bottomBarHeight;
-        engine->hasResizedBar = false;
-        engine->delayFrames = true;
+        eng->prevScreenWidth = eng->screenWidth;
+        eng->prevScreenHeight = eng->screenHeight;
+        eng->viewportWidth = eng->screenWidth - eng->sideBarWidth;
+        eng->viewportHeight = eng->screenHeight - eng->bottomBarHeight;
+        eng->hasResizedBar = false;
+        eng->delayFrames = true;
     }
 }
 
-int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
+int GetEngineMouseCursor(EngineContext *eng, CGEditorContext *cgEd)
 {
-    if (engine->isAnyMenuOpen)
+    if (eng->isAnyMenuOpen)
     {
         return MOUSE_CURSOR_ARROW;
     }
 
-    if (engine->draggingResizeButtonID == 1 || engine->draggingResizeButtonID == 3)
+    if (eng->draggingResizeButtonID == 1 || eng->draggingResizeButtonID == 3)
     {
         return MOUSE_CURSOR_RESIZE_NS;
     }
-    else if (engine->draggingResizeButtonID == 2)
+    else if (eng->draggingResizeButtonID == 2)
     {
         return MOUSE_CURSOR_RESIZE_EW;
     }
 
-    if (engine->isViewportFocused)
+    if (eng->isViewportFocused)
     {
-        switch (engine->viewportMode)
+        switch (eng->viewportMode)
         {
         case VIEWPORT_CG_EDITOR:
-            return editor->cursor;
+            return cgEd->cursor;
         case VIEWPORT_GAME_SCREEN:
-            // return interpreter->cursor;
+            // return intp->cursor;
             return MOUSE_CURSOR_ARROW;
         case VIEWPORT_HITBOX_EDITOR:
             return MOUSE_CURSOR_CROSSHAIR;
         default:
-            engine->viewportMode = VIEWPORT_CG_EDITOR;
-            return editor->cursor;
+            eng->viewportMode = VIEWPORT_CG_EDITOR;
+            return cgEd->cursor;
         }
     }
 
-    if (engine->isSaveButtonHovered && engine->viewportMode != VIEWPORT_CG_EDITOR)
+    if (eng->isSaveButtonHovered && eng->viewportMode != VIEWPORT_CG_EDITOR)
     {
         return MOUSE_CURSOR_NOT_ALLOWED;
     }
 
-    if (engine->hoveredUIElementIndex != -1)
+    if (eng->hoveredUIElementIndex != -1)
     {
         return MOUSE_CURSOR_POINTING_HAND;
     }
@@ -1826,69 +1826,69 @@ int GetEngineMouseCursor(EngineContext *engine, EditorContext *editor)
     return MOUSE_CURSOR_ARROW;
 }
 
-int GetEngineFPS(EngineContext *engine, EditorContext *editor, InterpreterContext *interpreter)
+int GetEngineFPS(EngineContext *eng, CGEditorContext *cgEd, InterpreterContext *intp)
 {
     int fps;
 
-    if (engine->isViewportFocused)
+    if (eng->isViewportFocused)
     {
-        switch (engine->viewportMode)
+        switch (eng->viewportMode)
         {
         case VIEWPORT_CG_EDITOR:
-            fps = editor->fps;
+            fps = cgEd->fps;
             break;
         case VIEWPORT_GAME_SCREEN:
-            fps = interpreter->fps;
+            fps = intp->fps;
             break;
         case VIEWPORT_HITBOX_EDITOR:
             fps = 60;
             break;
         default:
             fps = 60;
-            engine->viewportMode = VIEWPORT_CG_EDITOR;
+            eng->viewportMode = VIEWPORT_CG_EDITOR;
             break;
         }
     }
     else
     {
-        fps = engine->fps;
+        fps = eng->fps;
     }
 
-    if (fps > engine->fpsLimit)
+    if (fps > eng->fpsLimit)
     {
-        fps = engine->fpsLimit;
+        fps = eng->fpsLimit;
     }
 
     return fps;
 }
 
-void SetEngineZoom(EngineContext *engine, EditorContext *editor)
+void SetEngineZoom(EngineContext *eng, CGEditorContext *cgEd)
 {
-    if (engine->viewportMode != VIEWPORT_CG_EDITOR) // zoom only for CG Editor
+    if (eng->viewportMode != VIEWPORT_CG_EDITOR) // zoom only for CG cgEd
     {
-        engine->zoom = 1.0f;
-        editor->zoom = 1.0f;
+        eng->zoom = 1.0f;
+        cgEd->zoom = 1.0f;
         return;
     }
 
     float wheel = GetMouseWheelMove();
-    if (wheel != 0 && engine->isViewportFocused && !editor->menuOpen)
+    if (wheel != 0 && eng->isViewportFocused && !cgEd->menuOpen)
     {
-        editor->delayFrames = true;
+        cgEd->delayFrames = true;
 
-        float zoom = engine->zoom;
+        float zoom = eng->zoom;
 
         if (wheel > 0 && zoom < 1.5f)
         {
-            engine->zoom = zoom + 0.25f;
+            eng->zoom = zoom + 0.25f;
         }
 
         if (wheel < 0 && zoom > 0.5f)
         {
-            engine->zoom = zoom - 0.25f;
+            eng->zoom = zoom - 0.25f;
         }
 
-        editor->zoom = engine->zoom;
+        cgEd->zoom = eng->zoom;
     }
 }
 
@@ -1907,153 +1907,153 @@ int main()
 
     InitAudioDevice();
 
-    EngineContext engine = InitEngineContext();
-    EditorContext editor = InitEditorContext();
+    EngineContext eng = InitEngineContext();
+    CGEditorContext cgEd = InitEditorContext();
     GraphContext graph = InitGraphContext();
-    InterpreterContext interpreter = InitInterpreterContext();
+    InterpreterContext intp = InitInterpreterContext();
     RuntimeGraphContext runtimeGraph = {0};
 
-    engine.currentPath = SetProjectFolderPath(fileName);
+    eng.currentPath = SetProjectFolderPath(fileName);
 
-    engine.files = LoadDirectoryFilesEx(engine.currentPath, NULL, false);
-    if (!engine.files.paths || engine.files.count <= 0)
+    eng.files = LoadDirectoryFilesEx(eng.currentPath, NULL, false);
+    if (!eng.files.paths || eng.files.count <= 0)
     {
-        AddToLog(&engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
-        EmergencyExit(&engine, &editor, &interpreter);
+        AddToLog(&eng, "Error loading files{E201}", LOG_LEVEL_ERROR);
+        EmergencyExit(&eng, &cgEd, &intp);
     }
 
-    PrepareCGFilePath(&engine, fileName);
+    PrepareCGFilePath(&eng, fileName);
 
-    interpreter.projectPath = strmac(NULL, MAX_FILE_PATH, "%s", engine.currentPath);
-    engine.projectPath = strmac(NULL, MAX_FILE_PATH, "%s", engine.currentPath);
+    intp.projectPath = strmac(NULL, MAX_FILE_PATH, "%s", eng.currentPath);
+    eng.projectPath = strmac(NULL, MAX_FILE_PATH, "%s", eng.currentPath);
 
-    if (!LoadGraphFromFile(engine.CGFilePath, &graph))
+    if (!LoadGraphFromFile(eng.CGFilePath, &graph))
     {
-        AddToLog(&engine, "Failed to load CoreGraph file! Continuing with empty graph{C223}", LOG_LEVEL_ERROR);
-        engine.CGFilePath[0] = '\0';
+        AddToLog(&eng, "Failed to load CoreGraph file! Continuing with empty graph{C223}", LOG_LEVEL_ERROR);
+        eng.CGFilePath[0] = '\0';
     }
 
-    AddToLog(&engine, "All resources loaded. Welcome!{E000}", LOG_LEVEL_NORMAL);
+    AddToLog(&eng, "All resources loaded. Welcome!{E000}", LOG_LEVEL_NORMAL);
 
     while (!WindowShouldClose() || IsKeyDown(KEY_ESCAPE))
     {
         if (!IsWindowReady())
         {
-            EmergencyExit(&engine, &editor, &interpreter);
+            EmergencyExit(&eng, &cgEd, &intp);
         }
 
         if(STRING_ALLOCATION_FAILURE){
-            AddToLog(&engine, "String allocation failed{O200}", LOG_LEVEL_ERROR);
-            EmergencyExit(&engine, &editor, &interpreter);
+            AddToLog(&eng, "String allocation failed{O200}", LOG_LEVEL_ERROR);
+            EmergencyExit(&eng, &cgEd, &intp);
         }
 
-        ContextChangePerFrame(&engine);
+        ContextChangePerFrame(&eng);
 
-        int prevHoveredUIIndex = engine.hoveredUIElementIndex;
-        engine.isAnyMenuOpen = engine.showSaveWarning == 1 || engine.showSettingsMenu;
+        int prevHoveredUIIndex = eng.hoveredUIElementIndex;
+        eng.isAnyMenuOpen = eng.showSaveWarning == 1 || eng.showSettingsMenu;
 
-        if (HandleUICollisions(&engine, &graph, &interpreter, &editor, &runtimeGraph) && !engine.isGameFullscreen)
+        if (HandleUICollisions(&eng, &graph, &intp, &cgEd, &runtimeGraph) && !eng.isGameFullscreen)
         {
-            if (((prevHoveredUIIndex != engine.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && engine.showSaveWarning != 1 && engine.showSettingsMenu == false) || engine.delayFrames)
+            if (((prevHoveredUIIndex != eng.hoveredUIElementIndex || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && eng.showSaveWarning != 1 && eng.showSettingsMenu == false) || eng.delayFrames)
             {
-                BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
-                engine.fps = 140;
+                BuildUITexture(&eng, &graph, &cgEd, &intp, &runtimeGraph);
+                eng.fps = 140;
             }
-            engine.delayFrames = true;
+            eng.delayFrames = true;
         }
-        else if (engine.delayFrames && !engine.isGameFullscreen)
+        else if (eng.delayFrames && !eng.isGameFullscreen)
         {
-            BuildUITexture(&engine, &graph, &editor, &interpreter, &runtimeGraph);
-            engine.fps = 60;
-            engine.delayFrames = false;
+            BuildUITexture(&eng, &graph, &cgEd, &intp, &runtimeGraph);
+            eng.fps = 60;
+            eng.delayFrames = false;
         }
 
-        SetMouseCursor(GetEngineMouseCursor(&engine, &editor));
+        SetMouseCursor(GetEngineMouseCursor(&eng, &cgEd));
 
-        SetTargetFPS(GetEngineFPS(&engine, &editor, &interpreter));
+        SetTargetFPS(GetEngineFPS(&eng, &cgEd, &intp));
 
-        SetEngineZoom(&engine, &editor);
+        SetEngineZoom(&eng, &cgEd);
 
-        Vector2 mouseInViewportTex = (Vector2){(engine.mousePos.x - engine.sideBarWidth) / engine.zoom + (engine.viewportTex.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f, engine.mousePos.y / engine.zoom + (engine.viewportTex.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f};
+        Vector2 mouseInViewportTex = (Vector2){(eng.mousePos.x - eng.sideBarWidth) / eng.zoom + (eng.viewportTex.texture.width - (eng.isGameFullscreen ? eng.screenWidth : eng.viewportWidth / eng.zoom)) / 2.0f, eng.mousePos.y / eng.zoom + (eng.viewportTex.texture.height - (eng.isGameFullscreen ? eng.screenHeight : eng.viewportHeight / eng.zoom)) / 2.0f};
 
         Rectangle viewportRecInViewportTex = (Rectangle){
-            (engine.viewportTex.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth)) / 2.0f,
-            (engine.viewportTex.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight)) / 2.0f,
-            engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
-            engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)};
+            (eng.viewportTex.texture.width - (eng.isGameFullscreen ? eng.screenWidth : eng.viewportWidth)) / 2.0f,
+            (eng.viewportTex.texture.height - (eng.isGameFullscreen ? eng.screenHeight : eng.viewportHeight)) / 2.0f,
+            eng.screenWidth - (eng.isGameFullscreen ? 0 : eng.sideBarWidth),
+            eng.screenHeight - (eng.isGameFullscreen ? 0 : eng.bottomBarHeight)};
 
-        if (engine.showSaveWarning == 1 || engine.showSettingsMenu)
+        if (eng.showSaveWarning == 1 || eng.showSettingsMenu)
         {
-            engine.isViewportFocused = false;
+            eng.isViewportFocused = false;
         }
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        switch (engine.viewportMode)
+        switch (eng.viewportMode)
         {
         case VIEWPORT_CG_EDITOR:
         {
             static bool isSecondFrame = false;
-            if (editor.isFirstFrame)
+            if (cgEd.isFirstFrame)
             {
                 isSecondFrame = true;
-                editor.isFirstFrame = false;
+                cgEd.isFirstFrame = false;
                 break;
             }
-            if (engine.CGFilePath[0] != '\0' && (engine.isViewportFocused || isSecondFrame))
+            if (eng.CGFilePath[0] != '\0' && (eng.isViewportFocused || isSecondFrame))
             {
-                editor.viewportBoundary = viewportRecInViewportTex;
-                HandleEditor(&editor, &graph, &engine.viewportTex, mouseInViewportTex, engine.draggingResizeButtonID != 0, isSecondFrame);
+                cgEd.viewportBoundary = viewportRecInViewportTex;
+                HandleEditor(&cgEd, &graph, &eng.viewportTex, mouseInViewportTex, eng.draggingResizeButtonID != 0, isSecondFrame);
             }
             if (isSecondFrame)
             {
                 isSecondFrame = false;
             }
 
-            if (engine.isAutoSaveON)
+            if (eng.isAutoSaveON)
             {
-                engine.autoSaveTimer += GetFrameTime();
+                eng.autoSaveTimer += GetFrameTime();
 
-                if (engine.autoSaveTimer >= 120.0f)
+                if (eng.autoSaveTimer >= 120.0f)
                 {
-                    if (SaveGraphToFile(engine.CGFilePath, &graph) == 0)
+                    if (SaveGraphToFile(eng.CGFilePath, &graph) == 0)
                     {
-                        editor.hasChanged = false;
-                        AddToLog(&engine, "Auto-saved successfully{C301}", LOG_LEVEL_SUCCESS);
+                        cgEd.hasChanged = false;
+                        AddToLog(&eng, "Auto-saved successfully{C301}", LOG_LEVEL_SUCCESS);
                     }
                     else
                     {
-                        AddToLog(&engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
+                        AddToLog(&eng, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
                     }
-                    engine.autoSaveTimer = 0.0f;
+                    eng.autoSaveTimer = 0.0f;
                 }
             }
 
-            if (editor.newLogMessage)
+            if (cgEd.newLogMessage)
             {
-                for (int i = 0; i < editor.logMessageCount; i++)
-                    AddToLog(&engine, editor.logMessages[i], editor.logMessageLevels[i]);
+                for (int i = 0; i < cgEd.logMessageCount; i++)
+                    AddToLog(&eng, cgEd.logMessages[i], cgEd.logMessageLevels[i]);
 
-                editor.newLogMessage = false;
-                editor.logMessageCount = 0;
-                engine.delayFrames = true;
+                cgEd.newLogMessage = false;
+                cgEd.logMessageCount = 0;
+                eng.delayFrames = true;
             }
-            if (editor.engineDelayFrames)
+            if (cgEd.engineDelayFrames)
             {
-                editor.engineDelayFrames = false;
-                engine.delayFrames = true;
+                cgEd.engineDelayFrames = false;
+                eng.delayFrames = true;
             }
-            if (editor.hasChangedInLastFrame)
+            if (cgEd.hasChangedInLastFrame)
             {
-                engine.delayFrames = true;
-                editor.hasChangedInLastFrame = false;
-                engine.wasBuilt = false;
+                eng.delayFrames = true;
+                cgEd.hasChangedInLastFrame = false;
+                eng.wasBuilt = false;
             }
-            if (editor.shouldOpenHitboxEditor)
+            if (cgEd.shouldOpenHitboxEditor)
             {
-                editor.shouldOpenHitboxEditor = false;
-                engine.viewportMode = VIEWPORT_HITBOX_EDITOR;
+                cgEd.shouldOpenHitboxEditor = false;
+                eng.viewportMode = VIEWPORT_HITBOX_EDITOR;
             }
 
             break;
@@ -2062,28 +2062,28 @@ int main()
         {
             if (IsKeyPressed(KEY_P))
             {
-                interpreter.isPaused = !interpreter.isPaused;
+                intp.isPaused = !intp.isPaused;
             }
-            BeginTextureMode(engine.viewportTex);
+            BeginTextureMode(eng.viewportTex);
             ClearBackground(BLACK);
 
-            engine.isGameRunning = HandleGameScreen(&interpreter, &runtimeGraph, mouseInViewportTex, viewportRecInViewportTex);
+            eng.isGameRunning = HandleGameScreen(&intp, &runtimeGraph, mouseInViewportTex, viewportRecInViewportTex);
 
-            if (!engine.isGameRunning)
+            if (!eng.isGameRunning)
             {
-                engine.viewportMode = VIEWPORT_CG_EDITOR;
-                editor.isFirstFrame = true;
-                engine.wasBuilt = false;
-                FreeInterpreterContext(&interpreter);
+                eng.viewportMode = VIEWPORT_CG_EDITOR;
+                cgEd.isFirstFrame = true;
+                eng.wasBuilt = false;
+                FreeInterpreterContext(&intp);
             }
-            if (interpreter.newLogMessage)
+            if (intp.newLogMessage)
             {
-                for (int i = 0; i < interpreter.logMessageCount; i++)
-                    AddToLog(&engine, interpreter.logMessages[i], interpreter.logMessageLevels[i]);
+                for (int i = 0; i < intp.logMessageCount; i++)
+                    AddToLog(&eng, intp.logMessages[i], intp.logMessageLevels[i]);
 
-                interpreter.newLogMessage = false;
-                interpreter.logMessageCount = 0;
-                engine.delayFrames = true;
+                intp.newLogMessage = false;
+                intp.logMessageCount = 0;
+                eng.delayFrames = true;
             }
             EndTextureMode();
 
@@ -2091,19 +2091,19 @@ int main()
         }
         case VIEWPORT_HITBOX_EDITOR:
         {
-            static HitboxEditorContext hitboxEditor = {0};
+            static HitboxEditorContext hbEd = {0};
 
-            if (hitboxEditor.texture.id == 0)
+            if (hbEd.texture.id == 0)
             {
-                engine.delayFrames = true;
+                eng.delayFrames = true;
                 char path[MAX_FILE_PATH];
-                strmac(path, MAX_FILE_PATH, "%s%c%s", engine.projectPath, PATH_SEPARATOR, editor.hitboxEditorFileName);
+                strmac(path, MAX_FILE_PATH, "%s%c%s", eng.projectPath, PATH_SEPARATOR, cgEd.hitboxEditorFileName);
 
                 Image img = LoadImage(path);
                 if (img.data == NULL)
                 {
-                    AddToLog(&engine, "Invalid texture file name{H200}", LOG_LEVEL_ERROR);
-                    engine.viewportMode = VIEWPORT_CG_EDITOR;
+                    AddToLog(&eng, "Invalid texture file name{H200}", LOG_LEVEL_ERROR);
+                    eng.viewportMode = VIEWPORT_CG_EDITOR;
                 }
                 else
                 {
@@ -2128,94 +2128,94 @@ int main()
                     UnloadImage(img);
 
                     Vector2 texPos = (Vector2){
-                        engine.viewportTex.texture.width / 2.0f,
-                        engine.viewportTex.texture.height / 2.0f};
+                        eng.viewportTex.texture.width / 2.0f,
+                        eng.viewportTex.texture.height / 2.0f};
 
-                    hitboxEditor = InitHitboxEditor(tex, texPos, (Vector2){scaleX, scaleY});
+                    hbEd = InitHitboxEditor(tex, texPos, (Vector2){scaleX, scaleY});
 
                     for (int i = 0; i < graph.pinCount; i++)
                     {
-                        if (graph.pins[i].id == editor.hitboxEditingPinID)
+                        if (graph.pins[i].id == cgEd.hitboxEditingPinID)
                         {
-                            hitboxEditor.poly = graph.pins[i].hitbox;
+                            hbEd.poly = graph.pins[i].hitbox;
                         }
                     }
 
-                    for (int i = 0; i < hitboxEditor.poly.count; i++)
+                    for (int i = 0; i < hbEd.poly.count; i++)
                     {
-                        hitboxEditor.poly.vertices[i].x *= hitboxEditor.scale.x;
-                        hitboxEditor.poly.vertices[i].y *= hitboxEditor.scale.y;
+                        hbEd.poly.vertices[i].x *= hbEd.scale.x;
+                        hbEd.poly.vertices[i].y *= hbEd.scale.y;
                     }
                 }
             }
 
-            if (engine.isViewportFocused)
+            if (eng.isViewportFocused)
             {
-                if (!UpdateHitboxEditor(&hitboxEditor, mouseInViewportTex, &graph, editor.hitboxEditingPinID))
+                if (!UpdateHitboxEditor(&hbEd, mouseInViewportTex, &graph, cgEd.hitboxEditingPinID))
                 {
-                    engine.viewportMode = VIEWPORT_CG_EDITOR;
-                    engine.delayFrames = true;
+                    eng.viewportMode = VIEWPORT_CG_EDITOR;
+                    eng.delayFrames = true;
                 }
             }
 
-            BeginTextureMode(engine.viewportTex);
-            DrawHitboxEditor(&hitboxEditor, mouseInViewportTex);
-            DrawTextEx(engine.font, "Press ESC to Save & Exit Hitbox Editor", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 30}, 30, 1, GRAY);
+            BeginTextureMode(eng.viewportTex);
+            DrawHitboxEditor(&hbEd, mouseInViewportTex);
+            DrawTextEx(eng.font, "Press ESC to Save & Exit Hitbox cgEd", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 30}, 30, 1, GRAY);
             EndTextureMode();
 
             break;
         }
         default:
         {
-            AddToLog(&engine, "Out of bounds enum{O201}", LOG_ERROR);
-            engine.viewportMode = VIEWPORT_CG_EDITOR;
+            AddToLog(&eng, "Out of bounds enum{O201}", LOG_ERROR);
+            eng.viewportMode = VIEWPORT_CG_EDITOR;
         }
         }
 
-        DrawTexturePro(engine.viewportTex.texture,
-                       (Rectangle){(engine.viewportTex.texture.width - (engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom)) / 2.0f,
-                                   (engine.viewportTex.texture.height - (engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)) / 2.0f,
-                                   engine.isGameFullscreen ? engine.screenWidth : engine.viewportWidth / engine.zoom,
-                                   -(engine.isGameFullscreen ? engine.screenHeight : engine.viewportHeight / engine.zoom)},
-                       (Rectangle){engine.isGameFullscreen ? 0 : engine.sideBarWidth,
+        DrawTexturePro(eng.viewportTex.texture,
+                       (Rectangle){(eng.viewportTex.texture.width - (eng.isGameFullscreen ? eng.screenWidth : eng.viewportWidth / eng.zoom)) / 2.0f,
+                                   (eng.viewportTex.texture.height - (eng.isGameFullscreen ? eng.screenHeight : eng.viewportHeight / eng.zoom)) / 2.0f,
+                                   eng.isGameFullscreen ? eng.screenWidth : eng.viewportWidth / eng.zoom,
+                                   -(eng.isGameFullscreen ? eng.screenHeight : eng.viewportHeight / eng.zoom)},
+                       (Rectangle){eng.isGameFullscreen ? 0 : eng.sideBarWidth,
                                    0,
-                                   engine.screenWidth - (engine.isGameFullscreen ? 0 : engine.sideBarWidth),
-                                   engine.screenHeight - (engine.isGameFullscreen ? 0 : engine.bottomBarHeight)},
+                                   eng.screenWidth - (eng.isGameFullscreen ? 0 : eng.sideBarWidth),
+                                   eng.screenHeight - (eng.isGameFullscreen ? 0 : eng.bottomBarHeight)},
                        (Vector2){0, 0}, 0.0f, WHITE);
 
-        if (engine.uiTex.texture.id != 0 && !engine.isGameFullscreen)
+        if (eng.uiTex.texture.id != 0 && !eng.isGameFullscreen)
         {
-            DrawTextureRec(engine.uiTex.texture, (Rectangle){0, 0, engine.uiTex.texture.width, -engine.uiTex.texture.height}, (Vector2){0, 0}, WHITE);
+            DrawTextureRec(eng.uiTex.texture, (Rectangle){0, 0, eng.uiTex.texture.width, -eng.uiTex.texture.height}, (Vector2){0, 0}, WHITE);
         }
 
-        if (engine.viewportMode == VIEWPORT_CG_EDITOR)
+        if (eng.viewportMode == VIEWPORT_CG_EDITOR)
         {
-            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){engine.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
-            DrawTextEx(GetFontDefault(), "TM", (Vector2){engine.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
+            DrawTextEx(GetFontDefault(), "CoreGraph", (Vector2){eng.sideBarWidth + 20, 30}, 40, 4, Fade(WHITE, 0.2f));
+            DrawTextEx(GetFontDefault(), "TM", (Vector2){eng.sideBarWidth + 230, 20}, 15, 1, Fade(WHITE, 0.2f));
         }
 
-        if (engine.showSaveWarning == 1)
+        if (eng.showSaveWarning == 1)
         {
-            engine.showSaveWarning = DrawSaveWarning(&engine, &graph, &editor);
-            if (engine.showSaveWarning == 2)
+            eng.showSaveWarning = DrawSaveWarning(&eng, &graph, &cgEd);
+            if (eng.showSaveWarning == 2)
             {
-                engine.shouldCloseWindow = true;
+                eng.shouldCloseWindow = true;
             }
         }
-        else if (engine.showSettingsMenu)
+        else if (eng.showSettingsMenu)
         {
-            engine.showSettingsMenu = DrawSettingsMenu(&engine, &interpreter);
+            eng.showSettingsMenu = DrawSettingsMenu(&eng, &intp);
         }
 
-        if (engine.shouldShowFPS)
+        if (eng.shouldShowFPS)
         {
-            DrawTextEx(engine.font, TextFormat("%d FPS", GetFPS()), (Vector2){engine.screenWidth / 2, 10}, 40, 1, RED);
+            DrawTextEx(eng.font, TextFormat("%d FPS", GetFPS()), (Vector2){eng.screenWidth / 2, 10}, 40, 1, RED);
         }
 
         EndDrawing();
 
         static bool requestedClose = false;
-        if (engine.shouldCloseWindow)
+        if (eng.shouldCloseWindow)
         {
             if (requestedClose)
             {
@@ -2228,13 +2228,13 @@ int main()
         }
     }
 
-    FreeEngineContext(&engine);
-    FreeEditorContext(&editor);
+    FreeEngineContext(&eng);
+    FreeEditorContext(&cgEd);
     FreeGraphContext(&graph);
-    FreeInterpreterContext(&interpreter);
+    FreeInterpreterContext(&intp);
 
-    free(interpreter.projectPath);
-    interpreter.projectPath = NULL;
+    free(intp.projectPath);
+    intp.projectPath = NULL;
 
     CloseAudioDevice();
 

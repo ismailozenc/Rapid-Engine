@@ -8,14 +8,14 @@
 
 HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos, Vector2 scale)
 {
-    HitboxEditorContext e = {0};
-    e.texture = tex;
-    e.position = pos;
-    e.poly.count = 0;
-    e.poly.isClosed = false;
-    e.draggingVerticeIndex = -1;
-    e.scale = scale;
-    return e;
+    HitboxEditorContext hbEd = {0};
+    hbEd.texture = tex;
+    hbEd.position = pos;
+    hbEd.poly.count = 0;
+    hbEd.poly.isClosed = false;
+    hbEd.draggingVerticeIndex = -1;
+    hbEd.scale = scale;
+    return hbEd;
 }
 
 static bool IsNear(Vector2 a, Vector2 b, float dist)
@@ -25,98 +25,98 @@ static bool IsNear(Vector2 a, Vector2 b, float dist)
     return (dx * dx + dy * dy) < (dist * dist);
 }
 
-bool UpdateHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal, GraphContext *graph, int hitboxEditingPinID)
+bool UpdateHitboxEditor(HitboxEditorContext *hbEd, Vector2 mouseLocal, GraphContext *graph, int hitboxEditingPinID)
 {
     if (IsKeyPressed(KEY_ESCAPE))
     {
-        if (e->poly.isClosed)
+        if (hbEd->poly.isClosed)
         {
-            for (int i = 0; i < e->poly.count; i++)
+            for (int i = 0; i < hbEd->poly.count; i++)
             {
-                e->poly.vertices[i].x /= e->scale.x;
-                e->poly.vertices[i].y /= e->scale.y;
+                hbEd->poly.vertices[i].x /= hbEd->scale.x;
+                hbEd->poly.vertices[i].y /= hbEd->scale.y;
             }
             for (int i = 0; i < graph->pinCount; i++)
             {
                 if (graph->pins[i].id == hitboxEditingPinID)
                 {
-                    graph->pins[i].hitbox = e->poly;
+                    graph->pins[i].hitbox = hbEd->poly;
                 }
             }
-            UnloadTexture(e->texture);
-            e->texture.id = 0;
+            UnloadTexture(hbEd->texture);
+            hbEd->texture.id = 0;
         }
         return false;
     }
     if (IsKeyPressed(KEY_R))
     {
-        e->poly.count = 0;
-        e->poly.isClosed = false;
+        hbEd->poly.count = 0;
+        hbEd->poly.isClosed = false;
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
     {
-        if (e->poly.count != 0)
+        if (hbEd->poly.count != 0)
         {
-            e->poly.count--;
-            e->poly.isClosed = false;
+            hbEd->poly.count--;
+            hbEd->poly.isClosed = false;
         }
     }
 
-    if (e->poly.isClosed)
+    if (hbEd->poly.isClosed)
     {
 
         if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON))
         {
-            e->draggingVerticeIndex = -1;
+            hbEd->draggingVerticeIndex = -1;
             return true;
         }
 
-        if (e->draggingVerticeIndex == -1)
+        if (hbEd->draggingVerticeIndex == -1)
         {
-            for (int i = 0; i < e->poly.count; i++)
+            for (int i = 0; i < hbEd->poly.count; i++)
             {
                 Vector2 vertice = {
-                    e->position.x + e->poly.vertices[i].x,
-                    e->position.y + e->poly.vertices[i].y};
+                    hbEd->position.x + hbEd->poly.vertices[i].x,
+                    hbEd->position.y + hbEd->poly.vertices[i].y};
 
                 if (IsNear(mouseLocal, vertice, SNAP_DIST))
                 {
-                    e->draggingVerticeIndex = i;
+                    hbEd->draggingVerticeIndex = i;
                 }
             }
 
-            if (e->draggingVerticeIndex == -1)
+            if (hbEd->draggingVerticeIndex == -1)
             {
                 return true;
             }
         }
 
-        e->poly.vertices[e->draggingVerticeIndex].x += GetMouseDelta().x;
-        e->poly.vertices[e->draggingVerticeIndex].y += GetMouseDelta().y;
+        hbEd->poly.vertices[hbEd->draggingVerticeIndex].x += GetMouseDelta().x;
+        hbEd->poly.vertices[hbEd->draggingVerticeIndex].y += GetMouseDelta().y;
     }
     else
     {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         {
             Vector2 rel = {
-                mouseLocal.x - e->position.x,
-                mouseLocal.y - e->position.y};
+                mouseLocal.x - hbEd->position.x,
+                mouseLocal.y - hbEd->position.y};
 
-            if (e->poly.count > 2)
+            if (hbEd->poly.count > 2)
             {
                 Vector2 firstScreen = {
-                    e->position.x + e->poly.vertices[0].x,
-                    e->position.y + e->poly.vertices[0].y};
+                    hbEd->position.x + hbEd->poly.vertices[0].x,
+                    hbEd->position.y + hbEd->poly.vertices[0].y};
                 if (IsNear(mouseLocal, firstScreen, SNAP_DIST))
                 {
-                    e->poly.isClosed = true;
+                    hbEd->poly.isClosed = true;
                     return true;
                 }
             }
 
-            if (e->poly.count < MAX_VERTICES && !e->poly.isClosed)
+            if (hbEd->poly.count < MAX_VERTICES && !hbEd->poly.isClosed)
             {
-                e->poly.vertices[e->poly.count++] = rel;
+                hbEd->poly.vertices[hbEd->poly.count++] = rel;
             }
         }
     }
@@ -124,47 +124,47 @@ bool UpdateHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal, GraphContext
     return true;
 }
 
-void DrawHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal)
+void DrawHitboxEditor(HitboxEditorContext *hbEd, Vector2 mouseLocal)
 {
     ClearBackground((Color){80, 0, 90, 100});
 
     DrawTexture(
-        e->texture,
-        (int)(e->position.x - e->texture.width / 2),
-        (int)(e->position.y - e->texture.height / 2),
+        hbEd->texture,
+        (int)(hbEd->position.x - hbEd->texture.width / 2),
+        (int)(hbEd->position.y - hbEd->texture.height / 2),
         WHITE);
 
-    for (int i = 0; i < e->poly.count; i++)
+    for (int i = 0; i < hbEd->poly.count; i++)
     {
         Vector2 p = {
-            e->position.x + e->poly.vertices[i].x,
-            e->position.y + e->poly.vertices[i].y};
+            hbEd->position.x + hbEd->poly.vertices[i].x,
+            hbEd->position.y + hbEd->poly.vertices[i].y};
         DrawCircle(p.x, p.y, 4, GREEN);
 
         if (i > 0)
         {
             Vector2 prev = {
-                e->position.x + e->poly.vertices[i - 1].x,
-                e->position.y + e->poly.vertices[i - 1].y};
+                hbEd->position.x + hbEd->poly.vertices[i - 1].x,
+                hbEd->position.y + hbEd->poly.vertices[i - 1].y};
             DrawLineEx(prev, p, 2, WHITE);
         }
     }
 
-    if (e->poly.isClosed && e->poly.count > 2)
+    if (hbEd->poly.isClosed && hbEd->poly.count > 2)
     {
         Vector2 first = {
-            e->position.x + e->poly.vertices[0].x,
-            e->position.y + e->poly.vertices[0].y};
+            hbEd->position.x + hbEd->poly.vertices[0].x,
+            hbEd->position.y + hbEd->poly.vertices[0].y};
         Vector2 last = {
-            e->position.x + e->poly.vertices[e->poly.count - 1].x,
-            e->position.y + e->poly.vertices[e->poly.count - 1].y};
+            hbEd->position.x + hbEd->poly.vertices[hbEd->poly.count - 1].x,
+            hbEd->position.y + hbEd->poly.vertices[hbEd->poly.count - 1].y};
         DrawLineEx(last, first, 2, WHITE);
 
-        for (int i = 0; i < e->poly.count; i++)
+        for (int i = 0; i < hbEd->poly.count; i++)
         {
             Vector2 vertice = {
-                e->position.x + e->poly.vertices[i].x,
-                e->position.y + e->poly.vertices[i].y};
+                hbEd->position.x + hbEd->poly.vertices[i].x,
+                hbEd->position.y + hbEd->poly.vertices[i].y};
 
             if (IsNear(mouseLocal, vertice, SNAP_DIST))
             {
@@ -172,19 +172,19 @@ void DrawHitboxEditor(HitboxEditorContext *e, Vector2 mouseLocal)
             }
         }
     }
-    else if (e->poly.count > 0)
+    else if (hbEd->poly.count > 0)
     {
         Vector2 last = {
-            e->position.x + e->poly.vertices[e->poly.count - 1].x,
-            e->position.y + e->poly.vertices[e->poly.count - 1].y};
+            hbEd->position.x + hbEd->poly.vertices[hbEd->poly.count - 1].x,
+            hbEd->position.y + hbEd->poly.vertices[hbEd->poly.count - 1].y};
 
         DrawLineEx(last, mouseLocal, 1, GRAY);
 
-        if (e->poly.count >= 3)
+        if (hbEd->poly.count >= 3)
         {
             Vector2 first = {
-                e->position.x + e->poly.vertices[0].x,
-                e->position.y + e->poly.vertices[0].y};
+                hbEd->position.x + hbEd->poly.vertices[0].x,
+                hbEd->position.y + hbEd->poly.vertices[0].y};
             if (IsNear(mouseLocal, first, SNAP_DIST))
             {
                 DrawCircleLines(first.x, first.y, SNAP_DIST, GREEN);

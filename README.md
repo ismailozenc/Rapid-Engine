@@ -108,3 +108,7 @@ gcc unity.c raylib/lib/libraylib.a -o RapidEngine.exe -Iraylib/include -lopengl3
 ```bash
 ./RapidEngine.exe
 ```
+
+## Support
+
+For assistance, contact [support@rapidengine.eu](mailto:support@rapidengine.eu)

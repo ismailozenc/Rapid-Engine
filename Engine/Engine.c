@@ -278,10 +278,12 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             fprintf(logFile, "[INTERPRETER %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), interpreter->logMessages[i]);
         }
 
-        //fprintf(logFile, "\nTo submit a crash report, please email support@rapidengine.eu");
+        fprintf(logFile, "\nTo submit a crash report, please email support@rapidengine.eu");
 
         fclose(logFile);
     }
+
+    OpenFile("engine_log.txt");
 
     FreeEngineContext(engine);
     FreeEditorContext(editor);

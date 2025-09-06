@@ -58,7 +58,7 @@ EngineContext InitEngineContext()
     UnloadImage(tempImg);
     if (engine.uiTex.id == 0 || engine.viewportTex.id == 0 || engine.resizeButton.id == 0 || engine.viewportFullscreenButton.id == 0)
     {
-        AddToLog(&engine, "Failed to load texture", LOG_LEVEL_ERROR);
+        AddToLog(&engine, "Failed to load texture{E223}", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -68,7 +68,7 @@ EngineContext InitEngineContext()
     engine.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 128, NULL, 0);
     if (engine.font.texture.id == 0)
     {
-        AddToLog(&engine, "Failed to load font", LOG_LEVEL_ERROR);
+        AddToLog(&engine, "Failed to load font{E224}", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -83,7 +83,7 @@ EngineContext InitEngineContext()
     engine.saveSound = LoadSoundFromWave(LoadWaveFromMemory(".wav", save_wav, save_wav_len));
     if (engine.saveSound.frameCount == 0)
     {
-        AddToLog(&engine, "Failed to load audio", LOG_LEVEL_ERROR);
+        AddToLog(&engine, "Failed to load audio{E225}", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 
@@ -161,7 +161,7 @@ void AddUIElement(EngineContext *engine, UIElement element)
     }
     else
     {
-        AddToLog(engine, "UIElement limit reached", LOG_LEVEL_ERROR);
+        AddToLog(engine, "UIElement limit reached{E212}", LOG_LEVEL_ERROR);
         EmergencyExit(engine, &(EditorContext){0}, &(InterpreterContext){0});
     }
 }
@@ -277,6 +277,8 @@ void EmergencyExit(EngineContext *engine, EditorContext *editor, InterpreterCont
             }
             fprintf(logFile, "[INTERPRETER %s] %s %s\n", level, TextFormat("%02d:%02d:%02d", tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec), interpreter->logMessages[i]);
         }
+
+        //fprintf(logFile, "\nTo submit a crash report, please email support@rapidengine.eu");
 
         fclose(logFile);
     }
@@ -434,12 +436,12 @@ int DrawSaveWarning(EngineContext *engine, GraphContext *graph, EditorContext *e
         {
             if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
             {
-                AddToLog(engine, "Saved successfully!", LOG_LEVEL_SUCCESS);
+                AddToLog(engine, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
                 editor->hasChanged = false;
             }
             else
             {
-                AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
+                AddToLog(engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
             }
             return 2;
         }
@@ -722,10 +724,10 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
                 {
                     editor->hasChanged = false;
-                    AddToLog(engine, "Saved successfully!", LOG_LEVEL_SUCCESS);
+                    AddToLog(engine, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
                 }
                 else
-                    AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
+                    AddToLog(engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
             }
             break;
         case UI_ACTION_STOP_GAME:
@@ -743,12 +745,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 if (editor->hasChanged)
                 {
-                    AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
+                    AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
                     break;
                 }
                 else if (!engine->wasBuilt)
                 {
-                    AddToLog(engine, "Project has not been built", LOG_LEVEL_WARNING);
+                    AddToLog(engine, "Project has not been built{I103}", LOG_LEVEL_WARNING);
                     break;
                 }
                 engine->viewportMode = VIEWPORT_GAME_SCREEN;
@@ -761,7 +763,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
             {
                 if (editor->hasChanged)
                 {
-                    AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
+                    AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
                     break;
                 }
                 *runtimeGraph = ConvertToRuntimeGraph(graph, interpreter);
@@ -772,12 +774,12 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 engine->delayFrames = true;
                 if (runtimeGraph != NULL)
                 {
-                    AddToLog(engine, "Build Successfull", LOG_LEVEL_SUCCESS);
+                    AddToLog(engine, "Build successful{I300}", LOG_LEVEL_SUCCESS);
                     engine->wasBuilt = true;
                 }
                 else
                 {
-                    AddToLog(engine, "Build failed", LOG_LEVEL_WARNING);
+                    AddToLog(engine, "Build failed{I100}", LOG_LEVEL_WARNING);
                 }
             }
             break;
@@ -794,7 +796,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
                 if (!engine->files.paths || engine->files.count < 0)
                 {
-                    AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
+                    AddToLog(engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
                     EmergencyExit(engine, editor, interpreter);
                 }
                 engine->uiElementCount = 0;
@@ -809,7 +811,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                 engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
                 if (!engine->files.paths || engine->files.count < 0)
                 {
-                    AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
+                    AddToLog(engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
                     EmergencyExit(engine, editor, interpreter);
                 }
             }
@@ -911,7 +913,7 @@ void DrawUIElements(EngineContext *engine, GraphContext *graph, EditorContext *e
                         engine->files = LoadDirectoryFilesEx(engine->currentPath, NULL, false);
                         if (!engine->files.paths || engine->files.count < 0)
                         {
-                            AddToLog(engine, "Error loading files", LOG_LEVEL_ERROR);
+                            AddToLog(engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
                             EmergencyExit(engine, editor, interpreter);
                         }
                     }
@@ -1099,6 +1101,9 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
 
             char finalMsg[256];
             strmac(finalMsg, MAX_LOG_MESSAGE_SIZE, "%s", engine->logs.entries[i].message);
+            if(engine->logs.entries[i].level != LOG_LEVEL_DEBUG){
+                finalMsg[strlen(finalMsg) - 6] = '\0';
+            }
 
             int repeatCount = 1;
             while (i - repeatCount >= 0)
@@ -1131,7 +1136,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
                     break;
                 }
             }
-            strmac(cutMessage, j, "%s", finalMsg);
+            strmac(cutMessage, MAX_LOG_MESSAGE_SIZE, "%.*s", j, finalMsg);
 
             Color logColor;
             switch (engine->logs.entries[i].level)
@@ -1423,7 +1428,7 @@ void BuildUITexture(EngineContext *engine, GraphContext *graph, EditorContext *e
             fileTextColor = (Color){220, 220, 220, 255};
             break;
         default:
-            AddToLog(engine, "Out of bounds enum", LOG_LEVEL_ERROR);
+            AddToLog(engine, "Out of bounds enum{O201}", LOG_LEVEL_ERROR);
             fileOutlineColor = (Color){160, 160, 160, 255};
             fileTextColor = (Color){220, 220, 220, 255};
             break;
@@ -1594,22 +1599,22 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
         if (SaveGraphToFile(engine->CGFilePath, graph) == 0)
         {
             editor->hasChanged = false;
-            AddToLog(engine, "Saved successfully!", LOG_LEVEL_SUCCESS);
+            AddToLog(engine, "Saved successfully{C300}", LOG_LEVEL_SUCCESS);
         }
         else
         {
-            AddToLog(engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
+            AddToLog(engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
         }
     }
     else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_R))
     {
         if (editor->hasChanged)
         {
-            AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
+            AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
         }
         else if (!engine->wasBuilt)
         {
-            AddToLog(engine, "Project has not been built", LOG_LEVEL_WARNING);
+            AddToLog(engine, "Project has not been built!{I103}", LOG_LEVEL_WARNING);
         }
         else
         {
@@ -1633,7 +1638,7 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
     {
         if (editor->hasChanged)
         {
-            AddToLog(engine, "Project not saved!", LOG_LEVEL_WARNING);
+            AddToLog(engine, "Project not saved!{I102}", LOG_LEVEL_WARNING);
         }
         else
         {
@@ -1645,12 +1650,12 @@ bool HandleUICollisions(EngineContext *engine, GraphContext *graph, InterpreterC
             engine->delayFrames = true;
             if (runtimeGraph != NULL)
             {
-                AddToLog(engine, "Build Successfull", LOG_LEVEL_NORMAL);
+                AddToLog(engine, "Build successful{I300}", LOG_LEVEL_NORMAL);
                 engine->wasBuilt = true;
             }
             else
             {
-                AddToLog(engine, "Build failed", LOG_LEVEL_ERROR);
+                AddToLog(engine, "Build failed{I100}", LOG_LEVEL_ERROR);
             }
         }
     }
@@ -1911,7 +1916,7 @@ int main()
     engine.files = LoadDirectoryFilesEx(engine.currentPath, NULL, false);
     if (!engine.files.paths || engine.files.count <= 0)
     {
-        AddToLog(&engine, "Error loading files", LOG_LEVEL_ERROR);
+        AddToLog(&engine, "Error loading files{E201}", LOG_LEVEL_ERROR);
         EmergencyExit(&engine, &editor, &interpreter);
     }
 
@@ -1922,11 +1927,11 @@ int main()
 
     if (!LoadGraphFromFile(engine.CGFilePath, &graph))
     {
-        AddToLog(&engine, "Failed to load CoreGraph file! Continuing with empty graph", LOG_LEVEL_ERROR);
+        AddToLog(&engine, "Failed to load CoreGraph file! Continuing with empty graph{C223}", LOG_LEVEL_ERROR);
         engine.CGFilePath[0] = '\0';
     }
 
-    AddToLog(&engine, "All resources loaded. Welcome!", 0);
+    AddToLog(&engine, "All resources loaded. Welcome!{E000}", LOG_LEVEL_NORMAL);
 
     while (!WindowShouldClose() || IsKeyDown(KEY_ESCAPE))
     {
@@ -1936,7 +1941,7 @@ int main()
         }
 
         if(STRING_ALLOCATION_FAILURE){
-            AddToLog(&engine, "String allocation failed", LOG_LEVEL_ERROR);
+            AddToLog(&engine, "String allocation failed{O200}", LOG_LEVEL_ERROR);
             EmergencyExit(&engine, &editor, &interpreter);
         }
 
@@ -2013,11 +2018,11 @@ int main()
                     if (SaveGraphToFile(engine.CGFilePath, &graph) == 0)
                     {
                         editor.hasChanged = false;
-                        AddToLog(&engine, "Auto-saved successfully!", LOG_LEVEL_SUCCESS);
+                        AddToLog(&engine, "Auto-saved successfully{C301}", LOG_LEVEL_SUCCESS);
                     }
                     else
                     {
-                        AddToLog(&engine, "ERROR SAVING CHANGES!", LOG_LEVEL_WARNING);
+                        AddToLog(&engine, "Error saving changes!{C101}", LOG_LEVEL_WARNING);
                     }
                     engine.autoSaveTimer = 0.0f;
                 }
@@ -2095,7 +2100,7 @@ int main()
                 Image img = LoadImage(path);
                 if (img.data == NULL)
                 {
-                    AddToLog(&engine, "Invalid texture file name", LOG_LEVEL_ERROR);
+                    AddToLog(&engine, "Invalid texture file name{H200}", LOG_LEVEL_ERROR);
                     engine.viewportMode = VIEWPORT_CG_EDITOR;
                 }
                 else
@@ -2160,7 +2165,7 @@ int main()
         }
         default:
         {
-            AddToLog(&engine, "Out of bounds enum", LOG_ERROR);
+            AddToLog(&engine, "Out of bounds enum{O201}", LOG_ERROR);
             engine.viewportMode = VIEWPORT_CG_EDITOR;
         }
         }

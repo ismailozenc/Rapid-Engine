@@ -49,7 +49,7 @@ EditorContext InitEditorContext()
     UnloadImage(tempImg);
     if (editor.gearTxt.id == 0)
     {
-        AddToLogFromEditor(&editor, "Failed to load texture", LOG_LEVEL_ERROR);
+        AddToLogFromEditor(&editor, "Failed to load texture{C220}", LOG_LEVEL_ERROR);
     }
 
     editor.nodeDropdownFocused = -1;
@@ -58,7 +58,7 @@ EditorContext InitEditorContext()
     editor.font = LoadFontFromMemory(".ttf", arialbd_ttf, arialbd_ttf_len, 256, NULL, 0);
     if (editor.font.texture.id == 0)
     {
-        AddToLogFromEditor(&editor, "Failed to load font", LOG_LEVEL_ERROR);
+        AddToLogFromEditor(&editor, "Failed to load font{C221}", LOG_LEVEL_ERROR);
     }
 
     editor.newLogMessage = false;
@@ -746,7 +746,7 @@ void DrawNodes(EditorContext *editor, GraphContext *graph)
         }
         else
         {
-            AddToLogFromEditor(editor, "Error drawing connection", LOG_LEVEL_WARNING);
+            AddToLogFromEditor(editor, "Error drawing connection{C110}", LOG_LEVEL_WARNING);
         }
     }
 

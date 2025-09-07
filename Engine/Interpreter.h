@@ -194,6 +194,8 @@ typedef struct
     bool shouldShowHitboxes;
 
     bool isPaused;
+
+    Vector2 cameraOffset;
 } InterpreterContext;
 
 typedef enum{

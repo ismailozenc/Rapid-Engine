@@ -96,18 +96,17 @@ void AddToLogFromEditor(CGEditorContext *cgEd, char *message, int level)
 
 void DrawBackgroundGrid(CGEditorContext *cgEd, int gridSpacing, RenderTexture2D dot)
 {
+    static Vector2 offset;
     if (cgEd->isDraggingScreen)
     {
         Vector2 delta = Vector2Scale(GetMouseDelta(), 1.0f / cgEd->zoom);
-        cgEd->cameraOffset = Vector2Subtract(cgEd->cameraOffset, Vector2Scale(delta, 1.0f / cgEd->zoom));
+        offset = Vector2Subtract(offset, Vector2Scale(delta, 1.0f / cgEd->zoom));
     }
     gridSpacing /= cgEd->zoom;
 
     const float maxOffset = 100000.0f;
-    cgEd->cameraOffset.x = Clamp(cgEd->cameraOffset.x, -maxOffset, maxOffset);
-    cgEd->cameraOffset.y = Clamp(cgEd->cameraOffset.y, -maxOffset, maxOffset);
-
-    Vector2 offset = cgEd->cameraOffset;
+    offset.x = Clamp(offset.x, -maxOffset, maxOffset);
+    offset.y = Clamp(offset.y, -maxOffset, maxOffset);
 
     float worldLeft = offset.x;
     float worldTop = offset.y;
@@ -725,22 +724,29 @@ void DrawNodes(CGEditorContext *cgEd, GraphContext *graph)
 
     for (int i = 0; i < graph->linkCount; i++)
     {
-        Vector2 inputPinPosition = (Vector2){-1};
-        Vector2 outputPinPosition = (Vector2){-1};
-        bool isFlowConnection = false;
+        Vector2 inputPinPosition;
+        Vector2 outputPinPosition;
+        bool isInputPosSet = false;
+        bool isOutputPosSet = false;
+        bool isInputFlow = false;
+        bool isOutputFlow = false;
         for (int j = 0; j < graph->pinCount; j++)
         {
             if (graph->links[i].inputPinID == graph->pins[j].id)
             {
                 inputPinPosition = graph->pins[j].position;
+                isInputPosSet = true;
+                isInputFlow = (graph->pins[j].type == PIN_FLOW);
             }
             else if (graph->links[i].outputPinID == graph->pins[j].id)
             {
                 outputPinPosition = graph->pins[j].position;
-                isFlowConnection = (graph->pins[j].type == PIN_FLOW);
+                isOutputPosSet = true;
+                isOutputFlow = (graph->pins[j].type == PIN_FLOW);
             }
         }
-        if (inputPinPosition.x != -1 && outputPinPosition.x != -1)
+        bool isFlowConnection = isInputFlow && isOutputFlow;
+        if (isInputPosSet && isOutputPosSet)
         {
             DrawCurvedWire(outputPinPosition, inputPinPosition, 2.0f + 2.0f / cgEd->zoom, isFlowConnection ? (Color){180, 100, 200, 255} : (Color){0, 255, 255, 255});
         }
@@ -1346,9 +1352,12 @@ void HandleDragging(CGEditorContext *cgEd, GraphContext *graph)
     }
     else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && cgEd->isDraggingScreen)
     {
+        Vector2 delta = Vector2Scale(GetMouseDelta(), 1.0f / cgEd->zoom);
+        cgEd->cameraOffset.x += Vector2Scale(GetMouseDelta(), 1.0f / cgEd->zoom).x;
+        cgEd->cameraOffset.y += Vector2Scale(GetMouseDelta(), 1.0f / cgEd->zoom).y;
         for (int i = 0; i < graph->nodeCount; i++)
         {
-            Vector2 delta = Vector2Scale(GetMouseDelta(), 1.0f / cgEd->zoom);
+            
             graph->nodes[i].position.x += delta.x;
             graph->nodes[i].position.y += delta.y;
         }

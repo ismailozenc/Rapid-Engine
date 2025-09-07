@@ -312,8 +312,6 @@ char *SetProjectFolderPath(const char *fileName)
         return NULL;
     }
 
-    STRING_ALLOCATION_FAILURE = true;
-
     char *projectPath = malloc(MAX_FILE_PATH);
     if (!projectPath)
     {

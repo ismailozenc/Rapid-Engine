@@ -63,10 +63,10 @@ static inline void OpenFile(const char* filePath) {
 #define MAX_VARIABLE_NAME_SIZE 128
 #define MAX_LITERAL_NODE_FIELD_SIZE 512
 
-#define MAX_HITBOX_VERTICES 64
+#define MAX_POLYGON_VERTICES 64
 
 typedef struct {
-    Vector2 vertices[MAX_HITBOX_VERTICES];
+    Vector2 vertices[MAX_POLYGON_VERTICES];
     int count;
     bool isClosed;
 } Polygon;

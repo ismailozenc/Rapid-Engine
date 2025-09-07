@@ -2160,7 +2160,8 @@ int main()
 
             BeginTextureMode(eng.viewportTex);
             DrawHitboxEditor(&hbEd, mouseInViewportTex);
-            DrawTextEx(eng.font, "Press ESC to Save & Exit Hitbox cgEd", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 30}, 30, 1, GRAY);
+            DrawTextEx(eng.font, "ESC - Save & Exit Hitbox Editor", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 30}, 30, 1, GRAY);
+            DrawTextEx(eng.font, "R - reset hitbox", (Vector2){viewportRecInViewportTex.x + 30, viewportRecInViewportTex.y + 70}, 30, 1, GRAY);
             EndTextureMode();
 
             break;

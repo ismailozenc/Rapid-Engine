@@ -15,6 +15,7 @@ HitboxEditorContext InitHitboxEditor(Texture2D tex, Vector2 pos, Vector2 scale)
     hbEd.poly.isClosed = false;
     hbEd.draggingVerticeIndex = -1;
     hbEd.scale = scale;
+    hbEd.lastActionType = HBED_LAST_ACTION_TYPE_NONE;
     return hbEd;
 }
 
@@ -55,17 +56,36 @@ bool UpdateHitboxEditor(HitboxEditorContext *hbEd, Vector2 mouseLocal, GraphCont
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
     {
-        if (hbEd->poly.count != 0)
+        switch (hbEd->lastActionType)
         {
-            hbEd->poly.count--;
-            hbEd->poly.isClosed = false;
+        case HBED_LAST_ACTION_TYPE_ADD:
+            if (hbEd->poly.count != 0)
+            {
+                hbEd->poly.count--;
+                hbEd->poly.isClosed = false;
+            }
+            break;
+        case HBED_LAST_ACTION_TYPE_DELETE:
+            hbEd->poly.count++;
+            for (int j = hbEd->poly.count - 1; j > hbEd->lastActionVerticeIndex; j--)
+            {
+                hbEd->poly.vertices[j] = hbEd->poly.vertices[j - 1];
+            }
+            hbEd->poly.vertices[hbEd->lastActionVerticeIndex] = hbEd->lastActionVertice;
+            break;
+        case HBED_LAST_ACTION_TYPE_MOVE:
+            hbEd->poly.vertices[hbEd->lastActionVerticeIndex].x -= hbEd->lastActionVertice.x;
+            hbEd->poly.vertices[hbEd->lastActionVerticeIndex].y -= hbEd->lastActionVertice.y;
+            break;
         }
+
+        hbEd->lastActionType = HBED_LAST_ACTION_TYPE_NONE;
     }
 
     if (hbEd->poly.isClosed)
     {
 
-        if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+        if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
         {
             hbEd->draggingVerticeIndex = -1;
             return true;
@@ -81,7 +101,24 @@ bool UpdateHitboxEditor(HitboxEditorContext *hbEd, Vector2 mouseLocal, GraphCont
 
                 if (IsNear(mouseLocal, vertice, SNAP_DIST))
                 {
-                    hbEd->draggingVerticeIndex = i;
+                    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+                    {
+                        hbEd->draggingVerticeIndex = i;
+                        hbEd->lastActionType = HBED_LAST_ACTION_TYPE_MOVE;
+                        hbEd->lastActionVerticeIndex = i;
+                        hbEd->lastActionVertice = (Vector2){0, 0};
+                    }
+                    else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+                    {
+                        hbEd->lastActionType = HBED_LAST_ACTION_TYPE_DELETE;
+                        hbEd->lastActionVertice = (Vector2){hbEd->poly.vertices[i].x, hbEd->poly.vertices[i].y};
+                        hbEd->lastActionVerticeIndex = i;
+                        for (int j = i; j < hbEd->poly.count - 1; j++)
+                        {
+                            hbEd->poly.vertices[j] = hbEd->poly.vertices[j + 1];
+                        }
+                        hbEd->poly.count--;
+                    }
                 }
             }
 
@@ -93,6 +130,9 @@ bool UpdateHitboxEditor(HitboxEditorContext *hbEd, Vector2 mouseLocal, GraphCont
 
         hbEd->poly.vertices[hbEd->draggingVerticeIndex].x += GetMouseDelta().x;
         hbEd->poly.vertices[hbEd->draggingVerticeIndex].y += GetMouseDelta().y;
+
+        hbEd->lastActionVertice.x += GetMouseDelta().x;
+        hbEd->lastActionVertice.y += GetMouseDelta().y;
     }
     else
     {
@@ -117,6 +157,10 @@ bool UpdateHitboxEditor(HitboxEditorContext *hbEd, Vector2 mouseLocal, GraphCont
             if (hbEd->poly.count < MAX_VERTICES && !hbEd->poly.isClosed)
             {
                 hbEd->poly.vertices[hbEd->poly.count++] = rel;
+
+                hbEd->lastActionType = HBED_LAST_ACTION_TYPE_ADD;
+                hbEd->lastActionVerticeIndex = hbEd->poly.count;
+                hbEd->lastActionVertice = rel;
             }
         }
     }

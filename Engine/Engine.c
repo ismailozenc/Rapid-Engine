@@ -221,7 +221,7 @@ void EmergencyExit(EngineContext *eng, CGEditorContext *cgEd, InterpreterContext
                 level = "UNKNOWN";
                 break;
             }
-            fprintf(logFile, "[eng %s] %s\n", level, eng->logs.entries[i].message);
+            fprintf(logFile, "[ENGINE %s] %s\n", level, eng->logs.entries[i].message);
         }
 
         for (int i = 0; i < cgEd->logMessageCount; i++)
@@ -287,7 +287,6 @@ void EmergencyExit(EngineContext *eng, CGEditorContext *cgEd, InterpreterContext
 
     FreeEngineContext(eng);
     FreeEditorContext(cgEd);
-    // FreeGraphContext(graph);
     FreeInterpreterContext(intp);
 
     free(intp->projectPath);
@@ -769,6 +768,7 @@ void DrawUIElements(EngineContext *eng, GraphContext *graph, CGEditorContext *cg
                     break;
                 }
                 *runtimeGraph = ConvertToRuntimeGraph(graph, intp);
+                intp->runtimeGraph = runtimeGraph;
                 if (intp->buildErrorOccured)
                 {
                     EmergencyExit(eng, cgEd, intp);
@@ -829,7 +829,7 @@ void DrawUIElements(EngineContext *eng, GraphContext *graph, CGEditorContext *cg
                 else
                 {
                     eng->shouldCloseWindow = true;
-                    return;
+                    break;
                 }
             }
             break;
@@ -900,6 +900,8 @@ void DrawUIElements(EngineContext *eng, GraphContext *graph, CGEditorContext *cg
                         PrepareCGFilePath(eng, openedFileName);
 
                         LoadGraphFromFile(eng->CGFilePath, graph);
+
+                        cgEd->graph = graph;
 
                         eng->viewportMode = VIEWPORT_CG_EDITOR;
                     }
@@ -1645,6 +1647,7 @@ bool HandleUICollisions(EngineContext *eng, GraphContext *graph, InterpreterCont
         else
         {
             *runtimeGraph = ConvertToRuntimeGraph(graph, intp);
+            intp->runtimeGraph = runtimeGraph;
             if (intp->buildErrorOccured)
             {
                 EmergencyExit(eng, cgEd, intp);
@@ -1898,6 +1901,7 @@ int main()
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(1600, 1000, "RapidEngine");
     SetTargetFPS(140);
+    SetExitKey(KEY_NULL);
     char fileName[MAX_FILE_NAME];
     strmac(fileName, MAX_FILE_NAME, "%s", developerMode ? "Tetris" : HandleProjectManager());
 
@@ -1932,10 +1936,11 @@ int main()
         AddToLog(&eng, "Failed to load CoreGraph file! Continuing with empty graph{C223}", LOG_LEVEL_ERROR);
         eng.CGFilePath[0] = '\0';
     }
+    cgEd.graph = &graph;
 
     AddToLog(&eng, "All resources loaded. Welcome!{E000}", LOG_LEVEL_NORMAL);
 
-    while (!WindowShouldClose() || IsKeyDown(KEY_ESCAPE))
+    while (!WindowShouldClose())
     {
         if (!IsWindowReady())
         {
@@ -2155,6 +2160,7 @@ int main()
                 {
                     eng.viewportMode = VIEWPORT_CG_EDITOR;
                     eng.delayFrames = true;
+                    break;
                 }
             }
 
@@ -2215,23 +2221,14 @@ int main()
 
         EndDrawing();
 
-        static bool requestedClose = false;
         if (eng.shouldCloseWindow)
         {
-            if (requestedClose)
-            {
-                break;
-            }
-            else
-            {
-                requestedClose = true;
-            }
+            break;
         }
     }
 
     FreeEngineContext(&eng);
     FreeEditorContext(&cgEd);
-    FreeGraphContext(&graph);
     FreeInterpreterContext(&intp);
 
     free(intp.projectPath);

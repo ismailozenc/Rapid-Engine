@@ -82,6 +82,10 @@ void FreeEditorContext(CGEditorContext *cgEd)
     UnloadTexture(cgEd->gearTxt);
 
     UnloadFont(cgEd->font);
+
+    if(cgEd->graph){
+        FreeGraphContext(cgEd->graph);
+    }
 }
 
 void AddToLogFromEditor(CGEditorContext *cgEd, char *message, int level)

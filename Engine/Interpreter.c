@@ -36,6 +36,49 @@ InterpreterContext InitInterpreterContext()
     return intp;
 }
 
+void FreeRuntimeGraphContext(RuntimeGraphContext *rg)
+{
+    if (!rg) return;
+
+    if (rg->nodes)
+    {
+        for (int i = 0; i < rg->nodeCount; i++)
+        {
+            RuntimeNode *node = &rg->nodes[i];
+
+            for (int j = 0; j < node->inputCount; j++)
+            {
+                if (node->inputPins[j])
+                {
+                    free(node->inputPins[j]);
+                    node->inputPins[j] = NULL;
+                }
+            }
+
+            for (int j = 0; j < node->outputCount; j++)
+            {
+                if (node->outputPins[j])
+                {
+                    free(node->outputPins[j]);
+                    node->outputPins[j] = NULL;
+                }
+            }
+        }
+
+        free(rg->nodes);
+        rg->nodes = NULL;
+    }
+
+    if (rg->pins)
+    {
+        free(rg->pins);
+        rg->pins = NULL;
+    }
+
+    rg->nodeCount = 0;
+    rg->pinCount = 0;
+}
+
 void FreeInterpreterContext(InterpreterContext *intp)
 {
     if (!intp)
@@ -74,6 +117,10 @@ void FreeInterpreterContext(InterpreterContext *intp)
     char *projectPath = intp->projectPath;
     *intp = InitInterpreterContext();
     intp->projectPath = projectPath;
+
+    if(intp->runtimeGraph){
+        FreeRuntimeGraphContext(intp->runtimeGraph);
+    }
 }
 
 char *ValueTypeToString(ValueType type)

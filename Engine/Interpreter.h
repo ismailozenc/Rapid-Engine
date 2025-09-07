@@ -196,6 +196,8 @@ typedef struct
     bool isPaused;
 
     Vector2 cameraOffset;
+
+    RuntimeGraphContext *runtimeGraph;
 } InterpreterContext;
 
 typedef enum{

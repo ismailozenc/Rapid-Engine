@@ -65,6 +65,8 @@ typedef struct
     bool shouldOpenHitboxEditor;
     char hitboxEditorFileName[MAX_FILE_NAME];
     int hitboxEditingPinID;
+
+    GraphContext *graph;
 } CGEditorContext;
 
 CGEditorContext InitEditorContext(void);

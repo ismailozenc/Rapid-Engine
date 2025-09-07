@@ -312,11 +312,7 @@ char *SetProjectFolderPath(const char *fileName)
         return NULL;
     }
 
-    char *lastSlash = strrchr(cwd, PATH_SEPARATOR);
-    if (lastSlash && lastSlash != cwd)
-    {
-        *lastSlash = '\0';
-    }
+    STRING_ALLOCATION_FAILURE = true;
 
     char *projectPath = malloc(MAX_FILE_PATH);
     if (!projectPath)
@@ -361,16 +357,6 @@ void PrepareCGFilePath(EngineContext *eng, const char *projectName)
     {
         exit(1);
     }
-
-    size_t len = strlen(cwd);
-
-    if (len <= 7)
-    {
-        fprintf(stderr, "Current directory path too short to truncate 7 chars\n");
-        exit(1);
-    }
-
-    cwd[len - 7] = '\0';
 
     strmac(eng->CGFilePath, MAX_FILE_PATH, "%s%cProjects%c%s%c%s.cg", cwd, PATH_SEPARATOR, PATH_SEPARATOR, projectName, PATH_SEPARATOR, projectName);
 

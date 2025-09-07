@@ -205,8 +205,6 @@ int WindowLoadProject(char *projectFileName, Font font)
 
     Vector2 mousePos = GetMousePosition();
 
-    FilePathList files = LoadDirectoryFiles(TextFormat("..%cProjects", PATH_SEPARATOR));
-
     int yPosition = 80;
 
     static int selectedProject = 0;
@@ -246,6 +244,21 @@ int WindowLoadProject(char *projectFileName, Font font)
         {
             return PROJECT_MANAGER_WINDOW_MODE_MAIN;
         }
+    }
+
+    if (!DirectoryExists("Projects"))
+    {
+        if (MAKE_DIR("Projects") != 0)
+        {
+            return false;
+        }
+    }
+
+    FilePathList files = LoadDirectoryFiles("Projects");
+
+    if(files.count == 0){
+        DrawTextEx(font, "No existing projects", (Vector2){(GetScreenWidth() - MeasureTextEx(font, "No existing projects", 35, 1).x) / 2, yPosition}, 35, 1, WHITE);
+        return PROJECT_MANAGER_WINDOW_MODE_LOAD;
     }
 
     static float blinkTimer = 0;
@@ -324,19 +337,50 @@ int WindowLoadProject(char *projectFileName, Font font)
 
 bool CreateProject(ProjectOptions PO)
 {
-    char projectPath[MAX_FILE_PATH];
+    char baseProjects[MAX_FILE_PATH];
+    strmac(baseProjects, MAX_FILE_PATH, "Projects");
 
-    strmac(projectPath, MAX_FILE_PATH, "..%cProjects%c%s", PATH_SEPARATOR, PATH_SEPARATOR, PO.projectName);
-
-    if (DirectoryExists(TextFormat("..%cProjects", PATH_SEPARATOR)))
+    if (!DirectoryExists(baseProjects))
     {
-        if (MAKE_DIR(projectPath) != 0)
+        if (MAKE_DIR(baseProjects) != 0)
         {
             return false;
         }
     }
-    else{
 
+    char projectPath[MAX_FILE_PATH];
+    strmac(projectPath, MAX_FILE_PATH, "%s%c%s", baseProjects, PATH_SEPARATOR, PO.projectName);
+
+    char tempPath[MAX_FILE_PATH];
+    char originalName[MAX_FILE_NAME];
+    strmac(originalName, MAX_FILE_NAME, "%s", PO.projectName);
+
+    for (int i = 1; i < 100; i++)
+    {
+        if (i == 1){
+            strmac(tempPath, MAX_FILE_PATH, "%s", projectPath);
+        }
+        else{
+            strmac(tempPath, MAX_FILE_PATH, "%s %d", projectPath, i);
+        }
+
+        if (!DirectoryExists(tempPath))
+        {
+            if (MAKE_DIR(tempPath) != 0){
+                return false;
+            }
+
+            strmac(projectPath, MAX_FILE_PATH, "%s", tempPath);
+            if (i > 1){
+                strmac(PO.projectName, MAX_FILE_NAME, "%s %d", originalName, i);
+            }
+
+            break;
+        }
+
+        if (i == 99){
+            return false;
+        }
     }
 
     char mainPath[MAX_FILE_PATH];
@@ -367,9 +411,12 @@ bool CreateProject(ProjectOptions PO)
 
     strmac(foldersPath, MAX_FILE_PATH, "%s%cAssets", projectPath, PATH_SEPARATOR);
 
-    if (MAKE_DIR(foldersPath) != 0)
+    if (!DirectoryExists(foldersPath))
     {
-        return false;
+        if (MAKE_DIR(foldersPath) != 0)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -377,6 +424,21 @@ bool CreateProject(ProjectOptions PO)
 
 int WindowCreateProject(char *projectFileName, Font font)
 {
+    static bool shouldDrawFailureScreen = false;
+    if (shouldDrawFailureScreen)
+    {
+        static float timer = 5.0f;
+        ClearBackground((Color){40, 42, 54, 255});
+        DrawTextEx(font, "FAILED TO CREATE PROJECT", (Vector2){(GetScreenWidth() - MeasureTextEx(font, "FAILED TO CREATE PROJECT", 40, 0).x) / 2, (GetScreenHeight() - MeasureTextEx(font, "FAILED TO CREATE PROJECT", 40, 0).y) / 2 - 50}, 40, 0, RED);
+        DrawTextEx(font, TextFormat("Exiting in %.1f", timer), (Vector2){(GetScreenWidth() - MeasureTextEx(font, TextFormat("Exiting in %.1f", timer), 40, 0).x) / 2, (GetScreenHeight() - MeasureTextEx(font, TextFormat("Exiting in %.1f", timer), 40, 0).y) / 2 + 50}, 40, 0, RED);
+        timer -= GetFrameTime();
+        if (timer <= 0)
+        {
+            exit(1);
+        }
+        return PROJECT_MANAGER_WINDOW_MODE_CREATE;
+    }
+
     Rectangle backButton = {1, 0, 65, 1600};
     static Rectangle textBox = {700, 230, 250, 40};
     static char inputText[MAX_FILE_NAME] = "";
@@ -529,7 +591,8 @@ int WindowCreateProject(char *projectFileName, Font font)
                 strmac(PO.projectName, MAX_FILE_NAME, "%s", inputText);
                 if (!CreateProject(PO))
                 {
-                    exit(1);
+                    shouldDrawFailureScreen = true;
+                    return PROJECT_MANAGER_WINDOW_MODE_CREATE;
                 }
                 strmac(projectFileName, MAX_FILE_NAME, "%s", inputText);
                 return PROJECT_MANAGER_WINDOW_MODE_EXIT;

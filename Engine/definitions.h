@@ -22,6 +22,9 @@ static bool developerMode = false;
 #include <direct.h>
 #define MAKE_DIR(path) _mkdir(path)
 #define GetCWD _getcwd
+#define strdup _strdup
+#define fopen_safe(filename, mode) fopen(filename, mode)
+#define sscanf_safe sscanf
 
 void* __stdcall ShellExecuteA(void* hwnd, const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd);
 

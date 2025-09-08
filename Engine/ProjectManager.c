@@ -503,7 +503,7 @@ int WindowCreateProject(char *projectFileName, Font font)
 
     DrawRectangleRounded(textBox, 2.0f, 8, LIGHTGRAY);
     DrawRectangleRoundedLinesEx(textBox, 2.0f, 8, 2, isFocused ? WHITE : DARKGRAY);
-    const char *subStr;
+    const char* subStr = inputText; // Initialize to avoid warning
     if (MeasureTextEx(font, inputText, 30, 0).x > textBox.width)
     {
         int len = strlen(inputText);
@@ -512,7 +512,7 @@ int WindowCreateProject(char *projectFileName, Font font)
             subStr = &inputText[i];
             if (MeasureTextEx(font, subStr, 30, 0).x <= textBox.width - MeasureText("_", 30) - 15)
             {
-                DrawTextEx(font, subStr, (Vector2){textBox.x + 5, textBox.y + 10}, 30, 0, BLACK);
+                DrawTextEx(font, subStr, (Vector2) { textBox.x + 5, textBox.y + 10 }, 30, 0, BLACK);
                 break;
             }
         }

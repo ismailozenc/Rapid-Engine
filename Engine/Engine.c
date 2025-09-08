@@ -351,7 +351,7 @@ void PrepareCGFilePath(EngineContext *eng, const char *projectName)
 {
     char cwd[MAX_FILE_PATH];
 
-    if (!getcwd(cwd, sizeof(cwd)))
+    if (!GetCWD(cwd, sizeof(cwd)))
     {
         exit(1);
     }
